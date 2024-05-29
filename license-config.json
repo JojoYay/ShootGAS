@@ -10,6 +10,7 @@
     "CONTRIBUTING",
     "build",
     "src",
+    ".env",
     "dist"
   ],
   "license": "license-header.txt",

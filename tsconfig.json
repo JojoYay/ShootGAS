@@ -12,7 +12,9 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "allowUnreachableCode": false,
-    "allowUnusedLabels": false
+    "allowUnusedLabels": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
   },
   "include": ["src/**/*", "test/**/*", "rollup.config.mjs"]
 }

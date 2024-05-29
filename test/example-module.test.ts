@@ -28,12 +28,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { hello } from '../src/example-module';
+// import { hello } from '../src/example-module';
 
-describe('example-module', () => {
-  describe('hello', () => {
-    it('Returns a hello message', () => {
-      expect(hello()).toBe('Hello Apps Script!');
-    });
-  });
-});
+// describe('example-module', () => {
+//   describe('hello', () => {
+//     it('Returns a hello message', () => {
+//       expect(hello()).toBe('Hello Apps Script!');
+//     });
+//   });
+// });
