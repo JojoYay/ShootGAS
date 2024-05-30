@@ -42,6 +42,7 @@
     "typescript": "^5.4.5"
   },
   "devDependencies": {
+    "@types/cheerio": "^0.22.35",
     "@types/prettier": "^3.0.0"
   }
 }

@@ -1,15 +1,23 @@
 const ROWNUM = 1; //とりあえず一番上からデータとってくる運用
-const REPORT_SHEET = '1wyYYlpHbGCmeX4v3G2FjuQ4kuQpz9d3j2DveSPTbMbU';
-const SETTING_SHEET = '1RymgqowExhXB3p2N9i1OYdypIhCtMZkRWr1Wpo1CTyI';
-const LINE_ACCESS_TOKEN =
-  'glhgotcUd27uledjA6p02Rv4tkbaqJeUJzAVLeiGNB8Us7tomv7ZdZZ8cz1q+PmVch28XYoh0SlKqPZpwk7+SJkAjZz/CmELk4CNP/DNiKjRUrIQUGDEmhLL40rXDJ8e1lBubmGGRJfkhE0BkXH2CwdB04t89/1O/w1cDnyilFU=';
-const FOLDER_ID = '1fcBWvaoAlWNJVmmH4s2spVi5_EJdE3aC';
-const ARCHIVE_FOLDER = '1IdRNjbo752JhlATsDic3bGUZDEY5fk9B';
-const CHANNEL_QR = 'https://qr-official.line.me/sid/L/164wqxlu.png';
-const CHANNEL_URL = 'https://lin.ee/1O9VC3Q';
-const SETTING_SHEET_NAME = 'Settings';
-const CASH_BOOK_SHEET_NAME = 'CashBook';
-const MAPPING_SHEET_NAME = 'DensukeMapping';
+
+const REPORT_SHEET: string | null =
+  PropertiesService.getScriptProperties().getProperty('reportSheet');
+const SETTING_SHEET: string | null =
+  PropertiesService.getScriptProperties().getProperty('settingSheet');
+const LINE_ACCESS_TOKEN: string | null =
+  PropertiesService.getScriptProperties().getProperty('lineAccessToken');
+const FOLDER_ID: string | null =
+  PropertiesService.getScriptProperties().getProperty('folderId');
+const ARCHIVE_FOLDER: string | null =
+  PropertiesService.getScriptProperties().getProperty('archiveFolder');
+const CHANNEL_QR: string | null =
+  PropertiesService.getScriptProperties().getProperty('channelQr');
+const CHANNEL_URL: string | null =
+  PropertiesService.getScriptProperties().getProperty('channelUrl');
+
+const SETTING_SHEET_NAME: string = 'Settings';
+const CASH_BOOK_SHEET_NAME: string = 'CashBook';
+const MAPPING_SHEET_NAME: string = 'DensukeMapping';
 
 function generateRemind($ = getDensukeCheerio()): string {
   const members: string[] = exstractMembers($);
@@ -48,7 +56,10 @@ function generateRemind($ = getDensukeCheerio()): string {
   return summary;
 }
 
-function generateSummaryBase($ = getDensukeCheerio()) {
+function generateSummaryBase($ = getDensukeCheerio()): void {
+  if (!SETTING_SHEET) {
+    throw new Error('Script Propert not found');
+  }
   // スプレッドシートとシートを取得
   const ss = SpreadsheetApp.openById(SETTING_SHEET);
   const settingSheet = ss.getSheetByName(SETTING_SHEET_NAME);
@@ -57,7 +68,7 @@ function generateSummaryBase($ = getDensukeCheerio()) {
   const attendees: string[] = exstractAttendees($, ROWNUM, '○', members);
   const actDate: string = extractDateFromRownum($, ROWNUM);
   if (!cashBook || !settingSheet) {
-    return;
+    throw new Error('Script Propert not found');
   }
   // データの範囲を取得
   const range = cashBook.getDataRange();
@@ -78,6 +89,9 @@ function generateSummaryBase($ = getDensukeCheerio()) {
 }
 
 function getDensukeUrl(): string {
+  if (!SETTING_SHEET) {
+    throw new Error('Script Propert not found');
+  }
   const ss = SpreadsheetApp.openById(SETTING_SHEET);
   const settingSheet = ss.getSheetByName(SETTING_SHEET_NAME);
   let url: string = '';
@@ -86,9 +100,12 @@ function getDensukeUrl(): string {
   }
   return url;
 }
-function getDensukeCheerio() {
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getDensukeCheerio(): any {
   const url: string = getDensukeUrl();
   const html: string = UrlFetchApp.fetch(url).getContentText();
+  // @ts-ignore
   const $ = Cheerio.load(html);
   return $;
 }
@@ -99,10 +116,15 @@ function generateSummarySheet(
   attendFee: number,
   actDate: string,
   attendees: string[]
-) {
+): void {
+  if (!REPORT_SHEET || !SETTING_SHEET) {
+    throw new Error('Script Propert not found');
+  }
   const attendFeeTotal: number = attendFee * attendees.length;
-  const report: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(REPORT_SHEET);
-  let logSheet: GoogleAppsScript.Spreadsheet.Sheet | null = report.getSheetByName(actDate);
+  const report: GoogleAppsScript.Spreadsheet.Spreadsheet =
+    SpreadsheetApp.openById(REPORT_SHEET);
+  let logSheet: GoogleAppsScript.Spreadsheet.Sheet | null =
+    report.getSheetByName(actDate);
   if (!logSheet) {
     logSheet = report.insertSheet(actDate);
   }
@@ -162,6 +184,8 @@ function generateSummarySheet(
       '▲' + rentalFee,
       '' + (orgPrice - rentalFee + attendFeeTotal),
     ]);
+  } else {
+    throw new Error('Cash Book not found');
   }
 }
 
@@ -196,8 +220,11 @@ function getSummaryStr(
   return summary;
 }
 
-function archiveFiles(actDate: string) {
+function archiveFiles(actDate: string): void {
   try {
+    if (!FOLDER_ID || !ARCHIVE_FOLDER) {
+      throw new Error('Script Propert not found');
+    }
     const sourceFolder = DriveApp.getFolderById(FOLDER_ID);
     const destinationFolder = DriveApp.getFolderById(ARCHIVE_FOLDER);
     const files = sourceFolder.getFiles();
@@ -333,21 +360,24 @@ function executeMethod(obj: any, methodName: string, args: []) {
   }
 }
 
-function sendMessageToPaynowOwner(message: string) {
+function sendMessageToPaynowOwner(message: string): void {
   sendLineMessage(getLineUserId(getDensukeName(getPaynowOwner())), message);
 }
 
-function getPaynowOwner() {
+function getPaynowOwner(): string {
+  if (!SETTING_SHEET) {
+    throw new Error('Script Propert not found');
+  }
   const setting = SpreadsheetApp.openById(SETTING_SHEET);
   const settingSheet = setting.getSheetByName(SETTING_SHEET_NAME);
   if (!settingSheet) {
-    return;
+    throw new Error('Script Propert not found');
   }
   const payNowOwner = settingSheet.getRange('B6').getValue();
   return payNowOwner;
 }
 
-function sendLineMessage(userId: string, message: string) {
+function sendLineMessage(userId: string, message: string): void {
   if (userId) {
     const url = 'https://api.line.me/v2/bot/message/push';
     const headers = {
@@ -368,19 +398,15 @@ function sendLineMessage(userId: string, message: string) {
       headers: headers,
       payload: JSON.stringify(postData),
     };
-    try {
-      const response = UrlFetchApp.fetch(url, options);
-      Logger.log(response.getContentText());
-    } catch (e) {
-      Logger.log('Error: ' + e);
-    }
+    const response = UrlFetchApp.fetch(url, options);
+    Logger.log(response.getContentText());
   }
 }
 function sendLineReply(
   replyToken: string,
   messageText: string,
   imageUrl: string
-) {
+): void {
   const url = 'https://api.line.me/v2/bot/message/reply';
   const headers = {
     'Content-Type': 'application/json',
@@ -409,16 +435,12 @@ function sendLineReply(
     headers: headers,
     payload: JSON.stringify(postData),
   };
-  try {
-    const response = UrlFetchApp.fetch(url, options);
-    Logger.log(response.getContentText());
-  } catch (e) {
-    Logger.log('Error: ' + e);
-  }
+  const response = UrlFetchApp.fetch(url, options);
+  Logger.log(response.getContentText());
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function errorMessage(json: any) {
+function errorMessage(json: any): void {
   const userId: string = json.events[0].source.userId;
   const lang: string = getLineLang(userId);
   const replyToken: string = json.events[0].replyToken;
@@ -435,12 +457,15 @@ function errorMessage(json: any) {
 
 class RequestExecuter {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  intro(json: any) {
+  intro(json: any): void {
+    if (!CHANNEL_URL || !CHANNEL_QR) {
+      throw new Error('Script Propert not found');
+    }
     const replyToken = json.events[0].replyToken;
     sendLineReply(replyToken, CHANNEL_URL, CHANNEL_QR);
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  register(json: any) {
+  register(json: any): void {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const event: any = json.events[0];
     const replyToken = event.replyToken;
@@ -495,11 +520,9 @@ class RequestExecuter {
       }
     }
     sendLineReply(replyToken, replyMessage, '');
-
-    return [replyMessage, null];
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  payNow(json: any) {
+  payNow(json: any): void {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const event: any = json.events[0];
     const replyToken = event.replyToken;
@@ -553,7 +576,10 @@ class RequestExecuter {
     sendLineReply(replyToken, replyMessage, '');
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  aggregate(json: any) {
+  aggregate(json: any): void {
+    if (!SETTING_SHEET) {
+      throw new Error('Script Propert not found');
+    }
     const event = json.events[0];
     const replyToken = event.replyToken;
     const $ = getDensukeCheerio();
@@ -571,7 +597,10 @@ class RequestExecuter {
     sendLineReply(replyToken, getSummaryStr(attendees, actDate, addy), '');
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  unpaid(json: any) {
+  unpaid(json: any): void {
+    if (!SETTING_SHEET) {
+      throw new Error('Script Propert not found');
+    }
     const event = json.events[0];
     const replyToken = event.replyToken;
     const $ = getDensukeCheerio();
@@ -584,12 +613,12 @@ class RequestExecuter {
     );
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  remind(json: any) {
+  remind(json: any): void {
     const replyToken = json.events[0].replyToken;
     sendLineReply(replyToken, generateRemind(), '');
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  densukeUpd(json: any) {
+  densukeUpd(json: any): void {
     const event = json.events[0];
     const replyToken = event.replyToken;
     const $ = getDensukeCheerio();
@@ -599,7 +628,9 @@ class RequestExecuter {
     const members = exstractMembers($);
     const attendees = exstractAttendees($, ROWNUM, '○', members);
     const actDate = extractDateFromRownum($, ROWNUM);
-
+    if (!SETTING_SHEET) {
+      throw new Error('Script Propert not found');
+    }
     const ss = SpreadsheetApp.openById(SETTING_SHEET);
     const settingSheet = ss.getSheetByName(SETTING_SHEET_NAME);
     if (!settingSheet) {
@@ -625,7 +656,7 @@ class RequestExecuter {
     sendLineReply(replyToken, replyMessage, '');
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  regInfo(json: any) {
+  regInfo(json: any): void {
     const event = json.events[0];
     const replyToken = event.replyToken;
     const userId = event.source.userId;
@@ -642,7 +673,7 @@ class RequestExecuter {
     sendLineReply(replyToken, replyMessage, '');
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  managerInfo(json: any) {
+  managerInfo(json: any): void {
     const event = json.events[0];
     const replyToken = event.replyToken;
     const userId = event.source.userId;
@@ -661,12 +692,15 @@ class RequestExecuter {
   }
 }
 
-function isKanji(userId: string) {
+function isKanji(userId: string): boolean {
   return getKanjiIds().includes(userId);
 }
 
-function getKanjiIds() {
+function getKanjiIds(): string[] {
   const kanjiIds: string[] = [];
+  if (!SETTING_SHEET) {
+    throw new Error('Script Propert not found');
+  }
   const report = SpreadsheetApp.openById(SETTING_SHEET);
   const mappingSheet = report.getSheetByName(MAPPING_SHEET_NAME);
   if (!mappingSheet) {
@@ -712,6 +746,9 @@ function extractDateFromRownum($: any, rowNum: number): string {
 }
 
 function getLineName(member: string): string {
+  if (!SETTING_SHEET) {
+    throw new Error('Script Propert not found');
+  }
   const ss = SpreadsheetApp.openById(SETTING_SHEET);
   const sheet = ss.getSheetByName('LineNames');
   if (!sheet) {
@@ -733,6 +770,9 @@ function getPaymentUrl(lineName: string, actDate: string): string {
 
 function getUnpaid(actDate: string): string[] {
   const unpaid: string[] = [];
+  if (!SETTING_SHEET) {
+    throw new Error('Script Propert not found');
+  }
   const ss = SpreadsheetApp.openById(SETTING_SHEET);
   const paymentsSheet = ss.getSheetByName('Payments');
   if (!paymentsSheet) {
@@ -754,6 +794,9 @@ function getCurrentTime(): string {
 
 function getLineUserId(densukeName: string): string {
   let userId = '';
+  if (!SETTING_SHEET) {
+    throw new Error('Script Propert not found');
+  }
   const report = SpreadsheetApp.openById(SETTING_SHEET);
   const mappingSheet = report.getSheetByName(MAPPING_SHEET_NAME);
   if (!mappingSheet) {
@@ -783,11 +826,11 @@ function getLineUserProfile(userId: string) {
   return userProfile;
 }
 
-function getLineDisplayName(userId: string) {
+function getLineDisplayName(userId: string): string {
   return getLineUserProfile(userId).displayName;
 }
 
-function getLineLang(userId: string) {
+function getLineLang(userId: string): string {
   return getLineUserProfile(userId).language;
 }
 
@@ -811,7 +854,10 @@ function registerMapping(
   lineName: string,
   densukeName: string,
   userId: string
-) {
+): void {
+  if (!SETTING_SHEET) {
+    throw new Error('Script Propert not found');
+  }
   const report = SpreadsheetApp.openById(SETTING_SHEET);
   const mappingSheet = report.getSheetByName('DensukeMapping');
   if (!mappingSheet) {
@@ -831,7 +877,10 @@ function updateLineNameOfLatestReport(
   lineName: string,
   densukeName: string,
   actDate: string
-) {
+): void {
+  if (!REPORT_SHEET) {
+    throw new Error('Script Propert not found');
+  }
   const report = SpreadsheetApp.openById(REPORT_SHEET);
   const repo = report.getSheetByName(actDate);
   if (!repo) {
@@ -848,6 +897,9 @@ function updateLineNameOfLatestReport(
 
 function getDensukeName(lineName: string): string {
   let densukeName = null;
+  if (!SETTING_SHEET) {
+    throw new Error('Script Propert not found');
+  }
   const report = SpreadsheetApp.openById(SETTING_SHEET);
   const mappingSheet = report.getSheetByName('DensukeMapping');
   if (!mappingSheet) {
@@ -868,6 +920,9 @@ function uploadPayNowPic(
   messageId: string,
   actDate: string
 ): string {
+  if (!FOLDER_ID) {
+    throw new Error('Script Propert not found');
+  }
   const fileNm = actDate + '_' + lineName;
   const folder = DriveApp.getFolderById(FOLDER_ID);
   const files = folder.getFilesByName(fileNm);
@@ -880,6 +935,9 @@ function uploadPayNowPic(
 }
 
 function getLineImage(messageId: string, fileName: string): string {
+  if (!FOLDER_ID) {
+    throw new Error('Script Propert not found');
+  }
   const folder = DriveApp.getFolderById(FOLDER_ID);
 
   const url = `https://api-data.line.me/v2/bot/message/${messageId}/content`;
@@ -892,7 +950,10 @@ function getLineImage(messageId: string, fileName: string): string {
   return file.getUrl();
 }
 
-function updatePaymentStatus(lineName: string, actDate: string) {
+function updatePaymentStatus(lineName: string, actDate: string): void {
+  if (!REPORT_SHEET) {
+    throw new Error('Script Propert not found');
+  }
   const report = SpreadsheetApp.openById(REPORT_SHEET);
   const repo = report.getSheetByName(actDate);
   if (!repo) {

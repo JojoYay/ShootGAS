@@ -35,7 +35,7 @@ import typescript from 'rollup-plugin-typescript2';
 import { fileURLToPath } from 'url';
 
 export default {
-  input: 'src/example-module.ts',
+  input: 'src/index.ts',
   output: {
     dir: 'dist',
     format: 'esm',
@@ -49,7 +49,10 @@ export default {
         },
       },
     }),
-    typescript(),
+    typescript({
+      check: false,
+      tsconfig: "tsconfig.json"
+    }),
     prettier({ parser: 'typescript' }),
   ],
   context: 'this',
