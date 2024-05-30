@@ -19,10 +19,24 @@ const SETTING_SHEET_NAME: string = 'Settings';
 const CASH_BOOK_SHEET_NAME: string = 'CashBook';
 const MAPPING_SHEET_NAME: string = 'DensukeMapping';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function testeeee(): void {
+  const $ = getDensukeCheerio();
+  const members: string[] = extractMembers($);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const attendees: string[] = extractAttendees($, ROWNUM, '○', members);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const unknown: string[] = extractAttendees($, ROWNUM, '△', members);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const actDate: string = extractDateFromRownum($, ROWNUM);
+
+  console.log(generateRemind());
+}
+
 function generateRemind($ = getDensukeCheerio()): string {
-  const members: string[] = exstractMembers($);
-  const attendees: string[] = exstractAttendees($, ROWNUM, '○', members);
-  const unknown: string[] = exstractAttendees($, ROWNUM, '△', members);
+  const members: string[] = extractMembers($);
+  const attendees: string[] = extractAttendees($, ROWNUM, '○', members);
+  const unknown: string[] = extractAttendees($, ROWNUM, '△', members);
   const actDate: string = extractDateFromRownum($, ROWNUM);
 
   let remindStr: string =
@@ -64,8 +78,8 @@ function generateSummaryBase($ = getDensukeCheerio()): void {
   const ss = SpreadsheetApp.openById(SETTING_SHEET);
   const settingSheet = ss.getSheetByName(SETTING_SHEET_NAME);
   const cashBook = ss.getSheetByName(CASH_BOOK_SHEET_NAME);
-  const members: string[] = exstractMembers($);
-  const attendees: string[] = exstractAttendees($, ROWNUM, '○', members);
+  const members: string[] = extractMembers($);
+  const attendees: string[] = extractAttendees($, ROWNUM, '○', members);
   const actDate: string = extractDateFromRownum($, ROWNUM);
   if (!cashBook || !settingSheet) {
     throw new Error('Script Propert not found');
@@ -125,6 +139,7 @@ function generateSummarySheet(
     SpreadsheetApp.openById(REPORT_SHEET);
   let logSheet: GoogleAppsScript.Spreadsheet.Sheet | null =
     report.getSheetByName(actDate);
+  console.log(actDate);
   if (!logSheet) {
     logSheet = report.insertSheet(actDate);
   }
@@ -240,11 +255,13 @@ function archiveFiles(actDate: string): void {
   }
 }
 
-// function doGet(
-//   e: GoogleAppsScript.Events.DoGet
-// ): GoogleAppsScript.Content.TextOutput {
-//   return ContentService.createTextOutput('Hello World');
-// }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function doGet(
+  e: GoogleAppsScript.Events.DoGet
+): GoogleAppsScript.Content.TextOutput {
+  console.log(e);
+  return ContentService.createTextOutput('Hello World');
+}
 
 // interface ICommand {
 //   func: string;
@@ -335,23 +352,27 @@ function doPost(
   const requestExecuter = new RequestExecuter();
   const json = JSON.parse(e.postData.contents);
   const event = json.events[0]; //CHATGPTがコレでよいと言いやがったけどいいのかな
-
+  console.log('イベント:' + event);
+  let done = false;
   for (const item of COMMAND_MAP) {
     if (item.condition(event)) {
+      done = true;
       executeMethod(requestExecuter, item.func, json);
-    } else {
-      errorMessage(json);
     }
   }
+  if (!done) {
+    errorMessage(json);
+  }
+
   return ContentService.createTextOutput(
     JSON.stringify({ content: 'post ok' })
   ).setMimeType(ContentService.MimeType.JSON);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function executeMethod(obj: any, methodName: string, args: []) {
+function executeMethod(obj: any, methodName: string, args: any) {
   if (typeof obj[methodName] === 'function') {
-    return obj[methodName](...args);
+    return obj[methodName](args);
   } else {
     //こいつは基本的にCOMMAND_MAPに指定したメソッド名がRequestExecuterに存在する場合は発生しない（ので無視してよい）
     throw new Error(
@@ -407,6 +428,10 @@ function sendLineReply(
   messageText: string,
   imageUrl: string
 ): void {
+  console.log('replyToken:' + replyToken);
+  console.log('messageText:' + messageText);
+  console.log('imageUrl:' + imageUrl);
+
   const url = 'https://api.line.me/v2/bot/message/reply';
   const headers = {
     'Content-Type': 'application/json',
@@ -434,6 +459,7 @@ function sendLineReply(
     method: 'post',
     headers: headers,
     payload: JSON.stringify(postData),
+    muteHttpExceptions: true,
   };
   const response = UrlFetchApp.fetch(url, options);
   Logger.log(response.getContentText());
@@ -474,7 +500,7 @@ class RequestExecuter {
     const lang = getLineLang(userId);
     const lineName = getLineDisplayName(userId);
     const $ = getDensukeCheerio();
-    const members = exstractMembers($);
+    const members = extractMembers($);
     const actDate = extractDateFromRownum($, ROWNUM);
     const densukeNameNew = userMessage.split('@@register@@')[1];
     let replyMessage = null;
@@ -527,8 +553,8 @@ class RequestExecuter {
     const event: any = json.events[0];
     const replyToken = event.replyToken;
     const $ = getDensukeCheerio();
-    const members = exstractMembers($);
-    const attendees = exstractAttendees($, ROWNUM, '○', members);
+    const members = extractMembers($);
+    const attendees = extractAttendees($, ROWNUM, '○', members);
     const actDate = extractDateFromRownum($, ROWNUM);
     const messageId = event.message.id;
     const userId = event.source.userId;
@@ -583,8 +609,8 @@ class RequestExecuter {
     const event = json.events[0];
     const replyToken = event.replyToken;
     const $ = getDensukeCheerio();
-    const members = exstractMembers($);
-    const attendees = exstractAttendees($, ROWNUM, '○', members);
+    const members = extractMembers($);
+    const attendees = extractAttendees($, ROWNUM, '○', members);
     const actDate = extractDateFromRownum($, ROWNUM);
 
     const ss = SpreadsheetApp.openById(SETTING_SHEET);
@@ -625,8 +651,8 @@ class RequestExecuter {
     const userId = event.source.userId;
     const lang = getLineLang(userId);
     const lineName = getLineDisplayName(userId);
-    const members = exstractMembers($);
-    const attendees = exstractAttendees($, ROWNUM, '○', members);
+    const members = extractMembers($);
+    const attendees = extractAttendees($, ROWNUM, '○', members);
     const actDate = extractDateFromRownum($, ROWNUM);
     if (!SETTING_SHEET) {
       throw new Error('Script Propert not found');
@@ -716,33 +742,45 @@ function getKanjiIds(): string[] {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function exstractMembers($: any): string[] {
-  const members: string[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  $('#mymember td.member').each((element: any) => {
-    members.push($(element).text());
+function extractMembers($: any): string[] {
+  const data: string[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  $('td a').each((i: number, element: unknown) => {
+    const text = $(element).text();
+    const href = $(element).attr('href');
+    if (href && href.startsWith('javascript:memberdata(')) {
+      data.push(text.trim());
+    }
   });
-  return members;
+  return data;
 }
 
-function exstractAttendees(
+function extractAttendees(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   $: any,
   rowNum: number,
   symbol: string,
   members: string[]
 ): string[] {
-  const attendees: string[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  $(`#row${rowNum} td.attendee:contains("${symbol}")`).each((element: any) => {
-    const idx = $(element).index();
-    attendees.push(members[idx]);
-  });
-  return attendees;
+  const row = $(`#listtable tr`).eq(rowNum);
+  const attend: string[] = [];
+  row
+    .find('td')
+    .slice(4)
+    .each((i: number, element: unknown) => {
+      const text = $(element).text();
+      if (text === symbol) {
+        attend.push(members[i]);
+      }
+    });
+  return attend;
 }
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function extractDateFromRownum($: any, rowNum: number): string {
-  return $(`#row${rowNum} td.date`).text();
+  const row = $(`#listtable tr`).eq(rowNum);
+  const cell = row.find('td[nowrap]').first(); // 最初の<td nowrap="">を取得
+  return cell.text();
 }
 
 function getLineName(member: string): string {
