@@ -33,7 +33,9 @@
 describe('index', () => {
   describe('payNow', () => {
     it('Returns a hello message', () => {
-      expect(generateRemind()).toBe('次回予定6/2(日)リマインドです！\n伝助の更新お忘れなく！\nThis is gentle reminder of 6/2(日).\nPlease update your Densuke schedule.\n〇(14名): 成瀬, Suffian, 安室, Soma, 松平, やまだじょ, 塚本拓, 望月, なべ, おばたけ, 八木, 竹村, 西尾, 西村\n△(4名): SUZUKI, 正田, 德永, 芦田\n伝助URL：https://densuke.biz/list?cd=6MmRJzUzsD3TJPQT');
+      expect(generateRemind()).toBe(
+        '次回予定6/2(日)リマインドです！\n伝助の更新お忘れなく！\nThis is gentle reminder of 6/2(日).\nPlease update your Densuke schedule.\n〇(14名): 成瀬, Suffian, 安室, Soma, 松平, やまだじょ, 塚本拓, 望月, なべ, おばたけ, 八木, 竹村, 西尾, 西村\n△(4名): SUZUKI, 正田, 德永, 芦田\n伝助URL：https://densuke.biz/list?cd=6MmRJzUzsD3TJPQT'
+      );
     });
   });
 });

@@ -14,6 +14,7 @@ const CHANNEL_QR: string | null =
   PropertiesService.getScriptProperties().getProperty('channelQr');
 const CHANNEL_URL: string | null =
   PropertiesService.getScriptProperties().getProperty('channelUrl');
+// messageUsage: メッセージ使用量, chat: チャット画面も登録が必要
 
 const SETTING_SHEET_NAME: string = 'Settings';
 const CASH_BOOK_SHEET_NAME: string = 'CashBook';
@@ -21,16 +22,15 @@ const MAPPING_SHEET_NAME: string = 'DensukeMapping';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function testeeee(): void {
-  const $ = getDensukeCheerio();
-  const members: string[] = extractMembers($);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const attendees: string[] = extractAttendees($, ROWNUM, '○', members);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const unknown: string[] = extractAttendees($, ROWNUM, '△', members);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const actDate: string = extractDateFromRownum($, ROWNUM);
+  console.log(FOLDER_ID);
+  console.log(ARCHIVE_FOLDER);
+  console.log(CHANNEL_QR);
+  console.log(CHANNEL_URL);
 
-  console.log(generateRemind());
+  console.log(
+    PropertiesService.getScriptProperties().getProperty('messageUsage')
+  );
+  console.log(PropertiesService.getScriptProperties().getProperty('chat'));
 }
 
 function generateRemind($ = getDensukeCheerio()): string {
@@ -102,6 +102,28 @@ function generateSummaryBase($ = getDensukeCheerio()): void {
   generateSummarySheet(orgPrice, rentalFee, attendFee, actDate, attendees);
 }
 
+function getPayNowFolderUrl() {
+  return 'https://drive.google.com/drive/folders/' + FOLDER_ID + '?usp=sharing';
+}
+
+function getSettingSheetUrl() {
+  return (
+    'https://docs.google.com/spreadsheets/d/' +
+    SETTING_SHEET +
+    '/edit?usp=sharing&ccc=' +
+    new Date().getTime()
+  );
+}
+
+function getReportSheetUrl() {
+  return (
+    'https://docs.google.com/spreadsheets/d/' +
+    REPORT_SHEET +
+    '/edit?usp=sharing&ccc=' +
+    new Date().getTime()
+  );
+}
+
 function getDensukeUrl(): string {
   if (!SETTING_SHEET) {
     throw new Error('Script Propert not found');
@@ -139,7 +161,6 @@ function generateSummarySheet(
     SpreadsheetApp.openById(REPORT_SHEET);
   let logSheet: GoogleAppsScript.Spreadsheet.Sheet | null =
     report.getSheetByName(actDate);
-  console.log(actDate);
   if (!logSheet) {
     logSheet = report.insertSheet(actDate);
   }
@@ -228,30 +249,26 @@ function getSummaryStr(
     '名): ' +
     attendees.join(', ') +
     '\n' +
-    'Report URL:https://docs.google.com/spreadsheets/d/1wyYYlpHbGCmeX4v3G2FjuQ4kuQpz9d3j2DveSPTbMbU/edit?usp=sharing&cache=' +
-    new Date().getTime() +
-    ' \nPayNow先:' +
+    'Report URL:' +
+    getReportSheetUrl() +
+    '\nPayNow先: ' +
     payNowAddy;
   return summary;
 }
 
 function archiveFiles(actDate: string): void {
-  try {
-    if (!FOLDER_ID || !ARCHIVE_FOLDER) {
-      throw new Error('Script Propert not found');
+  if (!FOLDER_ID || !ARCHIVE_FOLDER) {
+    throw new Error('Script Propert not found');
+  }
+  const sourceFolder = DriveApp.getFolderById(FOLDER_ID);
+  const destinationFolder = DriveApp.getFolderById(ARCHIVE_FOLDER);
+  const files = sourceFolder.getFiles();
+  const prefix = actDate + '_';
+  while (files.hasNext()) {
+    const file = files.next();
+    if (!file.getName().startsWith(prefix)) {
+      file.moveTo(destinationFolder);
     }
-    const sourceFolder = DriveApp.getFolderById(FOLDER_ID);
-    const destinationFolder = DriveApp.getFolderById(ARCHIVE_FOLDER);
-    const files = sourceFolder.getFiles();
-    const prefix = actDate + '_';
-    while (files.hasNext()) {
-      const file = files.next();
-      if (!file.getName().startsWith(prefix)) {
-        file.moveTo(destinationFolder);
-      }
-    }
-  } catch (e: unknown) {
-    Logger.log('Error: ' + (e as Error).message);
   }
 }
 
@@ -262,11 +279,6 @@ function doGet(
   console.log(e);
   return ContentService.createTextOutput('Hello World');
 }
-
-// interface ICommand {
-//   func: string;
-//   condition: (event: any) => boolean;
-// }
 
 interface Event {
   type: string;
@@ -292,49 +304,51 @@ const COMMAND_MAP: Command[] = [
     condition: (event: Event) =>
       event.type === 'message' &&
       event.message.type === 'text' &&
-      event.message.text === '集計',
+      (event.message.text === '集計' || event.message.text === 'aggregate'),
   },
   {
     func: 'unpaid',
     condition: (event: Event) =>
       event.type === 'message' &&
       event.message.type === 'text' &&
-      event.message.text === '未払い',
+      (event.message.text === '未払い' || event.message.text === 'unpaid'),
   },
   {
     func: 'densukeUpd',
     condition: (event: Event) =>
       event.type === 'message' &&
       event.message.type === 'text' &&
-      event.message.text === '伝助更新',
+      (event.message.text === '伝助更新' || event.message.text === 'update'),
   },
   {
     func: 'remind',
     condition: (event: Event) =>
       event.type === 'message' &&
       event.message.type === 'text' &&
-      event.message.text === 'リマインド',
+      (event.message.text === 'リマインド' || event.message.text === 'remind'),
   },
   {
     func: 'intro',
     condition: (event: Event) =>
       event.type === 'message' &&
       event.message.type === 'text' &&
-      event.message.text === '紹介',
+      (event.message.text === '紹介' || event.message.text === 'introduce'),
   },
   {
     func: 'regInfo',
     condition: (event: Event) =>
       event.type === 'message' &&
       event.message.type === 'text' &&
-      (event.message.text === '登録' || event.message.text === '@@register@@'),
+      (event.message.text === '登録' ||
+        event.message.text === '@@register@@' ||
+        event.message.text === 'how to register'),
   },
   {
     func: 'managerInfo',
     condition: (event: Event) =>
       event.type === 'message' &&
       event.message.type === 'text' &&
-      event.message.text === '管理',
+      (event.message.text === '管理' || event.message.text === 'manage'),
   },
   {
     func: 'register',
@@ -352,7 +366,6 @@ function doPost(
   const requestExecuter = new RequestExecuter();
   const json = JSON.parse(e.postData.contents);
   const event = json.events[0]; //CHATGPTがコレでよいと言いやがったけどいいのかな
-  console.log('イベント:' + event);
   let done = false;
   for (const item of COMMAND_MAP) {
     if (item.condition(event)) {
@@ -428,10 +441,6 @@ function sendLineReply(
   messageText: string,
   imageUrl: string
 ): void {
-  console.log('replyToken:' + replyToken);
-  console.log('messageText:' + messageText);
-  console.log('imageUrl:' + imageUrl);
-
   const url = 'https://api.line.me/v2/bot/message/reply';
   const headers = {
     'Content-Type': 'application/json',
@@ -569,34 +578,38 @@ class RequestExecuter {
         if (lang === 'ja') {
           replyMessage =
             actDate +
-            'の支払いを登録しました。ありがとうございます！\nhttps://docs.google.com/spreadsheets/d/1wyYYlpHbGCmeX4v3G2FjuQ4kuQpz9d3j2DveSPTbMbU/edit?usp=sharing&ccc=' +
-            new Date().getTime();
+            'の支払いを登録しました。ありがとうございます！\n' +
+            getReportSheetUrl();
         } else {
           replyMessage =
             'Payment for ' +
             actDate +
-            ' has been registered. Thank you!\nhttps://docs.google.com/spreadsheets/d/1wyYYlpHbGCmeX4v3G2FjuQ4kuQpz9d3j2DveSPTbMbU/edit?usp=sharing&ccc=' +
-            new Date().getTime();
+            ' has been registered. Thank you!\n' +
+            getReportSheetUrl();
         }
       } else {
         if (lang === 'ja') {
           replyMessage =
             actDate +
-            '当日の伝助の出席が〇になっていませんでした。伝助を更新して、「伝助更新」と入力してください。';
+            '当日の伝助の出席が〇になっていませんでした。伝助を更新して、「伝助更新」と入力してください。\n' +
+            getDensukeUrl();
         } else {
           replyMessage =
             'Your attendance on ' +
             actDate +
-            " in Densuke has not been marked as 〇.\nPlease update Densuke and type '伝助更新'.";
+            " in Densuke has not been marked as 〇.\nPlease update Densuke and type 'update'.\n" +
+            getDensukeUrl();
         }
       }
     } else {
       if (lang === 'ja') {
         replyMessage =
-          '【エラー】伝助名称登録が完了していません。\n登録を完了させて、再度PayNow画像をアップロードして下さい。\n登録は「登録」と入力してください。';
+          '【エラー】伝助名称登録が完了していません。\n登録を完了させて、再度PayNow画像をアップロードして下さい。\n登録は「登録」と入力してください。\n' +
+          getDensukeUrl();
       } else {
         replyMessage =
-          "【Error】The initial registration is not complete.\nPlease complete the initial registration and upload the PayNow photo again.\nFor the initial registration, please type '登録'.";
+          "【Error】The initial registration is not complete.\nPlease complete the initial registration and upload the PayNow photo again.\nFor the initial registration, please type 'how to register'.\n" +
+          getDensukeUrl();
       }
     }
     sendLineReply(replyToken, replyMessage, '');
@@ -668,7 +681,7 @@ class RequestExecuter {
     const ownerMessage =
       '【' +
       lineName +
-      'さんにより更新されました】\n以下再送お願いします\n' +
+      'さんにより更新されました】\n' +
       getSummaryStr(attendees, actDate, addy);
     sendMessageToPaynowOwner(ownerMessage);
     let replyMessage = null;
@@ -704,13 +717,23 @@ class RequestExecuter {
     const replyToken = event.replyToken;
     const userId = event.source.userId;
     let replyMessage = null;
+    console.log(userId);
+    console.log(isKanji(userId));
     if (isKanji(userId)) {
       replyMessage =
-        '設定：https://docs.google.com/spreadsheets/d/1RymgqowExhXB3p2N9i1OYdypIhCtMZkRWr1Wpo1CTyI/edit?usp=sharing \nPayNow：https://drive.google.com/drive/folders/1fcBWvaoAlWNJVmmH4s2spVi5_EJdE3aC?usp=sharin \nReport URL:https://docs.google.com/spreadsheets/d/1wyYYlpHbGCmeX4v3G2FjuQ4kuQpz9d3j2DveSPTbMbU/edit?usp=sharing&ccc=' +
-        new Date().getTime() +
+        '設定：' +
+        getSettingSheetUrl() +
+        '\nPayNow：' +
+        getPayNowFolderUrl() +
+        '\nReport URL:' +
+        getReportSheetUrl() +
         '\n伝助：' +
         getDensukeUrl() +
-        '\nメッセージ利用状況：https://manager.line.biz/account/@164wqxlu/purchase \n 利用可能コマンド:集計, 紹介, 登録, リマインド, 伝助更新, 未払い, @@register@@名前, ';
+        '\nチャット状況：' +
+        PropertiesService.getScriptProperties().getProperty('chat');
+      '\nメッセージ利用状況：' +
+        PropertiesService.getScriptProperties().getProperty('messageUsage');
+      ('\n 利用可能コマンド:集計, 紹介, 登録, リマインド, 伝助更新, 未払い, @@register@@名前 ');
     } else {
       replyMessage = 'えっ！？このコマンドは平民のキミには内緒だよ！';
     }
