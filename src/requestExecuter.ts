@@ -105,7 +105,10 @@ export class RequestExecuter {
   }
 
   public aggregate(postEventHander: PostEventHandler): void {
-    const $ = densukeUtil.getDensukeCheerio();
+    let $ = densukeUtil.getDensukeCheerio();
+    if (postEventHander.mockDensukeCheerio) {
+      $ = postEventHander.mockDensukeCheerio;
+    }
     const members = densukeUtil.extractMembers($);
     const attendees = densukeUtil.extractAttendees($, ScriptProps.instance.ROWNUM, '○', members);
     const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
@@ -158,11 +161,11 @@ export class RequestExecuter {
 
   public managerInfo(postEventHander: PostEventHandler): void {
     if (gasUtil.isKanji(postEventHander.userId)) {
-      postEventHander.resultMessage = '設定：' + GasProps.instance.settingSheetUrl + '\nPayNow：' + GasProps.instance.payNowFolderUrl;
-      '\nReport URL:' + GasProps.instance.ReportSheetUrl;
-      '\n伝助：' + densukeUtil.getDensukeUrl() + '\nチャット状況：' + ScriptProps.instance.chat;
-      '\nメッセージ利用状況：' +
-        ScriptProps.instance.messageUsage +
+      postEventHander.resultMessage = '設定：' + GasProps.instance.settingSheetUrl +
+        '\nPayNow：' + GasProps.instance.payNowFolderUrl +
+        '\nReport URL:' + GasProps.instance.ReportSheetUrl +
+        '\n伝助：' + densukeUtil.getDensukeUrl() + '\nチャット状況：' + ScriptProps.instance.chat +
+        '\nメッセージ利用状況：' + ScriptProps.instance.messageUsage +
         '\n 利用可能コマンド:集計, 紹介, 登録, リマインド, 伝助更新, 未払い, @@register@@名前 ';
     } else {
       postEventHander.resultMessage = 'えっ！？このコマンドは平民のキミには内緒だよ！';

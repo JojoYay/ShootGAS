@@ -14,6 +14,8 @@ export class PostEventHandler {
   private _resultImage: string | null;
   private _paynowOwnerMsg: string | null;
   private _testResult: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private _mockDensukeCheerio: any | null;
 
   public constructor(e: GoogleAppsScript.Events.DoPost) {
     const json = JSON.parse(e.postData.contents);
@@ -110,5 +112,13 @@ export class PostEventHandler {
   }
   public set testResult(value: string[]) {
     this._testResult = value;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public get mockDensukeCheerio(): any | null {
+    return this._mockDensukeCheerio;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public set mockDensukeCheerio(value: any | null) {
+    this._mockDensukeCheerio = value;
   }
 }

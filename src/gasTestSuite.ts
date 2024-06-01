@@ -2,6 +2,8 @@ import { GasProps } from './gasProps';
 import { GasUtil } from './gasUtil';
 import { PostEventHandler } from './postEventHandler';
 import { RequestExecuter } from './requestExecuter';
+import { ScriptProps } from './scriptProps';
+import { yagiHtml } from './yagiAddedDensuke';
 
 const gasUtil: GasUtil = new GasUtil();
 
@@ -29,6 +31,13 @@ export class GasTestSuite {
     const juneData: GoogleAppsScript.Spreadsheet.Sheet | null = baseRepoSS.getSheetByName('6/2(日)');
     const actualJune: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet('5/26(日)');
     this.copySheetData(juneData, actualJune);
+
+    const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
+    const files = folder.getFilesByName('6/2(日)_相馬究(Kiwamu Soma)');
+    if (files.hasNext()) {
+      const f = files.next();
+      f.setTrashed(true);
+    }
   }
 
   private copySheetData(sourceSheet: GoogleAppsScript.Spreadsheet.Sheet | null, targetSheet: GoogleAppsScript.Spreadsheet.Sheet): void {
@@ -48,7 +57,7 @@ export class GasTestSuite {
     ) {
       postEventHander.testResult.push('testIntro1:passed');
     } else {
-      postEventHander.testResult.push('testIntro1:failed');
+      postEventHander.testResult.push('testIntro1:failed\n');
     }
   }
 
@@ -60,7 +69,7 @@ export class GasTestSuite {
     if (gasUtil.isKanji(nishimuraUserId) && !gasUtil.isKanji(noKanjiId) && gasUtil.isKanji(jojoId) && !gasUtil.isKanji('')) {
       postEventHander.testResult.push('testIsKanji:passed');
     } else {
-      postEventHander.testResult.push('testIsKanji:failed');
+      postEventHander.testResult.push('testIsKanji:failed\n');
     }
   }
 
@@ -78,7 +87,7 @@ export class GasTestSuite {
     if (result1 && result2) {
       postEventHander.testResult.push('testRegister1:passed');
     } else {
-      postEventHander.testResult.push('testRegister1:failed' + postEventHander.resultMessage);
+      postEventHander.testResult.push('testRegister1:failed\n' + postEventHander.resultMessage);
     }
   }
 
@@ -95,7 +104,7 @@ export class GasTestSuite {
     if (result3) {
       postEventHander.testResult.push('testRegister2:passed');
     } else {
-      postEventHander.testResult.push('testRegister2:failed' + postEventHander.resultMessage);
+      postEventHander.testResult.push('testRegister2:failed\n' + postEventHander.resultMessage);
     }
   }
 
@@ -109,24 +118,25 @@ export class GasTestSuite {
     const result4 = expectMsg3 === postEventHander.resultMessage;
 
     if (result4) {
-      postEventHander.testResult.push('testRegister:passed');
+      postEventHander.testResult.push('testRegister3:passed');
     } else {
-      postEventHander.testResult.push('testRegister:failed' + postEventHander.resultMessage);
+      postEventHander.testResult.push('testRegister3:failed\n' + postEventHander.resultMessage);
     }
   }
 
   public testPayNow1(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
+    this.initializeSheet();
     //Soma(Ucb9beba3011ec9cf85c5482efa132e9b)さんで実行
     const somaId = 'Ucb9beba3011ec9cf85c5482efa132e9b';
     postEventHander.userId = somaId;
     requestExecuter.payNow(postEventHander);
     const expectation1: string = '6/2(日)の支払いを登録しました。ありがとうございます！\n' + GasProps.instance.ReportSheetUrl;
     const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
-    const files = folder.getFilesByName('6/2(日)_相馬究(Kiwamu Soma)');
-    if (postEventHander.resultMessage === expectation1 && files.hasNext()) {
+    const resultfiles = folder.getFilesByName('6/2(日)_相馬究(Kiwamu Soma)');
+    if (postEventHander.resultMessage === expectation1 && resultfiles.hasNext()) {
       postEventHander.testResult.push('testPayNow1:passed');
     } else {
-      postEventHander.testResult.push('testPayNow1:failed' + postEventHander.resultMessage);
+      postEventHander.testResult.push('testPayNow1:failed\n' + postEventHander.resultMessage);
     }
   }
 
@@ -140,7 +150,7 @@ export class GasTestSuite {
     if (postEventHander.resultMessage === expectation) {
       postEventHander.testResult.push('testPayNow2:passed');
     } else {
-      postEventHander.testResult.push('testPayNow2:failed' + postEventHander.resultMessage);
+      postEventHander.testResult.push('testPayNow2:failed\n' + postEventHander.resultMessage);
     }
   }
 
@@ -154,9 +164,175 @@ export class GasTestSuite {
     if (postEventHander.resultMessage === expectation) {
       postEventHander.testResult.push('testPayNow3:passed');
     } else {
-      postEventHander.testResult.push('testPayNow3:failed' + postEventHander.resultMessage);
+      postEventHander.testResult.push('testPayNow3:failed\n' + postEventHander.resultMessage);
     }
   }
 
-  public testAggregate() {}
+  //Driveのデータを見て集計をきちんと計算しているか？
+  public testAggregate1(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
+    this.initializeSheet();
+    try {
+      //Rocky支払い追加
+      const orgFolder: GoogleAppsScript.Drive.Folder = DriveApp.getFolderById('14FCKvswWbQTgkfHVmiHviYDNqDurAFXc');
+      const files = orgFolder.getFilesByName('payNowSample.jpg');
+      const file = files.next();
+      const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
+      file.makeCopy('6/2(日)_Rocky', folder);
+
+      postEventHander.messageText = '集計';
+      requestExecuter.aggregate(postEventHander);
+
+      const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet('6/2(日)', false);
+      const rockyPaid = report.getRange('C14').getValue();
+      if (rockyPaid) {
+        postEventHander.testResult.push('testAggregate1:passed');
+      } else {
+        postEventHander.testResult.push('testAggregate1:failed\n' + rockyPaid);
+      }
+    } finally {
+      const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
+      const files = folder.getFilesByName('6/2(日)_Rocky');
+      if (files.hasNext()) {
+        const file = files.next();
+        file.setTrashed(true);
+      }
+    }
+  }
+
+  //金額は正しいか？
+  public testAggregate2(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
+    this.initializeSheet();
+
+    postEventHander.messageText = '集計';
+    requestExecuter.aggregate(postEventHander);
+
+    const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet('6/2(日)', false);
+    const originalPrice: number = report.getRange('B3').getValue();
+    const finalPrice: number = report.getRange('B7').getValue();
+    const cashBook: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.cashBookSheet;
+    const originalAmount: number = cashBook.getRange('E4').getValue();
+    const finalAmount: number = cashBook.getRange('E6').getValue();
+
+    if (originalPrice === originalAmount && finalPrice === finalAmount) {
+      postEventHander.testResult.push('testAggregate2:passed');
+    } else {
+      postEventHander.testResult.push('testAggregate2:failed\n' + postEventHander.resultMessage);
+    }
+  }
+
+  //その日消しても出きてきちんと支払い状況が反映するか？
+  public testAggregate3(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
+    this.initializeSheet();
+    const reportSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+    const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet('6/2(日)', false);
+    reportSS.deleteSheet(report);
+    try {
+      //Rocky支払い追加
+      const orgFolder: GoogleAppsScript.Drive.Folder = DriveApp.getFolderById('14FCKvswWbQTgkfHVmiHviYDNqDurAFXc');
+      const files = orgFolder.getFilesByName('payNowSample.jpg');
+      const file = files.next();
+      const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
+      file.makeCopy('6/2(日)_Rocky', folder);
+
+      postEventHander.messageText = '集計';
+      requestExecuter.aggregate(postEventHander);
+
+      const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet('6/2(日)', false);
+      const rockyPaid = report.getRange('C14').getValue();
+      const somaNotPaid = report.getRange('C28').getValue();
+      if (!!rockyPaid && !somaNotPaid) {
+        postEventHander.testResult.push('testAggregate3:passed');
+      } else {
+        postEventHander.testResult.push('testAggregate3:failed\n' + rockyPaid);
+      }
+    } finally {
+      const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
+      const files = folder.getFilesByName('6/2(日)_Rocky');
+      if (files.hasNext()) {
+        const file = files.next();
+        file.setTrashed(true);
+      }
+    }
+  }
+
+  //伝助更新したシリーズ
+  public testAggregate4(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
+    this.initializeSheet();
+    //@ts-ignore
+    const $ = Cheerio.load(yagiHtml);
+    postEventHander.mockDensukeCheerio = $;
+    requestExecuter.aggregate(postEventHander);
+
+    const reportSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+    const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet('6/2(日)', false);
+    reportSS.deleteSheet(report);
+    try {
+      //八木支払い追加
+      const orgFolder: GoogleAppsScript.Drive.Folder = DriveApp.getFolderById('14FCKvswWbQTgkfHVmiHviYDNqDurAFXc');
+      const files = orgFolder.getFilesByName('payNowSample.jpg');
+      const file = files.next();
+      const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
+      file.makeCopy('6/2(日)_yagisho', folder);
+
+      postEventHander.messageText = '集計';
+      requestExecuter.aggregate(postEventHander);
+
+      const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet('6/2(日)', false);
+      const yagiPaid = report.getRange('C18').getValue();
+      const rockyNotPaid = report.getRange('C14').getValue();
+      if (!!yagiPaid && !rockyNotPaid) {
+        postEventHander.testResult.push('testAggregate4:passed');
+      } else {
+        postEventHander.testResult.push('testAggregate4:failed');
+      }
+    } finally {
+      const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
+      const files = folder.getFilesByName('6/2(日)_yagisho');
+      if (files.hasNext()) {
+        const file = files.next();
+        file.setTrashed(true);
+      }
+    }
+  }
+
+    //伝助更新したシリーズ
+	public testManageInfo(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
+		this.initializeSheet();
+		//@ts-ignore
+		const $ = Cheerio.load(yagiHtml);
+		postEventHander.mockDensukeCheerio = $;
+		requestExecuter.aggregate(postEventHander);
+	
+		const reportSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+		const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet('6/2(日)', false);
+		reportSS.deleteSheet(report);
+		try {
+		  //八木支払い追加
+		  const orgFolder: GoogleAppsScript.Drive.Folder = DriveApp.getFolderById('14FCKvswWbQTgkfHVmiHviYDNqDurAFXc');
+		  const files = orgFolder.getFilesByName('payNowSample.jpg');
+		  const file = files.next();
+		  const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
+		  file.makeCopy('6/2(日)_yagisho', folder);
+	
+		  postEventHander.messageText = '集計';
+		  requestExecuter.aggregate(postEventHander);
+	
+		  const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet('6/2(日)', false);
+		  const yagiPaid = report.getRange('C18').getValue();
+		  const rockyNotPaid = report.getRange('C14').getValue();
+		  if (!!yagiPaid && !rockyNotPaid) {
+			postEventHander.testResult.push('testAggregate4:passed');
+		  } else {
+			postEventHander.testResult.push('testAggregate4:failed');
+		  }
+		} finally {
+		  const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
+		  const files = folder.getFilesByName('6/2(日)_yagisho');
+		  if (files.hasNext()) {
+			const file = files.next();
+			file.setTrashed(true);
+		  }
+		}
+	  }
+	
 }

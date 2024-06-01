@@ -8,7 +8,6 @@ const gasUtil: GasUtil = new GasUtil();
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.Content.TextOutput {
-  console.log(e);
   return ContentService.createTextOutput('Hello World');
 }
 
