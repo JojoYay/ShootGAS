@@ -295,44 +295,43 @@ export class GasTestSuite {
     }
   }
 
-    //伝助更新したシリーズ
-	public testManageInfo(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
-		this.initializeSheet();
-		//@ts-ignore
-		const $ = Cheerio.load(yagiHtml);
-		postEventHander.mockDensukeCheerio = $;
-		requestExecuter.aggregate(postEventHander);
-	
-		const reportSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
-		const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet('6/2(日)', false);
-		reportSS.deleteSheet(report);
-		try {
-		  //八木支払い追加
-		  const orgFolder: GoogleAppsScript.Drive.Folder = DriveApp.getFolderById('14FCKvswWbQTgkfHVmiHviYDNqDurAFXc');
-		  const files = orgFolder.getFilesByName('payNowSample.jpg');
-		  const file = files.next();
-		  const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
-		  file.makeCopy('6/2(日)_yagisho', folder);
-	
-		  postEventHander.messageText = '集計';
-		  requestExecuter.aggregate(postEventHander);
-	
-		  const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet('6/2(日)', false);
-		  const yagiPaid = report.getRange('C18').getValue();
-		  const rockyNotPaid = report.getRange('C14').getValue();
-		  if (!!yagiPaid && !rockyNotPaid) {
-			postEventHander.testResult.push('testAggregate4:passed');
-		  } else {
-			postEventHander.testResult.push('testAggregate4:failed');
-		  }
-		} finally {
-		  const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
-		  const files = folder.getFilesByName('6/2(日)_yagisho');
-		  if (files.hasNext()) {
-			const file = files.next();
-			file.setTrashed(true);
-		  }
-		}
-	  }
-	
+  //伝助更新したシリーズ
+  public testManageInfo(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
+    this.initializeSheet();
+    //@ts-ignore
+    const $ = Cheerio.load(yagiHtml);
+    postEventHander.mockDensukeCheerio = $;
+    requestExecuter.aggregate(postEventHander);
+
+    const reportSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+    const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet('6/2(日)', false);
+    reportSS.deleteSheet(report);
+    try {
+      //八木支払い追加
+      const orgFolder: GoogleAppsScript.Drive.Folder = DriveApp.getFolderById('14FCKvswWbQTgkfHVmiHviYDNqDurAFXc');
+      const files = orgFolder.getFilesByName('payNowSample.jpg');
+      const file = files.next();
+      const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
+      file.makeCopy('6/2(日)_yagisho', folder);
+
+      postEventHander.messageText = '集計';
+      requestExecuter.aggregate(postEventHander);
+
+      const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet('6/2(日)', false);
+      const yagiPaid = report.getRange('C18').getValue();
+      const rockyNotPaid = report.getRange('C14').getValue();
+      if (!!yagiPaid && !rockyNotPaid) {
+        postEventHander.testResult.push('testAggregate4:passed');
+      } else {
+        postEventHander.testResult.push('testAggregate4:failed');
+      }
+    } finally {
+      const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
+      const files = folder.getFilesByName('6/2(日)_yagisho');
+      if (files.hasNext()) {
+        const file = files.next();
+        file.setTrashed(true);
+      }
+    }
+  }
 }
