@@ -32,11 +32,7 @@ export class GasUtil {
     return unpaid;
   }
 
-  public registerMapping(
-    lineName: string,
-    densukeName: string,
-    userId: string
-  ): void {
+  public registerMapping(lineName: string, densukeName: string, userId: string): void {
     const mappingSheet = GasProps.instance.mappingSheet;
     const values = mappingSheet.getDataRange().getValues();
     for (let i = values.length - 1; i >= 0; i--) {
@@ -48,11 +44,7 @@ export class GasUtil {
     mappingSheet.appendRow([lineName, densukeName, userId]);
   }
 
-  public uploadPayNowPic(
-    lineName: string,
-    messageId: string,
-    actDate: string
-  ): string {
+  public uploadPayNowPic(lineName: string, messageId: string, actDate: string): void {
     const fileNm = actDate + '_' + lineName;
     const folder = GasProps.instance.payNowFolder;
     const files = folder.getFilesByName(fileNm);
@@ -60,18 +52,12 @@ export class GasUtil {
       const file = files.next();
       file.setTrashed(true);
     }
-    const imageUrl = lineUtil.getLineImage(messageId, fileNm);
-    return imageUrl;
+    lineUtil.getLineImage(messageId, fileNm);
   }
 
-  public getReportSheet(
-    actDate: string,
-    isGenerate: boolean = false
-  ): GoogleAppsScript.Spreadsheet.Sheet {
-    const report: GoogleAppsScript.Spreadsheet.Spreadsheet =
-      SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
-    let reportSheet: GoogleAppsScript.Spreadsheet.Sheet | null =
-      report.getSheetByName(actDate);
+  public getReportSheet(actDate: string, isGenerate: boolean = false): GoogleAppsScript.Spreadsheet.Sheet {
+    const report: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+    let reportSheet: GoogleAppsScript.Spreadsheet.Sheet | null = report.getSheetByName(actDate);
     if (!reportSheet) {
       if (isGenerate) {
         reportSheet = report.insertSheet(actDate);
@@ -97,6 +83,19 @@ export class GasUtil {
     return userId;
   }
 
+  public getLineName(densukeName: string) {
+    let lineName = null;
+    const mappingSheet = GasProps.instance.mappingSheet;
+    const values = mappingSheet.getDataRange().getValues();
+    for (let i = values.length - 1; i >= 0; i--) {
+      if (values[i][1] === densukeName) {
+        lineName = values[i][0];
+        break;
+      }
+    }
+    return lineName;
+  }
+
   public getDensukeName(lineName: string): string {
     let densukeName = null;
     const mappingSheet = GasProps.instance.mappingSheet;
@@ -110,11 +109,7 @@ export class GasUtil {
     return densukeName;
   }
 
-  public updateLineNameOfLatestReport(
-    lineName: string,
-    densukeName: string,
-    actDate: string
-  ): void {
+  public updateLineNameOfLatestReport(lineName: string, densukeName: string, actDate: string): void {
     const repo = this.getReportSheet(actDate, false);
     const values = repo.getDataRange().getValues();
     for (let i = 0; i < values.length; i++) {

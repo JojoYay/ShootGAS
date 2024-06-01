@@ -69,22 +69,9 @@ export class DensukeUtil {
 
   public generateRemind($ = this.getDensukeCheerio()): string {
     const members: string[] = this.extractMembers($);
-    const attendees: string[] = this.extractAttendees(
-      $,
-      ScriptProps.instance.ROWNUM,
-      '○',
-      members
-    );
-    const unknown: string[] = this.extractAttendees(
-      $,
-      ScriptProps.instance.ROWNUM,
-      '△',
-      members
-    );
-    const actDate: string = this.extractDateFromRownum(
-      $,
-      ScriptProps.instance.ROWNUM
-    );
+    const attendees: string[] = this.extractAttendees($, ScriptProps.instance.ROWNUM, '○', members);
+    const unknown: string[] = this.extractAttendees($, ScriptProps.instance.ROWNUM, '△', members);
+    const actDate: string = this.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
 
     let remindStr: string =
       '次回予定' +
@@ -122,16 +109,8 @@ export class DensukeUtil {
     const settingSheet = GasProps.instance.settingSheet;
     const cashBook = GasProps.instance.cashBookSheet;
     const members: string[] = this.extractMembers($);
-    const attendees: string[] = this.extractAttendees(
-      $,
-      ScriptProps.instance.ROWNUM,
-      '○',
-      members
-    );
-    const actDate: string = this.extractDateFromRownum(
-      $,
-      ScriptProps.instance.ROWNUM
-    );
+    const attendees: string[] = this.extractAttendees($, ScriptProps.instance.ROWNUM, '○', members);
+    const actDate: string = this.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
     // データの範囲を取得
     const range = cashBook.getDataRange();
     const values = range.getValues();
@@ -147,27 +126,12 @@ export class DensukeUtil {
     const rentalFee: number = settingSheet.getRange('B3').getValue();
     const attendFee: number = settingSheet.getRange('B4').getValue();
 
-    this.generateSummarySheet(
-      orgPrice,
-      rentalFee,
-      attendFee,
-      actDate,
-      attendees
-    );
+    this.generateSummarySheet(orgPrice, rentalFee, attendFee, actDate, attendees);
   }
 
-  private generateSummarySheet(
-    orgPrice: number,
-    rentalFee: number,
-    attendFee: number,
-    actDate: string,
-    attendees: string[]
-  ): void {
+  private generateSummarySheet(orgPrice: number, rentalFee: number, attendFee: number, actDate: string, attendees: string[]): void {
     const attendFeeTotal: number = attendFee * attendees.length;
-    const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet(
-      actDate,
-      true
-    ); //ない場合作る
+    const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet(actDate, true); //ない場合作る
     const dd: string = new Date().toLocaleString();
     report.getRange('A1').setValue('日付');
     report.getRange('B1').setValue(actDate);
@@ -182,9 +146,7 @@ export class DensukeUtil {
     report.getRange('A6').setValue('ピッチ使用料金(SGD)');
     report.getRange('B6').setValue('' + rentalFee);
     report.getRange('A7').setValue('余剰金残高(SGD)');
-    report
-      .getRange('B7')
-      .setValue('' + (orgPrice - rentalFee + attendFeeTotal));
+    report.getRange('B7').setValue('' + (orgPrice - rentalFee + attendFeeTotal));
 
     report.getRange('A9').setValue('参加者（伝助名称）');
     report.getRange('B9').setValue('参加者（Line名称）');
@@ -195,43 +157,23 @@ export class DensukeUtil {
       report.deleteRow(i);
     }
     for (let i = 0; i < attendees.length; i++) {
-      const lineName = this.getLineName(attendees[i]);
+      const lineName = gasUtil.getLineName(attendees[i]);
 
-      report.appendRow([
-        attendees[i],
-        lineName,
-        this.getPaymentUrl(lineName, actDate),
-      ]);
+      report.appendRow([attendees[i], lineName, gasUtil.getPaymentUrl(lineName, actDate)]);
     }
     report.setColumnWidth(1, 170);
     report.setColumnWidth(2, 200);
     const cashBook = GasProps.instance.cashBookSheet;
     const attendOrg = orgPrice + attendFeeTotal;
     if (cashBook) {
-      cashBook.appendRow([
-        dd,
-        actDate,
-        '参加費(' + attendees.length + '名)',
-        '' + attendFeeTotal,
-        '' + attendOrg,
-      ]);
-      cashBook.appendRow([
-        dd,
-        actDate,
-        'ピッチ使用料金',
-        '▲' + rentalFee,
-        '' + (orgPrice - rentalFee + attendFeeTotal),
-      ]);
+      cashBook.appendRow([dd, actDate, '参加費(' + attendees.length + '名)', '' + attendFeeTotal, '' + attendOrg]);
+      cashBook.appendRow([dd, actDate, 'ピッチ使用料金', '▲' + rentalFee, '' + (orgPrice - rentalFee + attendFeeTotal)]);
     } else {
       throw new Error('Cash Book not found');
     }
   }
 
-  public getSummaryStr(
-    attendees: string[],
-    actDate: string,
-    payNowAddy: string
-  ): string {
+  public getSummaryStr(attendees: string[], actDate: string, payNowAddy: string): string {
     let paynowStr = '';
     if (gasUtil.getUnpaid(actDate).length === 0) {
       paynowStr =
@@ -257,61 +199,31 @@ export class DensukeUtil {
     return summary;
   }
 
-  private archiveFiles(actDate: string): void {
-    const folderProp = ScriptProps.instance.folderId;
-    const archiveProp = ScriptProps.instance.archiveFolder;
-    const sourceFolder = DriveApp.getFolderById(folderProp);
-    const destinationFolder = DriveApp.getFolderById(archiveProp);
-    const files = sourceFolder.getFiles();
-    const prefix = actDate + '_';
-    while (files.hasNext()) {
-      const file = files.next();
-      if (!file.getName().startsWith(prefix)) {
-        file.moveTo(destinationFolder);
-      }
-    }
-  }
+  // private archiveFiles(actDate: string): void {
+  //   const folderProp = ScriptProps.instance.folderId;
+  //   const archiveProp = ScriptProps.instance.archiveFolder;
+  //   const sourceFolder = DriveApp.getFolderById(folderProp);
+  //   const destinationFolder = DriveApp.getFolderById(archiveProp);
+  //   const files = sourceFolder.getFiles();
+  //   const prefix = actDate + '_';
+  //   while (files.hasNext()) {
+  //     const file = files.next();
+  //     if (!file.getName().startsWith(prefix)) {
+  //       file.moveTo(destinationFolder);
+  //     }
+  //   }
+  // }
 
-  private getLineName(densukeName: string) {
-    let lineName = null;
-    const mappingSheet = GasProps.instance.mappingSheet;
-    const values = mappingSheet.getDataRange().getValues();
-    for (let i = values.length - 1; i >= 0; i--) {
-      if (values[i][1] === densukeName) {
-        lineName = values[i][0];
-        break;
-      }
-    }
-    return lineName;
-  }
-
-  public getPaymentUrl(lineName: string, actDate: string) {
-    const payNowOwner = this.getPaynowOwner();
-    if (payNowOwner === lineName) {
-      return 'PayNow口座主';
-    }
-    return this.getFileUrlInFolder(actDate, lineName);
-  }
-
-  public getPaynowOwner(): string {
-    const settingSheet = GasProps.instance.settingSheet;
-    const payNowOwner = settingSheet.getRange('B6').getValue();
-    return payNowOwner;
-  }
-
-  private getFileUrlInFolder(actDate: string, lineName: string) {
-    if (!lineName) {
-      return '';
-    }
-    const folderProp = ScriptProps.instance.folderId;
-    const folder = DriveApp.getFolderById(folderProp);
-    const fileName = actDate + '_' + lineName;
-    const files = folder.getFilesByName(fileName);
-    if (files.hasNext()) {
-      const file = files.next();
-      return file.getUrl();
-    } else {
-      return '';
-    }
-  }
+  // private getLineName(densukeName: string) {
+  //   let lineName = null;
+  //   const mappingSheet = GasProps.instance.mappingSheet;
+  //   const values = mappingSheet.getDataRange().getValues();
+  //   for (let i = values.length - 1; i >= 0; i--) {
+  //     if (values[i][1] === densukeName) {
+  //       lineName = values[i][0];
+  //       break;
+  //     }
+  //   }
+  //   return lineName;
+  // }
 }

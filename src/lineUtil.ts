@@ -28,11 +28,7 @@ export class LineUtil {
     }
   }
 
-  public sendLineReply(
-    replyToken: string,
-    messageText: string,
-    imageUrl: string
-  ): void {
+  public sendLineReply(replyToken: string, messageText: string, imageUrl: string | null): void {
     const url = 'https://api.line.me/v2/bot/message/reply';
     const headers = {
       'Content-Type': 'application/json',
@@ -81,14 +77,37 @@ export class LineUtil {
   }
 
   public getLineDisplayName(userId: string): string {
+    if (ScriptProps.isTesting()) {
+      if (userId === 'Ucb9beba3011ec9cf85c5482efa132e9b') {
+        return '相馬究(Kiwamu Soma)';
+      } else if (userId === 'tekitoutekitoutekitou') {
+        return 'なべLINE';
+      } else if (userId === 'Uf395b2a8c82788dc3331b62f0cf96578') {
+        return 'Takashi Chiba';
+      }
+    }
     return this.getLineUserProfile(userId).displayName;
   }
 
   public getLineLang(userId: string): string {
+    if (ScriptProps.isTesting()) {
+      if (userId === 'Ucb9beba3011ec9cf85c5482efa132e9b' || userId === 'tekitoutekitoutekitou' || userId === 'Uf395b2a8c82788dc3331b62f0cf96578') {
+        return 'ja';
+      }
+    }
     return this.getLineUserProfile(userId).language;
   }
 
-  public getLineImage(messageId: string, fileName: string): string {
+  public getLineImage(messageId: string, fileName: string): void {
+    if (ScriptProps.isTesting()) {
+      //テストの場合はコピーする
+      const orgFolder: GoogleAppsScript.Drive.Folder = DriveApp.getFolderById('14FCKvswWbQTgkfHVmiHviYDNqDurAFXc');
+      const files = orgFolder.getFilesByName('payNowSample.jpg');
+      const file = files.next();
+      const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
+      file.makeCopy(fileName, folder);
+      return;
+    }
     const folder = GasProps.instance.payNowFolder;
     const url = `https://api-data.line.me/v2/bot/message/${messageId}/content`;
     const headers = {
@@ -96,7 +115,7 @@ export class LineUtil {
     };
     const response = UrlFetchApp.fetch(url, { headers: headers });
     const blob = response.getBlob().setName(fileName);
-    const file = folder.createFile(blob);
-    return file.getUrl();
+    folder.createFile(blob);
+    // return file.getUrl();
   }
 }
