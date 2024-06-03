@@ -153,8 +153,13 @@ export class DensukeUtil {
     }
     for (let i = 0; i < attendees.length; i++) {
       const lineName = gasUtil.getLineName(attendees[i]);
-
-      report.appendRow([attendees[i], lineName, gasUtil.getPaymentUrl(attendees[i], actDate)]);
+      report.appendRow([attendees[i], lineName]);
+      const paymentUrl: GoogleAppsScript.Spreadsheet.RichTextValue | null = gasUtil.getPaymentUrl(attendees[i], actDate);
+      const lastRow = report.getLastRow();
+      if (paymentUrl) {
+        report.getRange(lastRow, 3).setRichTextValue(paymentUrl);
+      }
+      // report.appendRow([attendees[i], lineName, gasUtil.getPaymentUrl(attendees[i], actDate)]);
     }
     report.setColumnWidth(1, 170);
     report.setColumnWidth(2, 200);

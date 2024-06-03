@@ -58,12 +58,12 @@ export class GasUtil {
 
   public uploadPayNowPic(densukeName: string, messageId: string, actDate: string): void {
     const fileNm = actDate + '_' + densukeName;
-    const folder = GasProps.instance.payNowFolder;
-    const files = folder.getFilesByName(fileNm);
-    if (files.hasNext()) {
-      const file = files.next();
-      file.setTrashed(true);
-    }
+    // const folder = GasProps.instance.payNowFolder;
+    // const files = folder.getFilesByName(fileNm);
+    // if (files.hasNext()) {
+    //   const file = files.next();
+    //   file.setTrashed(true);
+    // }
     lineUtil.getLineImage(messageId, fileNm);
   }
 
@@ -137,16 +137,19 @@ export class GasUtil {
     const values = repo.getDataRange().getValues();
     for (let i = values.length - 1; i >= 0; i--) {
       if (values[i][0] === desunekeName) {
-        repo.getRange(i + 1, 3).setValue(this.getPaymentUrl(desunekeName, actDate));
+        const val: GoogleAppsScript.Spreadsheet.RichTextValue | null = this.getPaymentUrl(desunekeName, actDate);
+        if (val) {
+          repo.getRange(i + 1, 3).setRichTextValue(val);
+        }
         break;
       }
     }
   }
 
-  public getPaymentUrl(densukeName: string, actDate: string) {
+  public getPaymentUrl(densukeName: string, actDate: string): GoogleAppsScript.Spreadsheet.RichTextValue | null {
     const payNowOwner = this.getPaynowOwner();
     if (payNowOwner === densukeName) {
-      return 'PayNow口座主';
+      return SpreadsheetApp.newRichTextValue().setText('PayNow口座主').build();
     }
     return this.getFileUrlInFolder(actDate, densukeName);
   }
@@ -157,16 +160,31 @@ export class GasUtil {
     return payNowOwner;
   }
 
-  private getFileUrlInFolder(actDate: string, densukeName: string) {
+  private getFileUrlInFolder(actDate: string, densukeName: string): GoogleAppsScript.Spreadsheet.RichTextValue | null {
     const folder = GasProps.instance.payNowFolder;
     const fileName = actDate + '_' + densukeName;
     const files = folder.getFilesByName(fileName);
-    if (files.hasNext()) {
-      const file = files.next();
-      return file.getUrl();
-    } else {
-      return '';
+    const urls: string[] = [];
+    if (!files.hasNext()) {
+      return null;
     }
+    while (files.hasNext()) {
+      const file = files.next();
+      urls.push(file.getUrl());
+    }
+    console.log(urls);
+    const rtv = SpreadsheetApp.newRichTextValue().setText('');
+    if (urls.length > 0) {
+      rtv.setText(urls.join('\n'));
+      let totalChar = -1;
+      for (let i = 0; i < urls.length; i++) {
+        const start = totalChar + 1;
+        const end = start + urls[i].length;
+        totalChar = end;
+        rtv.setLinkUrl(start, end, urls[i]);
+      }
+    }
+    return rtv.build();
   }
 
   public archiveFiles(actDate: string): void {
