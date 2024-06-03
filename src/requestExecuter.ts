@@ -175,10 +175,18 @@ export class RequestExecuter {
         ScriptProps.instance.chat +
         '\nメッセージ利用状況：' +
         ScriptProps.instance.messageUsage +
-        '\n 利用可能コマンド:集計, 紹介, 登録, リマインド, 伝助更新, 未払い, @@register@@名前 ';
+        '\n 利用可能コマンド:集計,aggregate, 紹介, introduce, 登録, how to register, リマインド, remind, 伝助更新, update, 未払い, unpaid, 未登録参加者, unregister, @@register@@名前 ';
     } else {
       postEventHander.resultMessage = 'えっ！？このコマンドは平民のキミには内緒だよ！';
     }
+  }
+
+  public unRegister(postEventHander: PostEventHandler) {
+    this.aggregate(postEventHander);
+    const $ = densukeUtil.getDensukeCheerio();
+    const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
+    const unRegister = gasUtil.getUnRegister(actDate);
+    postEventHander.resultMessage = '現在未登録の参加者 (' + unRegister.length + '名): ' + unRegister.join(', ');
   }
 
   public systemTest(postEventHander: PostEventHandler): void {

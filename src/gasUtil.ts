@@ -32,6 +32,18 @@ export class GasUtil {
     return unpaid;
   }
 
+  public getUnRegister(actDate: string): string[] {
+    const unregister: string[] = [];
+    const repo = this.getReportSheet(actDate, false);
+    const values = repo.getDataRange().getValues();
+    for (let i = 9; i < values.length; i++) {
+      if (!values[i][1]) {
+        unregister.push(values[i][0]);
+      }
+    }
+    return unregister;
+  }
+
   public registerMapping(lineName: string, densukeName: string, userId: string): void {
     const mappingSheet = GasProps.instance.mappingSheet;
     const values = mappingSheet.getDataRange().getValues();
@@ -146,11 +158,7 @@ export class GasUtil {
   }
 
   private getFileUrlInFolder(actDate: string, densukeName: string) {
-    // if (!lineName) {
-    //   return '';
-    // }
-    const folderProp = ScriptProps.instance.folderId;
-    const folder = DriveApp.getFolderById(folderProp);
+    const folder = GasProps.instance.payNowFolder;
     const fileName = actDate + '_' + densukeName;
     const files = folder.getFilesByName(fileName);
     if (files.hasNext()) {
@@ -158,6 +166,19 @@ export class GasUtil {
       return file.getUrl();
     } else {
       return '';
+    }
+  }
+
+  public archiveFiles(actDate: string): void {
+    const sourceFolder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
+    const destinationFolder: GoogleAppsScript.Drive.Folder = GasProps.instance.archiveFolder;
+    const files: GoogleAppsScript.Drive.FileIterator = sourceFolder.getFiles();
+    const prefix: string = actDate + '_';
+    while (files.hasNext()) {
+      const file: GoogleAppsScript.Drive.File = files.next();
+      if (!file.getName().startsWith(prefix)) {
+        file.moveTo(destinationFolder);
+      }
     }
   }
 }

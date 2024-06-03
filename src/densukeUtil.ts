@@ -112,11 +112,10 @@ export class DensukeUtil {
     const attendees: string[] = this.extractAttendees($, ScriptProps.instance.ROWNUM, '○', members);
     const actDate: string = this.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
     // データの範囲を取得
-    const range = cashBook.getDataRange();
-    const values = range.getValues();
+    const cRangeValues = cashBook.getDataRange().getValues();
     // 2カラム目（B列）に指定した値がある行を逆順に削除
-    for (let i = values.length - 1; i >= 0; i--) {
-      if (values[i][1] === actDate) {
+    for (let i = cRangeValues.length - 1; i >= 0; i--) {
+      if (cRangeValues[i][1] === actDate) {
         // B列はインデックス1
         cashBook.deleteRow(i + 1);
       }
@@ -125,11 +124,7 @@ export class DensukeUtil {
     const orgPrice: number = cashBook.getRange(lastRow, 5).getValue();
     const rentalFee: number = settingSheet.getRange('B3').getValue();
     const attendFee: number = settingSheet.getRange('B4').getValue();
-
-    this.generateSummarySheet(orgPrice, rentalFee, attendFee, actDate, attendees);
-  }
-
-  private generateSummarySheet(orgPrice: number, rentalFee: number, attendFee: number, actDate: string, attendees: string[]): void {
+    gasUtil.archiveFiles(actDate);
     const attendFeeTotal: number = attendFee * attendees.length;
     const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet(actDate, true); //ない場合作る
     const dd: string = new Date().toLocaleString();
@@ -163,13 +158,30 @@ export class DensukeUtil {
     }
     report.setColumnWidth(1, 170);
     report.setColumnWidth(2, 200);
-    const cashBook = GasProps.instance.cashBookSheet;
     const attendOrg = orgPrice + attendFeeTotal;
     if (cashBook) {
       cashBook.appendRow([dd, actDate, '参加費(' + attendees.length + '名)', '' + attendFeeTotal, '' + attendOrg]);
       cashBook.appendRow([dd, actDate, 'ピッチ使用料金', '-' + rentalFee, '' + (orgPrice - rentalFee + attendFeeTotal)]);
     } else {
       throw new Error('Cash Book not found');
+    }
+    this.copySheetInSpreadsheet();
+  }
+
+  private copySheetInSpreadsheet(): void {
+    const spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+    const sheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.cashBookSheet;
+
+    const oldCashBook = spreadsheet.getSheetByName('CashBook');
+    if (oldCashBook) {
+      spreadsheet.deleteSheet(oldCashBook);
+    }
+
+    if (sheet) {
+      const newSheet = sheet.copyTo(spreadsheet);
+      newSheet.setName('CashBook');
+      newSheet.activate();
+      spreadsheet.moveActiveSheet(1);
     }
   }
 

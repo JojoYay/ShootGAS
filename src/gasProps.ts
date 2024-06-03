@@ -45,6 +45,10 @@ export class GasProps {
     return DriveApp.getFolderById(ScriptProps.instance.folderId);
   }
 
+  public get archiveFolder(): GoogleAppsScript.Drive.Folder {
+    return DriveApp.getFolderById(ScriptProps.instance.archiveFolder);
+  }
+
   public get payNowFolderUrl(): string {
     return 'https://drive.google.com/drive/folders/' + ScriptProps.instance.folderId + '?usp=sharing';
   }

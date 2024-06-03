@@ -26,54 +26,65 @@ const COMMAND_MAP: Command[] = [
     condition: (postEventHander: PostEventHandler) =>
       postEventHander.type === 'message' &&
       postEventHander.messageType === 'text' &&
-      (postEventHander.messageText === '集計' || postEventHander.messageText === 'aggregate'),
+      (postEventHander.messageText === '集計' || postEventHander.messageText.toLowerCase() === 'aggregate'),
   },
   {
     func: 'unpaid',
     condition: (postEventHander: PostEventHandler) =>
       postEventHander.type === 'message' &&
       postEventHander.messageType === 'text' &&
-      (postEventHander.messageText === '未払い' || postEventHander.messageText === 'unpaid'),
+      (postEventHander.messageText === '未払い' || postEventHander.messageText.toLowerCase() === 'unpaid'),
+  },
+  {
+    func: 'unRegister',
+    condition: (postEventHander: PostEventHandler) =>
+      postEventHander.type === 'message' &&
+      postEventHander.messageType === 'text' &&
+      (postEventHander.messageText === '未登録参加者' || postEventHander.messageText.toLowerCase() === 'unregister'),
   },
   {
     func: 'densukeUpd',
     condition: (postEventHander: PostEventHandler) =>
       postEventHander.type === 'message' &&
       postEventHander.messageType === 'text' &&
-      (postEventHander.messageText === '伝助更新' || postEventHander.messageText === 'update'),
+      (postEventHander.messageText === '伝助更新' || postEventHander.messageText.toLowerCase() === 'update'),
   },
   {
     func: 'remind',
     condition: (postEventHander: PostEventHandler) =>
       postEventHander.type === 'message' &&
       postEventHander.messageType === 'text' &&
-      (postEventHander.messageText === 'リマインド' || postEventHander.messageText === 'remind'),
+      (postEventHander.messageText === 'リマインド' || postEventHander.messageText.toLowerCase() === 'remind'),
   },
   {
     func: 'intro',
     condition: (postEventHander: PostEventHandler) =>
       postEventHander.type === 'message' &&
       postEventHander.messageType === 'text' &&
-      (postEventHander.messageText === '紹介' || postEventHander.messageText === 'introduce'),
+      (postEventHander.messageText === '紹介' || postEventHander.messageText.toLowerCase() === 'introduce'),
   },
   {
     func: 'regInfo',
     condition: (postEventHander: PostEventHandler) =>
       postEventHander.type === 'message' &&
       postEventHander.messageType === 'text' &&
-      (postEventHander.messageText === '登録' || postEventHander.messageText === '@@register@@' || postEventHander.messageText === 'how to register'),
+      (postEventHander.messageText === '登録' ||
+        postEventHander.messageText.toLowerCase() === '@@register@@' ||
+        postEventHander.messageText.toLowerCase() === 'how to register'),
   },
   {
     func: 'managerInfo',
     condition: (postEventHander: PostEventHandler) =>
       postEventHander.type === 'message' &&
       postEventHander.messageType === 'text' &&
-      (postEventHander.messageText === '管理' || postEventHander.messageText === 'manage'),
+      (postEventHander.messageText === '管理' || postEventHander.messageText.toLowerCase() === 'manage'),
   },
   {
     func: 'register',
     condition: (postEventHander: PostEventHandler) =>
-      postEventHander.type === 'message' && postEventHander.messageType === 'text' && postEventHander.messageText.startsWith('@@register@@'),
+      postEventHander.type === 'message' &&
+      postEventHander.messageType === 'text' &&
+      postEventHander.messageText.toLowerCase().startsWith('@@register@@'),
   },
   {
     func: 'systemTest',
