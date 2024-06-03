@@ -67,10 +67,11 @@ export class RequestExecuter {
     const userId = postEventHander.userId;
     const lineName = lineUtil.getLineDisplayName(userId);
     const densukeName = gasUtil.getDensukeName(lineName);
+    console.log(densukeName);
     if (densukeName) {
       if (attendees.includes(densukeName)) {
-        gasUtil.uploadPayNowPic(lineName, messageId, actDate);
-        gasUtil.updatePaymentStatus(lineName, actDate);
+        gasUtil.uploadPayNowPic(densukeName, messageId, actDate);
+        gasUtil.updatePaymentStatus(densukeName, actDate);
         if (postEventHander.lang === 'ja') {
           postEventHander.resultMessage = actDate + 'の支払いを登録しました。ありがとうございます！\n' + GasProps.instance.ReportSheetUrl;
         } else {

@@ -159,7 +159,7 @@ export class DensukeUtil {
     for (let i = 0; i < attendees.length; i++) {
       const lineName = gasUtil.getLineName(attendees[i]);
 
-      report.appendRow([attendees[i], lineName, gasUtil.getPaymentUrl(lineName, actDate)]);
+      report.appendRow([attendees[i], lineName, gasUtil.getPaymentUrl(attendees[i], actDate)]);
     }
     report.setColumnWidth(1, 170);
     report.setColumnWidth(2, 200);
@@ -167,7 +167,7 @@ export class DensukeUtil {
     const attendOrg = orgPrice + attendFeeTotal;
     if (cashBook) {
       cashBook.appendRow([dd, actDate, '参加費(' + attendees.length + '名)', '' + attendFeeTotal, '' + attendOrg]);
-      cashBook.appendRow([dd, actDate, 'ピッチ使用料金', '▲' + rentalFee, '' + (orgPrice - rentalFee + attendFeeTotal)]);
+      cashBook.appendRow([dd, actDate, 'ピッチ使用料金', '-' + rentalFee, '' + (orgPrice - rentalFee + attendFeeTotal)]);
     } else {
       throw new Error('Cash Book not found');
     }

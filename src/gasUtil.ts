@@ -44,8 +44,8 @@ export class GasUtil {
     mappingSheet.appendRow([lineName, densukeName, userId]);
   }
 
-  public uploadPayNowPic(lineName: string, messageId: string, actDate: string): void {
-    const fileNm = actDate + '_' + lineName;
+  public uploadPayNowPic(densukeName: string, messageId: string, actDate: string): void {
+    const fileNm = actDate + '_' + densukeName;
     const folder = GasProps.instance.payNowFolder;
     const files = folder.getFilesByName(fileNm);
     if (files.hasNext()) {
@@ -120,23 +120,23 @@ export class GasUtil {
     }
   }
 
-  public updatePaymentStatus(lineName: string, actDate: string): void {
+  public updatePaymentStatus(desunekeName: string, actDate: string): void {
     const repo = this.getReportSheet(actDate, false);
     const values = repo.getDataRange().getValues();
     for (let i = values.length - 1; i >= 0; i--) {
-      if (values[i][1] === lineName) {
-        repo.getRange(i + 1, 3).setValue(this.getPaymentUrl(lineName, actDate));
+      if (values[i][0] === desunekeName) {
+        repo.getRange(i + 1, 3).setValue(this.getPaymentUrl(desunekeName, actDate));
         break;
       }
     }
   }
 
-  public getPaymentUrl(lineName: string, actDate: string) {
+  public getPaymentUrl(densukeName: string, actDate: string) {
     const payNowOwner = this.getPaynowOwner();
-    if (payNowOwner === lineName) {
+    if (payNowOwner === densukeName) {
       return 'PayNow口座主';
     }
-    return this.getFileUrlInFolder(actDate, lineName);
+    return this.getFileUrlInFolder(actDate, densukeName);
   }
 
   public getPaynowOwner(): string {
@@ -145,13 +145,13 @@ export class GasUtil {
     return payNowOwner;
   }
 
-  private getFileUrlInFolder(actDate: string, lineName: string) {
-    if (!lineName) {
-      return '';
-    }
+  private getFileUrlInFolder(actDate: string, densukeName: string) {
+    // if (!lineName) {
+    //   return '';
+    // }
     const folderProp = ScriptProps.instance.folderId;
     const folder = DriveApp.getFolderById(folderProp);
-    const fileName = actDate + '_' + lineName;
+    const fileName = actDate + '_' + densukeName;
     const files = folder.getFilesByName(fileName);
     if (files.hasNext()) {
       const file = files.next();

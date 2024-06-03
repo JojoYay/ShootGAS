@@ -115,6 +115,7 @@ export class LineUtil {
     };
     const response = UrlFetchApp.fetch(url, { headers: headers });
     const blob = response.getBlob().setName(fileName);
+    console.log('filename:' + fileName);
     folder.createFile(blob);
     // return file.getUrl();
   }
