@@ -11,10 +11,15 @@ export class ScriptProps {
     return this._instance;
   }
 
-  // public SETTING_SHEET_NAME: string = 'Settings';
-  // public CASH_BOOK_SHEET_NAME: string = 'CashBook';
-  // public MAPPING_SHEET_NAME: string = 'DensukeMapping';
   public ROWNUM: number = 1; //とりあえず一番上からデータとってくる運用
+
+  public get eventResults(): string {
+    const results: string | null = PropertiesService.getScriptProperties().getProperty('eventResults');
+    if (!results) {
+      throw new Error('Script Property (eventResults) was not found');
+    }
+    return results;
+  }
 
   public get reportSheet(): string {
     let reportProp: string | null = PropertiesService.getScriptProperties().getProperty('reportSheet');

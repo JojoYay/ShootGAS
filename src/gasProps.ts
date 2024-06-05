@@ -13,6 +13,8 @@ export class GasProps {
   private SETTING_SHEET_NAME: string = 'Settings';
   private CASH_BOOK_SHEET_NAME: string = 'CashBook';
   private MAPPING_SHEET_NAME: string = 'DensukeMapping';
+  private EVENT_DATA_SHEET_NAME: string = 'EventData';
+  private PERSONAL_TOTAL_SHEET_NAME: string = 'Total';
 
   public get settingSheet(): GoogleAppsScript.Spreadsheet.Sheet {
     const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
@@ -41,6 +43,24 @@ export class GasProps {
     return cashBook;
   }
 
+  public get eventDataSheet(): GoogleAppsScript.Spreadsheet.Sheet {
+    const eventResultsSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
+    const eventData: GoogleAppsScript.Spreadsheet.Sheet | null = eventResultsSS.getSheetByName(this.EVENT_DATA_SHEET_NAME);
+    if (!eventData) {
+      throw new Error('EventDataSheet was not found.');
+    }
+    return eventData;
+  }
+
+  public get personalTotalSheet(): GoogleAppsScript.Spreadsheet.Sheet {
+    const eventResultsSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
+    const eventData: GoogleAppsScript.Spreadsheet.Sheet | null = eventResultsSS.getSheetByName(this.PERSONAL_TOTAL_SHEET_NAME);
+    if (!eventData) {
+      throw new Error('PersonalTotalSheet was not found.');
+    }
+    return eventData;
+  }
+
   public get payNowFolder(): GoogleAppsScript.Drive.Folder {
     return DriveApp.getFolderById(ScriptProps.instance.folderId);
   }
@@ -54,16 +74,21 @@ export class GasProps {
   }
 
   public get settingSheetUrl(): string {
-    if (ScriptProps.isTesting()) {
-      return 'https://docs.google.com/spreadsheets/d/' + ScriptProps.instance.settingSheet + '?usp=sharing';
-    }
-    return 'https://docs.google.com/spreadsheets/d/' + ScriptProps.instance.settingSheet + '/edit?usp=sharing&ccc=' + new Date().getTime();
+    return this.generateSheetUrl(ScriptProps.instance.settingSheet);
   }
 
-  public get ReportSheetUrl(): string {
+  public get reportSheetUrl(): string {
+    return this.generateSheetUrl(ScriptProps.instance.reportSheet);
+  }
+
+  public get eventResultUrl(): string {
+    return this.generateSheetUrl(ScriptProps.instance.eventResults);
+  }
+
+  private generateSheetUrl(prop: string): string {
     if (ScriptProps.isTesting()) {
-      return 'https://docs.google.com/spreadsheets/d/' + ScriptProps.instance.reportSheet + '?usp=sharing';
+      return 'https://docs.google.com/spreadsheets/d/' + prop + '?usp=sharing';
     }
-    return 'https://docs.google.com/spreadsheets/d/' + ScriptProps.instance.reportSheet + '/edit?usp=sharing&ccc=' + new Date().getTime();
+    return 'https://docs.google.com/spreadsheets/d/' + prop + '/edit?usp=sharing&ccc=' + new Date().getTime();
   }
 }

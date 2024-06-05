@@ -1,6 +1,6 @@
 import { GasUtil } from './gasUtil';
 import { LineUtil } from './lineUtil';
-import { PostEventHandler } from './postEventHandler';
+import { COMMAND_MAP, PostEventHandler } from './postEventHandler';
 import { RequestExecuter } from './requestExecuter';
 
 const lineUtil: LineUtil = new LineUtil();
@@ -10,88 +10,6 @@ const gasUtil: GasUtil = new GasUtil();
 function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.Content.TextOutput {
   return ContentService.createTextOutput('Hello World');
 }
-
-type Command = {
-  func: string;
-  condition: (postEventHander: PostEventHandler) => boolean;
-};
-
-const COMMAND_MAP: Command[] = [
-  {
-    func: 'payNow',
-    condition: (postEventHander: PostEventHandler) => postEventHander.type === 'message' && postEventHander.messageType === 'image',
-  },
-  {
-    func: 'aggregate',
-    condition: (postEventHander: PostEventHandler) =>
-      postEventHander.type === 'message' &&
-      postEventHander.messageType === 'text' &&
-      (postEventHander.messageText === '集計' || postEventHander.messageText.toLowerCase() === 'aggregate'),
-  },
-  {
-    func: 'unpaid',
-    condition: (postEventHander: PostEventHandler) =>
-      postEventHander.type === 'message' &&
-      postEventHander.messageType === 'text' &&
-      (postEventHander.messageText === '未払い' || postEventHander.messageText.toLowerCase() === 'unpaid'),
-  },
-  {
-    func: 'unRegister',
-    condition: (postEventHander: PostEventHandler) =>
-      postEventHander.type === 'message' &&
-      postEventHander.messageType === 'text' &&
-      (postEventHander.messageText === '未登録参加者' || postEventHander.messageText.toLowerCase() === 'unregister'),
-  },
-  {
-    func: 'densukeUpd',
-    condition: (postEventHander: PostEventHandler) =>
-      postEventHander.type === 'message' &&
-      postEventHander.messageType === 'text' &&
-      (postEventHander.messageText === '伝助更新' || postEventHander.messageText.toLowerCase() === 'update'),
-  },
-  {
-    func: 'remind',
-    condition: (postEventHander: PostEventHandler) =>
-      postEventHander.type === 'message' &&
-      postEventHander.messageType === 'text' &&
-      (postEventHander.messageText === 'リマインド' || postEventHander.messageText.toLowerCase() === 'remind'),
-  },
-  {
-    func: 'intro',
-    condition: (postEventHander: PostEventHandler) =>
-      postEventHander.type === 'message' &&
-      postEventHander.messageType === 'text' &&
-      (postEventHander.messageText === '紹介' || postEventHander.messageText.toLowerCase() === 'introduce'),
-  },
-  {
-    func: 'regInfo',
-    condition: (postEventHander: PostEventHandler) =>
-      postEventHander.type === 'message' &&
-      postEventHander.messageType === 'text' &&
-      (postEventHander.messageText === '登録' ||
-        postEventHander.messageText.toLowerCase() === '@@register@@' ||
-        postEventHander.messageText.toLowerCase() === 'how to register'),
-  },
-  {
-    func: 'managerInfo',
-    condition: (postEventHander: PostEventHandler) =>
-      postEventHander.type === 'message' &&
-      postEventHander.messageType === 'text' &&
-      (postEventHander.messageText === '管理' || postEventHander.messageText.toLowerCase() === 'manage'),
-  },
-  {
-    func: 'register',
-    condition: (postEventHander: PostEventHandler) =>
-      postEventHander.type === 'message' &&
-      postEventHander.messageType === 'text' &&
-      postEventHander.messageText.toLowerCase().startsWith('@@register@@'),
-  },
-  {
-    func: 'systemTest',
-    condition: (postEventHander: PostEventHandler) =>
-      postEventHander.type === 'message' && postEventHander.messageType === 'text' && postEventHander.messageText.startsWith('システムテスト'),
-  },
-];
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Content.TextOutput {

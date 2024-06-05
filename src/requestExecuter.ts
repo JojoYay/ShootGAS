@@ -4,6 +4,7 @@ import { GasTestSuite } from './gasTestSuite';
 import { GasUtil } from './gasUtil';
 import { LineUtil } from './lineUtil';
 import { PostEventHandler } from './postEventHandler';
+import { ScoreBook, Title } from './scoreBook';
 import { ScriptProps } from './scriptProps';
 
 const densukeUtil: DensukeUtil = new DensukeUtil();
@@ -73,9 +74,9 @@ export class RequestExecuter {
         gasUtil.uploadPayNowPic(densukeName, messageId, actDate);
         gasUtil.updatePaymentStatus(densukeName, actDate);
         if (postEventHander.lang === 'ja') {
-          postEventHander.resultMessage = actDate + 'の支払いを登録しました。ありがとうございます！\n' + GasProps.instance.ReportSheetUrl;
+          postEventHander.resultMessage = actDate + 'の支払いを登録しました。ありがとうございます！\n' + GasProps.instance.reportSheetUrl;
         } else {
-          postEventHander.resultMessage = 'Payment for ' + actDate + ' has been registered. Thank you!\n' + GasProps.instance.ReportSheetUrl;
+          postEventHander.resultMessage = 'Payment for ' + actDate + ' has been registered. Thank you!\n' + GasProps.instance.reportSheetUrl;
         }
       } else {
         if (postEventHander.lang === 'ja') {
@@ -168,14 +169,16 @@ export class RequestExecuter {
         '\nPayNow：' +
         GasProps.instance.payNowFolderUrl +
         '\nReport URL:' +
-        GasProps.instance.ReportSheetUrl +
+        GasProps.instance.reportSheetUrl +
         '\n伝助：' +
         densukeUtil.getDensukeUrl() +
         '\nチャット状況：' +
         ScriptProps.instance.chat +
         '\nメッセージ利用状況：' +
         ScriptProps.instance.messageUsage +
-        '\n 利用可能コマンド:集計,aggregate, 紹介, introduce, 登録, how to register, リマインド, remind, 伝助更新, update, 未払い, unpaid, 未登録参加者, unregister, @@register@@名前 ';
+        '\n' +
+        postEventHander.generateCommandList();
+      // '\n 利用可能コマンド:集計,aggregate, 紹介, introduce, 登録, how to register, リマインド, remind, 伝助更新, update, 未払い, unpaid, 未登録参加者, unregister, @@register@@名前 ';
     } else {
       postEventHander.resultMessage = 'えっ！？このコマンドは平民のキミには内緒だよ！';
     }
@@ -187,6 +190,18 @@ export class RequestExecuter {
     const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
     const unRegister = gasUtil.getUnRegister(actDate);
     postEventHander.resultMessage = '現在未登録の参加者 (' + unRegister.length + '名): ' + unRegister.join(', ');
+  }
+
+  public ranking(postEventHander: PostEventHandler): void {
+    const scoreBook: ScoreBook = new ScoreBook();
+    const $ = densukeUtil.getDensukeCheerio();
+    const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
+    const members = densukeUtil.extractMembers($);
+    const attendees = densukeUtil.extractAttendees($, ScriptProps.instance.ROWNUM, '○', members);
+
+    scoreBook.generateScoreBook(actDate, attendees, Title.ASSIST);
+    scoreBook.generateScoreBook(actDate, attendees, Title.TOKUTEN);
+    postEventHander.resultMessage = 'ランキングが更新されました\n' + densukeUtil.getDensukeUrl();
   }
 
   public systemTest(postEventHander: PostEventHandler): void {

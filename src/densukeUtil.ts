@@ -1,5 +1,6 @@
 import { GasProps } from './gasProps';
 import { GasUtil } from './gasUtil';
+import { ScoreBook, Title } from './scoreBook';
 import { ScriptProps } from './scriptProps';
 const gasUtil: GasUtil = new GasUtil();
 
@@ -171,6 +172,9 @@ export class DensukeUtil {
       throw new Error('Cash Book not found');
     }
     this.copySheetInSpreadsheet();
+    const scoreBook: ScoreBook = new ScoreBook();
+    scoreBook.generateScoreBook(actDate, attendees, Title.ASSIST);
+    scoreBook.generateScoreBook(actDate, attendees, Title.TOKUTEN);
   }
 
   private copySheetInSpreadsheet(): void {
@@ -210,7 +214,7 @@ export class DensukeUtil {
       attendees.join(', ') +
       '\n' +
       'Report URL:' +
-      GasProps.instance.ReportSheetUrl +
+      GasProps.instance.reportSheetUrl +
       '\nPayNow先: ' +
       payNowAddy;
     return summary;

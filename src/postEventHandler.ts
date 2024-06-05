@@ -1,5 +1,120 @@
 import { LineUtil } from './lineUtil';
 
+type Command = {
+  func: string;
+  lineCmd: string;
+  display: boolean;
+  condition: (postEventHander: PostEventHandler) => boolean;
+};
+
+export const COMMAND_MAP: Command[] = [
+  {
+    func: 'payNow',
+    lineCmd: '',
+    display: false,
+    condition: (postEventHander: PostEventHandler) => postEventHander.type === 'message' && postEventHander.messageType === 'image',
+  },
+  {
+    func: 'aggregate',
+    lineCmd: '集計, aggregate',
+    display: true,
+    condition: (postEventHander: PostEventHandler) =>
+      postEventHander.type === 'message' &&
+      postEventHander.messageType === 'text' &&
+      (postEventHander.messageText === '集計' || postEventHander.messageText.toLowerCase() === 'aggregate'),
+  },
+  {
+    func: 'remind',
+    lineCmd: 'リマインド, remind',
+    display: true,
+    condition: (postEventHander: PostEventHandler) =>
+      postEventHander.type === 'message' &&
+      postEventHander.messageType === 'text' &&
+      (postEventHander.messageText === 'リマインド' || postEventHander.messageText.toLowerCase() === 'remind'),
+  },
+  {
+    func: 'unpaid',
+    lineCmd: '未払い, unpaid',
+    display: true,
+    condition: (postEventHander: PostEventHandler) =>
+      postEventHander.type === 'message' &&
+      postEventHander.messageType === 'text' &&
+      (postEventHander.messageText === '未払い' || postEventHander.messageText.toLowerCase() === 'unpaid'),
+  },
+  {
+    func: 'unRegister',
+    lineCmd: '未登録参加者, unregister',
+    display: true,
+    condition: (postEventHander: PostEventHandler) =>
+      postEventHander.type === 'message' &&
+      postEventHander.messageType === 'text' &&
+      (postEventHander.messageText === '未登録参加者' || postEventHander.messageText.toLowerCase() === 'unregister'),
+  },
+  {
+    func: 'densukeUpd',
+    lineCmd: '伝助更新, update',
+    display: true,
+    condition: (postEventHander: PostEventHandler) =>
+      postEventHander.type === 'message' &&
+      postEventHander.messageType === 'text' &&
+      (postEventHander.messageText === '伝助更新' || postEventHander.messageText.toLowerCase() === 'update'),
+  },
+  {
+    func: 'intro',
+    lineCmd: '紹介, introduce',
+    display: true,
+    condition: (postEventHander: PostEventHandler) =>
+      postEventHander.type === 'message' &&
+      postEventHander.messageType === 'text' &&
+      (postEventHander.messageText === '紹介' || postEventHander.messageText.toLowerCase() === 'introduce'),
+  },
+  {
+    func: 'regInfo',
+    lineCmd: '登録, how to register',
+    display: true,
+    condition: (postEventHander: PostEventHandler) =>
+      postEventHander.type === 'message' &&
+      postEventHander.messageType === 'text' &&
+      (postEventHander.messageText === '登録' ||
+        postEventHander.messageText.toLowerCase() === '@@register@@' ||
+        postEventHander.messageText.toLowerCase() === 'how to register'),
+  },
+  {
+    func: 'ranking',
+    lineCmd: 'ランキング, ranking',
+    display: true,
+    condition: (postEventHander: PostEventHandler) =>
+      postEventHander.type === 'message' &&
+      postEventHander.messageType === 'text' &&
+      (postEventHander.messageText === 'ランキング' || postEventHander.messageText.toLowerCase() === 'calc'),
+  },
+  {
+    func: 'managerInfo',
+    lineCmd: '管理, manage',
+    display: true,
+    condition: (postEventHander: PostEventHandler) =>
+      postEventHander.type === 'message' &&
+      postEventHander.messageType === 'text' &&
+      (postEventHander.messageText === '管理' || postEventHander.messageText.toLowerCase() === 'manage'),
+  },
+  {
+    func: 'register',
+    lineCmd: '@@register@@',
+    display: true,
+    condition: (postEventHander: PostEventHandler) =>
+      postEventHander.type === 'message' &&
+      postEventHander.messageType === 'text' &&
+      postEventHander.messageText.toLowerCase().startsWith('@@register@@'),
+  },
+  {
+    func: 'systemTest',
+    lineCmd: 'システムテスト',
+    display: false,
+    condition: (postEventHander: PostEventHandler) =>
+      postEventHander.type === 'message' && postEventHander.messageType === 'text' && postEventHander.messageText.startsWith('システムテスト'),
+  },
+];
+
 export class PostEventHandler {
   private _messageText: string;
   private _messageType: string; //message or image
@@ -121,5 +236,18 @@ export class PostEventHandler {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public set mockDensukeCheerio(value: any | null) {
     this._mockDensukeCheerio = value;
+  }
+
+  public generateCommandList(): string {
+    let result: string = '利用可能コマンド: ';
+    for (let i = 0; i < COMMAND_MAP.length; i++) {
+      if (COMMAND_MAP[i].display) {
+        result += COMMAND_MAP[i].lineCmd;
+        if (COMMAND_MAP[i].func !== 'register') {
+          result += ', ';
+        }
+      }
+    }
+    return result;
   }
 }

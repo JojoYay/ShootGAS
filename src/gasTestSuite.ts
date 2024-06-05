@@ -130,7 +130,7 @@ export class GasTestSuite {
     const somaId = 'Ucb9beba3011ec9cf85c5482efa132e9b';
     postEventHander.userId = somaId;
     requestExecuter.payNow(postEventHander);
-    const expectation1: string = '6/2(日)の支払いを登録しました。ありがとうございます！\n' + GasProps.instance.ReportSheetUrl;
+    const expectation1: string = '6/2(日)の支払いを登録しました。ありがとうございます！\n' + GasProps.instance.reportSheetUrl;
     const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
     const resultfiles = folder.getFilesByName('6/2(日)_相馬究(Kiwamu Soma)');
     if (postEventHander.resultMessage === expectation1 && resultfiles.hasNext()) {
