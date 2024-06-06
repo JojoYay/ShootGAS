@@ -82,6 +82,12 @@ export class GasUtil {
     return reportSheet;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public getLineUserIdRangeValue(): any[][] {
+    const mappingSheet = GasProps.instance.mappingSheet;
+    return mappingSheet.getDataRange().getValues();
+  }
+
   public getLineUserId(densukeName: string): string {
     let userId = '';
     const mappingSheet = GasProps.instance.mappingSheet;

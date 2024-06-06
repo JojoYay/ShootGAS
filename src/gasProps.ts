@@ -43,7 +43,7 @@ export class GasProps {
     return cashBook;
   }
 
-  public get eventDataSheet(): GoogleAppsScript.Spreadsheet.Sheet {
+  public get eventResultheet(): GoogleAppsScript.Spreadsheet.Sheet {
     const eventResultsSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
     const eventData: GoogleAppsScript.Spreadsheet.Sheet | null = eventResultsSS.getSheetByName(this.EVENT_DATA_SHEET_NAME);
     if (!eventData) {

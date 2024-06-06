@@ -1,6 +1,6 @@
 import { GasProps } from './gasProps';
 import { GasUtil } from './gasUtil';
-import { ScoreBook, Title } from './scoreBook';
+// import { ScoreBook, Title } from './scoreBook';
 import { ScriptProps } from './scriptProps';
 const gasUtil: GasUtil = new GasUtil();
 
@@ -164,17 +164,29 @@ export class DensukeUtil {
     }
     report.setColumnWidth(1, 170);
     report.setColumnWidth(2, 200);
+    report.getRange(1, 1, 7, 2).setBorder(true, true, true, true, true, true);
+    report.getRange(1, 1, 7, 1).setBackground('#fff2cc');
+
+    const rlastRow = report.getLastRow();
+    report.getRange(9, 1, rlastRow - 8, 3).setBorder(true, true, true, true, true, true);
+    report.getRange(9, 1, 1, 3).setBackground('#fff2cc');
+
     const attendOrg = orgPrice + attendFeeTotal;
     if (cashBook) {
       cashBook.appendRow([dd, actDate, '参加費(' + attendees.length + '名)', '' + attendFeeTotal, '' + attendOrg]);
       cashBook.appendRow([dd, actDate, 'ピッチ使用料金', '-' + rentalFee, '' + (orgPrice - rentalFee + attendFeeTotal)]);
+      const clastRow = cashBook.getLastRow();
+      // console.log('lastRow:' + clastRow);
+      cashBook.getRange(1, 1, 1, 5).setBackground('#fff2cc');
+      cashBook.getRange(1, 1, clastRow, 5).setBorder(true, true, true, true, true, true);
     } else {
       throw new Error('Cash Book not found');
     }
     this.copySheetInSpreadsheet();
-    const scoreBook: ScoreBook = new ScoreBook();
-    scoreBook.generateScoreBook(actDate, attendees, Title.ASSIST);
-    scoreBook.generateScoreBook(actDate, attendees, Title.TOKUTEN);
+
+    // const scoreBook: ScoreBook = new ScoreBook();
+    // scoreBook.generateScoreBook(actDate, attendees, Title.ASSIST);
+    // scoreBook.generateScoreBook(actDate, attendees, Title.TOKUTEN);
   }
 
   private copySheetInSpreadsheet(): void {

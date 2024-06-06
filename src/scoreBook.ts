@@ -2,6 +2,7 @@ import { DensukeUtil } from './densukeUtil';
 import { TotalScore } from './totalScore';
 import { GasProps } from './gasProps';
 import { ScriptProps } from './scriptProps';
+import { GasUtil } from './gasUtil';
 
 export enum Title {
   TOKUTEN = '得点王ランキング',
@@ -12,7 +13,17 @@ export enum Title {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function testaaaaa() {
   const scoreBook: ScoreBook = new ScoreBook();
-  // scoreBook.makeEventFormat();
+
+  // const densukeUtil = new DensukeUtil();
+  // const $ = densukeUtil.getDensukeCheerio();
+  // const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
+  // const members = densukeUtil.extractMembers($);
+  // const attendees = densukeUtil.extractAttendees($, ScriptProps.instance.ROWNUM, '○', members);
+
+  // scoreBook.generateScoreBook(actDate, attendees, Title.TOKUTEN);
+  // scoreBook.generateScoreBook(actDate, attendees, Title.ASSIST);
+
+  scoreBook.makeEventFormat();
   scoreBook.aggregateScore();
 }
 
@@ -22,112 +33,9 @@ export class ScoreBook {
     const eventDetails: GoogleAppsScript.Spreadsheet.Sheet[] = eventSS.getSheets();
     const totalResult: GoogleAppsScript.Spreadsheet.Sheet = this.getTotalSheet(eventDetails);
     const eventSheet: GoogleAppsScript.Spreadsheet.Sheet = this.getEventDataSheet(eventDetails);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const eventSheetVal: any[][] = eventSheet.getDataRange().getValues();
-    const dataList: TotalScore[] = [];
-    for (const sheet of eventDetails) {
-      if (sheet.getSheetName() === 'Total' || sheet.getSheetName() === 'EventData') {
-        continue;
-      }
-      const allValues = sheet.getDataRange().getValues();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const eventRow: any[] | undefined = eventSheetVal.find(item => item[1] === sheet.getSheetName());
-      if (!eventRow) {
-        throw new Error('eventがないなんてことはない');
-      }
-      // console.log(eventRow);
-      for (const allValueRow of allValues) {
-        console.log(allValueRow);
-        if (allValueRow[0] === '名前') {
-          continue;
-        }
-        let totalScore: TotalScore | null = null;
-        for (const t of dataList) {
-          if (t.name === allValueRow[0]) {
-            totalScore = t;
-            break;
-          }
-        }
-        if (!totalScore) {
-          totalScore = new TotalScore();
-          dataList.push(totalScore);
-          totalScore.name = allValueRow[0];
-        }
-        totalScore.playTime++;
-        if (eventRow[4] === '晴れ') {
-          totalScore.sunnyPlay++;
-        } else if (eventRow[4] === '雨') {
-          totalScore.rainyPlay++;
-        }
-        if (eventRow[5] === totalScore.name) {
-          totalScore.mipCount++;
-        }
-        if (allValueRow[1]) {
-          totalScore.teamPoint += totalScore.fetchTeamPoint(eventRow, allValueRow[1]);
-          if (totalScore.isTopTeam(eventRow, allValueRow[1])) {
-            totalScore.winCount++;
-          }
-          if (totalScore.fetchTeamPoint(eventRow, allValueRow[1]) === 0) {
-            totalScore.loseCount++;
-          }
-        }
-        if (allValueRow[2]) {
-          totalScore.goalCount += allValueRow[2];
-        }
-        if (allValueRow[3]) {
-          totalScore.assistCount += allValueRow[3];
-        }
-      }
-    }
+    const dataList: TotalScore[] = this.exstractTotalScores(eventSheet, eventDetails);
     // console.log(dataList);
-    const lastRow: number = totalResult.getLastRow();
-    if (lastRow > 2) {
-      totalResult.deleteRows(2, lastRow - 1);
-    }
-    for (const score of dataList) {
-      totalResult.appendRow([
-        '',
-        score.name,
-        score.playTime,
-        score.sunnyPlay,
-        score.rainyPlay,
-        '',
-        score.goalCount,
-        '',
-        score.assistCount,
-        score.mipCount,
-        score.teamPoint,
-        score.winCount,
-        score.loseCount,
-      ]);
-    }
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private getEventRow(eventSheetVal: any[][], actDate: string) {
-    return eventSheetVal[
-      eventSheetVal.findIndex(item => {
-        item[1] === actDate;
-      })
-    ];
-  }
-
-  private getTotalSheet(sheets: GoogleAppsScript.Spreadsheet.Sheet[]): GoogleAppsScript.Spreadsheet.Sheet {
-    for (const sheet of sheets) {
-      if (sheet.getSheetName() === 'Total') {
-        return sheet;
-      }
-    }
-    throw new Error('Total Sheet was not found');
-  }
-
-  private getEventDataSheet(sheets: GoogleAppsScript.Spreadsheet.Sheet[]): GoogleAppsScript.Spreadsheet.Sheet {
-    for (const sheet of sheets) {
-      if (sheet.getSheetName() === 'EventData') {
-        return sheet;
-      }
-    }
-    throw new Error('EventData Sheet was not found');
+    this.writeTotalRecord(totalResult, dataList);
   }
 
   public makeEventFormat(): void {
@@ -156,7 +64,124 @@ export class ScoreBook {
     return eventDetail;
   }
 
-  private updateAttendeeName(eventDetail: GoogleAppsScript.Spreadsheet.Sheet, attendees: string[]) {
+  private exstractTotalScores(eventSheet: GoogleAppsScript.Spreadsheet.Sheet, eventDetails: GoogleAppsScript.Spreadsheet.Sheet[]) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const eventSheetVal: any[][] = eventSheet.getDataRange().getValues();
+    const dataList: TotalScore[] = [];
+    for (const sheet of eventDetails) {
+      if (sheet.getSheetName() === 'Total' || sheet.getSheetName() === 'EventData') {
+        continue;
+      }
+      const allValues = sheet.getDataRange().getValues();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const eventRow: any[] | undefined = eventSheetVal.find(item => item[1] === sheet.getSheetName());
+      if (!eventRow) {
+        throw new Error('eventがないなんてことはない');
+      }
+      const g: GasUtil = new GasUtil();
+      const densukeMappingValue = g.getLineUserIdRangeValue();
+      // console.log(eventRow);
+      for (const allValueRow of allValues) {
+        // console.log(allValueRow);
+        if (allValueRow[0] === '名前') {
+          continue;
+        }
+        let totalScore: TotalScore | null = null;
+        for (const t of dataList) {
+          if (t.name === allValueRow[0]) {
+            totalScore = t;
+            break;
+          }
+        }
+        if (!totalScore) {
+          totalScore = new TotalScore();
+          dataList.push(totalScore);
+          totalScore.name = allValueRow[0];
+        }
+
+        totalScore.playTime++;
+        const userRow = densukeMappingValue.find(item => item[1] === allValueRow[0]);
+        if (userRow && userRow[2]) {
+          totalScore.userId = userRow[2];
+        }
+        if (eventRow[4] === '晴れ') {
+          totalScore.sunnyPlay++;
+        } else if (eventRow[4] === '雨') {
+          totalScore.rainyPlay++;
+        }
+        if (eventRow[5] === totalScore.name) {
+          totalScore.mipCount++;
+        }
+        if (allValueRow[1]) {
+          totalScore.teamPoint += totalScore.fetchTeamPoint(eventRow, allValueRow[1]);
+          if (totalScore.isTopTeam(eventRow, allValueRow[1])) {
+            totalScore.winCount++;
+          }
+          if (totalScore.fetchTeamPoint(eventRow, allValueRow[1]) === 0) {
+            totalScore.loseCount++;
+          }
+        }
+        if (allValueRow[2]) {
+          totalScore.goalCount += allValueRow[2];
+        }
+        if (allValueRow[3]) {
+          totalScore.assistCount += allValueRow[3];
+        }
+      }
+    }
+    return dataList;
+  }
+
+  private writeTotalRecord(totalResult: GoogleAppsScript.Spreadsheet.Sheet, dataList: TotalScore[]) {
+    const lastRow: number = totalResult.getLastRow();
+    if (lastRow > 2) {
+      totalResult.deleteRows(2, lastRow - 1);
+    }
+    for (const score of dataList) {
+      totalResult.appendRow([
+        score.userId,
+        score.name,
+        score.playTime,
+        score.sunnyPlay,
+        score.rainyPlay,
+        score.goalCount,
+        score.assistCount,
+        score.mipCount,
+        score.teamPoint,
+        score.winCount,
+        score.loseCount,
+      ]);
+    }
+  }
+
+  // // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // private getEventRow(eventSheetVal: any[][], actDate: string) {
+  //   return eventSheetVal[
+  //     eventSheetVal.findIndex(item => {
+  //       item[1] === actDate;
+  //     })
+  //   ];
+  // }
+
+  private getTotalSheet(sheets: GoogleAppsScript.Spreadsheet.Sheet[]): GoogleAppsScript.Spreadsheet.Sheet {
+    for (const sheet of sheets) {
+      if (sheet.getSheetName() === 'Total') {
+        return sheet;
+      }
+    }
+    throw new Error('Total Sheet was not found');
+  }
+
+  private getEventDataSheet(sheets: GoogleAppsScript.Spreadsheet.Sheet[]): GoogleAppsScript.Spreadsheet.Sheet {
+    for (const sheet of sheets) {
+      if (sheet.getSheetName() === 'EventData') {
+        return sheet;
+      }
+    }
+    throw new Error('EventData Sheet was not found');
+  }
+
+  private updateAttendeeName(eventDetail: GoogleAppsScript.Spreadsheet.Sheet, attendees: string[]): void {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const allDetails: any[][] = eventDetail.getDataRange().getValues();
     for (let i = allDetails.length - 1; i >= 1; i--) {
@@ -182,7 +207,7 @@ export class ScoreBook {
     }
   }
 
-  private updateEventDetails(eventDetail: GoogleAppsScript.Spreadsheet.Sheet) {
+  private updateEventDetails(eventDetail: GoogleAppsScript.Spreadsheet.Sheet): void {
     const teamName: string[] = ['チーム1', 'チーム2', 'チーム3', 'チーム4', 'チーム5', 'チーム6'];
     const teamNameVal = SpreadsheetApp.newDataValidation().requireValueInList(teamName).build();
     // const teamPoint: string[] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
@@ -198,13 +223,13 @@ export class ScoreBook {
     }
   }
 
-  private moveSheetToHead(sheet: GoogleAppsScript.Spreadsheet.Sheet, eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet) {
+  private moveSheetToHead(sheet: GoogleAppsScript.Spreadsheet.Sheet, eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet): void {
     sheet.activate();
     eventSS.moveActiveSheet(3);
   }
 
-  private updateEventSheet(actDate: string, attendees: string[]) {
-    const eventData: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.eventDataSheet;
+  private updateEventSheet(actDate: string, attendees: string[]): void {
+    const eventData: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.eventResultheet;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rangeValues: any[][] = eventData.getDataRange().getValues();
     const now: Date = new Date();
@@ -233,7 +258,7 @@ export class ScoreBook {
     return -1;
   }
 
-  private createInitialEvent(attendees: string[], eventData: GoogleAppsScript.Spreadsheet.Sheet, now: Date, actDate: string) {
+  private createInitialEvent(attendees: string[], eventData: GoogleAppsScript.Spreadsheet.Sheet, now: Date, actDate: string): void {
     const teamPoint: string[] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
     const teamPointVal = SpreadsheetApp.newDataValidation().requireValueInList(teamPoint).build();
     const weather: string[] = ['晴れ', '曇り', '雨'];
@@ -261,8 +286,8 @@ export class ScoreBook {
 
   public generateScoreBook(actDate: string, attendees: string[], title: Title): void {
     const reportSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
-    const goalCount: string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-    const goalCountVal = SpreadsheetApp.newDataValidation().requireValueInList(goalCount).build();
+    // const goalCount: string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+    // const goalCountVal = SpreadsheetApp.newDataValidation().requireValueInList(goalCount).build();
     let scoreSheet: GoogleAppsScript.Spreadsheet.Sheet | null = reportSS.getSheetByName(title);
     if (!scoreSheet) {
       scoreSheet = reportSS.insertSheet(title);
@@ -276,18 +301,74 @@ export class ScoreBook {
     }
     this.addAttendee(scoreSheet, attendees, true);
 
-    const newLocal_1 = scoreSheet.getLastRow();
+    const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
+    const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = this.getEventDetailSheet(eventSS, actDate); //ちょっとこのメソッドは危ない（順序によっては新規で作ってる）
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const eventValues: any[][] = eventDetail.getDataRange().getValues(); //こっちが入力したシート
+    const allVals = scoreSheet.getDataRange().getValues(); //こっちがランキングのシート
+    // const newLocal_1 = scoreSheet.getLastRow();
+    // console.log('allValues:');
+    // console.log(allVals);
+    // console.log('eventValues:');
+    // console.log(eventValues);
     const lastCol = scoreSheet.getLastColumn();
-    const allVals = scoreSheet.getDataRange().getValues();
-    console.log(newLocal_1);
-    for (let i = 3; i <= newLocal_1; i++) {
-      console.log('excel上:' + allVals[i - 1][0]);
-      console.log(attendees);
-      scoreSheet.getRange(i, 3).setDataValidation(goalCountVal);
-      const range = scoreSheet.getRange(i, 3, 1, lastCol - 2);
-      const formula = `=SUM(${range.getA1Notation()})`;
-      scoreSheet.getRange(i, 2).setFormula(formula);
+    let index: number = 3;
+    for (const allRow of allVals) {
+      if (allRow[0] === '伝助名称' || allRow[0] === '') {
+        continue;
+      }
+      for (const eventRow of eventValues) {
+        if (eventRow[0] === '名前') {
+          continue;
+        }
+        // console.log('allRow[0]:' + allRow[0]);
+        // console.log('resultRow[0]:' + eventRow[0]);
+        if (eventRow[0] === allRow[0]) {
+          if (title === Title.ASSIST) {
+            scoreSheet.getRange(index, 3).setValue(eventRow[3]);
+          } else if (title === Title.TOKUTEN) {
+            scoreSheet.getRange(index, 3).setValue(eventRow[2]);
+          }
+        }
+        const range = scoreSheet.getRange(index, 3, 1, lastCol - 2);
+        const formula = `=SUM(${range.getA1Notation()})`;
+        scoreSheet.getRange(index, 2).setFormula(formula);
+      }
+      index++;
     }
+
+    // for (const eventRow of eventValues) {
+
+    //   let index: number = 3;
+    //   for (const allRow of allVals) {
+    //     console.log('allRow[0]:' + allRow[0]);
+    //     console.log('resultRow[0]:' + eventRow[0]);
+
+    //     if (eventRow[0] === allRow[0]) {
+    //       if (title === Title.ASSIST) {
+    //         scoreSheet.getRange(index, 3).setValue(eventRow[3]);
+    //       } else if (title === Title.TOKUTEN) {
+    //         scoreSheet.getRange(index, 3).setValue(eventRow[2]);
+    //       }
+    //     }
+    //     const range = scoreSheet.getRange(index, 3, 1, lastCol - 2);
+    //     const formula = `=SUM(${range.getA1Notation()})`;
+    //     scoreSheet.getRange(index, 2).setFormula(formula);
+
+    //     index++;
+    //   }
+    // }
+
+    // // console.log(newLocal_1);
+    // for (let i = 3; i <= newLocal_1; i++) {
+    //   // console.log('excel上:' + allVals[i - 1][0]);
+    //   // console.log(attendees);
+    //   // scoreSheet.getRange(i, 3).setDataValidation(goalCountVal);
+
+    //   const range = scoreSheet.getRange(i, 3, 1, lastCol - 2);
+    //   const formula = `=SUM(${range.getA1Notation()})`;
+    //   scoreSheet.getRange(i, 2).setFormula(formula);
+    // }
 
     const finalRow = scoreSheet.getLastRow();
     const finalCol = scoreSheet.getLastColumn();
@@ -298,18 +379,21 @@ export class ScoreBook {
     reportSS.moveActiveSheet(1);
   }
 
-  private addAttendee(scoreSheet: GoogleAppsScript.Spreadsheet.Sheet, attendees: string[], removeZero: boolean) {
+  private addAttendee(scoreSheet: GoogleAppsScript.Spreadsheet.Sheet, attendees: string[], removeZero: boolean): void {
     if (removeZero) {
       this.removeZeroPpl(scoreSheet);
     }
     //シートがある場合は
     // const lastRow = scoreSheet.getLastRow();
     const allDataValues = scoreSheet.getDataRange().getValues();
-    console.log(allDataValues);
+    // if (allDataValues.length > 2) {
+    // console.log(allDataValues);
     for (let i = 0; i < attendees.length; i++) {
       let find = false;
-      for (let j: number = 0; j < allDataValues.length; j++) {
-        if (allDataValues[j][1] === attendees[i]) {
+      for (let j: number = 2; j < allDataValues.length; j++) {
+        // console.log(allDataValues[j][0] + ' : ' + attendees[i]);
+        if (allDataValues[j][0] === attendees[i]) {
+          // console.log(allDataValues[j][0] + ' : ' + attendees[i] + ' matched!');
           find = true;
           break;
         }
@@ -321,9 +405,9 @@ export class ScoreBook {
     }
   }
 
-  private removeZeroPpl(scoreSheet: GoogleAppsScript.Spreadsheet.Sheet) {
+  private removeZeroPpl(scoreSheet: GoogleAppsScript.Spreadsheet.Sheet): void {
     const values = scoreSheet.getDataRange().getValues();
-    console.log(values);
+    // console.log(values);
     for (let i = values.length - 1; i >= 1; i--) {
       if (values[i][1] === 0) {
         scoreSheet.deleteRow(i + 1);

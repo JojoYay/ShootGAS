@@ -199,8 +199,12 @@ export class RequestExecuter {
     const members = densukeUtil.extractMembers($);
     const attendees = densukeUtil.extractAttendees($, ScriptProps.instance.ROWNUM, '○', members);
 
+    scoreBook.makeEventFormat();
+    scoreBook.aggregateScore();
+
     scoreBook.generateScoreBook(actDate, attendees, Title.ASSIST);
     scoreBook.generateScoreBook(actDate, attendees, Title.TOKUTEN);
+
     postEventHander.resultMessage = 'ランキングが更新されました\n' + densukeUtil.getDensukeUrl();
   }
 

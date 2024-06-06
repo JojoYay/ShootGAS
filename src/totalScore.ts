@@ -1,4 +1,5 @@
 export class TotalScore {
+  public userId: string = '';
   public name: string = '';
   public playTime: number = 0;
   public sunnyPlay: number = 0;
