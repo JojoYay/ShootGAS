@@ -28,6 +28,32 @@ export class LineUtil {
     }
   }
 
+  public sendFlexReply(replyToken: string, flexJson: JSON | null): void {
+    const url = 'https://api.line.me/v2/bot/message/reply';
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + ScriptProps.instance.lineAccessToken,
+    };
+    const postData = {
+      replyToken: replyToken,
+      messages: [
+        {
+          type: 'flex',
+          altText: 'This is a Flex Message',
+          contents: flexJson,
+        },
+      ],
+    };
+    const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
+      method: 'post',
+      headers: headers,
+      payload: JSON.stringify(postData),
+      muteHttpExceptions: true,
+    };
+    const response = UrlFetchApp.fetch(url, options);
+    Logger.log(response.getContentText());
+  }
+
   public sendLineReply(replyToken: string, messageText: string, imageUrl: string | null): void {
     const url = 'https://api.line.me/v2/bot/message/reply';
     const headers = {

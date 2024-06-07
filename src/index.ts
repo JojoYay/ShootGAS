@@ -20,7 +20,11 @@ function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Content.Tex
       executeMethod(requestExecuter, item.func, postEventHander);
     }
   }
-  lineUtil.sendLineReply(postEventHander.replyToken, postEventHander.resultMessage, postEventHander.resultImage);
+  if (postEventHander.isFlex) {
+    lineUtil.sendFlexReply(postEventHander.replyToken, postEventHander.messageJson);
+  } else {
+    lineUtil.sendLineReply(postEventHander.replyToken, postEventHander.resultMessage, postEventHander.resultImage);
+  }
   if (postEventHander.paynowOwnerMsg) {
     lineUtil.sendLineMessage(gasUtil.getLineUserId(gasUtil.getDensukeName(gasUtil.getPaynowOwner())), postEventHander.paynowOwnerMsg);
   }

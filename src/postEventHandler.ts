@@ -89,6 +89,15 @@ export const COMMAND_MAP: Command[] = [
       (postEventHander.messageText === 'ランキング' || postEventHander.messageText.toLowerCase() === 'calc'),
   },
   {
+    func: 'myResult',
+    lineCmd: '戦績, my result',
+    display: true,
+    condition: (postEventHander: PostEventHandler) =>
+      postEventHander.type === 'message' &&
+      postEventHander.messageType === 'text' &&
+      (postEventHander.messageText === '戦績' || postEventHander.messageText.toLowerCase() === 'my result'),
+  },
+  {
     func: 'managerInfo',
     lineCmd: '管理, manage',
     display: true,
@@ -131,6 +140,8 @@ export class PostEventHandler {
   private _testResult: string[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private _mockDensukeCheerio: any | null;
+  public isFlex: boolean = false;
+  public messageJson: JSON | null = null;
 
   public constructor(e: GoogleAppsScript.Events.DoPost) {
     const json = JSON.parse(e.postData.contents);

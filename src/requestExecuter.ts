@@ -106,6 +106,40 @@ export class RequestExecuter {
     }
   }
 
+  public myResult(postEventHander: PostEventHandler): void {
+    postEventHander.isFlex = true;
+    const ss: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+    const jsonStr: string = ss.getSheetByName('MemberCardLayout')?.getRange(1, 1).getValue();
+    const messageJson: JSON = JSON.parse(jsonStr);
+    postEventHander.messageJson = messageJson;
+    this.reflectOwnResult(messageJson, postEventHander.userId);
+    // postEventHander.resultMessage = jsonStr;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private reflectOwnResult(jsonMessage: any, userId: string): void {
+    const resultSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.personalTotalSheet;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const resultValues: any[][] = resultSheet.getDataRange().getValues();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const resultRow: any[] | undefined = resultValues.find(row => row[0] === userId);
+    if (resultRow) {
+      jsonMessage.body.contents[0].contents[0].text = String(resultRow[1]); //名前
+      jsonMessage.body.contents[2].contents[0].contents[1].text = String(resultRow[2]); //参加数
+      jsonMessage.body.contents[2].contents[1].contents[1].text = String(resultRow[5]); //通算ゴール数
+      jsonMessage.body.contents[2].contents[2].contents[1].text = String(resultRow[6]); //通算アシスト数
+      jsonMessage.body.contents[2].contents[3].contents[1].text = String(resultRow[11]); //得点王ランキング
+      jsonMessage.body.contents[2].contents[4].contents[1].text = String(resultRow[12]); //アシスト王ランキング
+
+      jsonMessage.body.contents[4].contents[0].contents[1].text = String(resultRow[9]); //１位獲得数
+      jsonMessage.body.contents[4].contents[1].contents[1].text = String(resultRow[10]); //最下位獲得数
+      jsonMessage.body.contents[4].contents[2].contents[1].text = String(resultRow[8]); //チームポイント獲得数
+      // console.log(GasProps.instance.reportSheetUrl);
+      // jsonMessage.footer.contents[0].uri = GasProps.instance.reportSheetUrl; //伝助URL
+      // jsonMessage.footer.contents[1].uri = densukeUtil.getDensukeUrl(); //伝助URL
+    }
+  }
+
   public aggregate(postEventHander: PostEventHandler): void {
     let $ = densukeUtil.getDensukeCheerio();
     if (postEventHander.mockDensukeCheerio) {
@@ -205,7 +239,7 @@ export class RequestExecuter {
     scoreBook.generateScoreBook(actDate, attendees, Title.ASSIST);
     scoreBook.generateScoreBook(actDate, attendees, Title.TOKUTEN);
 
-    postEventHander.resultMessage = 'ランキングが更新されました\n' + densukeUtil.getDensukeUrl();
+    postEventHander.resultMessage = 'ランキングが更新されました\n' + GasProps.instance.reportSheetUrl;
   }
 
   public systemTest(postEventHander: PostEventHandler): void {
