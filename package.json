@@ -13,7 +13,7 @@
     "license": "license-check-and-add add -f license-config.json",
     "test": "jest test/ --passWithNoTests --detectOpenHandles",
     "deploy":      "npm run lint && npm run test && npm run build && ncp .clasp-dev.json .clasp.json && clasp push -f && clasp deploy -i AKfycbzOv8KYnAsa2JCQ6KSDyF_fW8kIScH39IAyu3GNqm0kS1z9MuXlyv5Xj4Ry3xR-cfjzHg",
-    "deploy:prod": "npm run lint && npm run test && npm run build && ncp .clasp-prod.json .clasp.json && clasp push && clasp undeploy -a && clasp deploy"
+    "deploy:prod": "npm run lint && npm run test && npm run build && ncp .clasp-prod.json .clasp.json && clasp push && clasp deploy -i AKfycbysS9XmULaZ9HtsLjWDYKrEuNZ7ws9xtK-Qmy3jbNfrCKYXU3upWYybefshFlX2ypfG"
   },
   "engines": {
     "node": ">=12"

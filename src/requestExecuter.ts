@@ -107,6 +107,9 @@ export class RequestExecuter {
   }
 
   public myResult(postEventHander: PostEventHandler): void {
+    if (!postEventHander.userId) {
+      postEventHander.resultMessage = '初回登録が終わっていません。"登録"と入力し、初回登録を完了させてください。';
+    }
     postEventHander.isFlex = true;
     const ss: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
     const jsonStr: string = ss.getSheetByName('MemberCardLayout')?.getRange(1, 1).getValue();
@@ -204,6 +207,8 @@ export class RequestExecuter {
         GasProps.instance.payNowFolderUrl +
         '\nReport URL:' +
         GasProps.instance.reportSheetUrl +
+        '\nEvent Result URL:' +
+        GasProps.instance.eventResultUrl +
         '\n伝助：' +
         densukeUtil.getDensukeUrl() +
         '\nチャット状況：' +

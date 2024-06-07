@@ -133,7 +133,7 @@ export class ScoreBook {
   }
 
   private writeTotalRecord(totalResult: GoogleAppsScript.Spreadsheet.Sheet, dataList: TotalScore[]) {
-    const lastRow: number = totalResult.getLastRow();
+    let lastRow: number = totalResult.getLastRow();
     if (lastRow > 2) {
       totalResult.deleteRows(2, lastRow - 1);
     }
@@ -152,44 +152,44 @@ export class ScoreBook {
         score.loseCount,
       ]);
     }
-    totalResult
-      .getDataRange()
-      .offset(1, 0, lastRow - 1)
-      .sort({ column: 6, ascending: false });
+    lastRow = totalResult.getLastRow();
+    const lastCol = totalResult.getLastColumn();
+    if (lastRow > 1) {
+      totalResult.getRange(1, 1, lastRow, lastCol).setBorder(true, true, true, true, true, true);
+      totalResult.getRange(2, 1, lastRow, lastCol).sort({ column: 6, ascending: false });
 
-    let rank = 1;
-    let prevScore = null;
-    let prevRank = 1;
-    const rangeVals = totalResult.getDataRange().getValues();
-    for (let i = 1; i < rangeVals.length; i++) {
-      const currentScore = rangeVals[i][6];
-      if (currentScore !== prevScore) {
-        prevRank = rank;
+      let rank = 1;
+      let prevScore = null;
+      let prevRank = 1;
+      let rangeVals = totalResult.getDataRange().getValues();
+      for (let i = 1; i < rangeVals.length; i++) {
+        const currentScore = rangeVals[i][5];
+        if (currentScore !== prevScore) {
+          prevRank = rank;
+        }
+        totalResult.getRange(i + 1, 12).setValue(prevRank + '位');
+        if (currentScore !== prevScore) {
+          rank++;
+        }
+        prevScore = currentScore;
       }
-      totalResult.getRange(i + 1, 12).setValue(prevRank + '位');
-      if (currentScore !== prevScore) {
-        rank++;
-      }
-      prevScore = currentScore;
-    }
 
-    totalResult
-      .getDataRange()
-      .offset(1, 0, lastRow - 1)
-      .sort({ column: 7, ascending: false });
-    rank = 1;
-    prevScore = null;
-    prevRank = 1;
-    for (let i = 1; i < rangeVals.length; i++) {
-      const currentScore = rangeVals[i][7];
-      if (currentScore !== prevScore) {
-        prevRank = rank;
+      totalResult.getRange(2, 1, lastRow, lastCol).sort({ column: 7, ascending: false });
+      rangeVals = totalResult.getDataRange().getValues();
+      rank = 1;
+      prevScore = null;
+      prevRank = 1;
+      for (let i = 1; i < rangeVals.length; i++) {
+        const currentScore = rangeVals[i][6];
+        if (currentScore !== prevScore) {
+          prevRank = rank;
+        }
+        totalResult.getRange(i + 1, 13).setValue(prevRank + '位');
+        if (currentScore !== prevScore) {
+          rank++;
+        }
+        prevScore = currentScore;
       }
-      totalResult.getRange(i + 1, 13).setValue(prevRank + '位');
-      if (currentScore !== prevScore) {
-        rank++;
-      }
-      prevScore = currentScore;
     }
   }
 
