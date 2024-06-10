@@ -15,6 +15,8 @@ export class GasProps {
   private MAPPING_SHEET_NAME: string = 'DensukeMapping';
   private EVENT_DATA_SHEET_NAME: string = 'EventData';
   private PERSONAL_TOTAL_SHEET_NAME: string = 'Total';
+  private G_RANKING_SHEET_NAME: string = '得点王ランキング';
+  private A_RANKING_SHEET_NAME: string = 'アシスト王ランキング';
 
   public get settingSheet(): GoogleAppsScript.Spreadsheet.Sheet {
     const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
@@ -23,6 +25,24 @@ export class GasProps {
       throw new Error('settingSheet was not found.');
     }
     return cashBook;
+  }
+
+  public get GRankingSheet(): GoogleAppsScript.Spreadsheet.Sheet {
+    const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+    const gRanking: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName(this.G_RANKING_SHEET_NAME);
+    if (!gRanking) {
+      throw new Error('gRankingSheet was not found.');
+    }
+    return gRanking;
+  }
+
+  public get ARankingSheet(): GoogleAppsScript.Spreadsheet.Sheet {
+    const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+    const aRanking: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName(this.A_RANKING_SHEET_NAME);
+    if (!aRanking) {
+      throw new Error('aRankingSheet was not found.');
+    }
+    return aRanking;
   }
 
   public get cashBookSheet(): GoogleAppsScript.Spreadsheet.Sheet {

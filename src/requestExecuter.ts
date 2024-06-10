@@ -127,19 +127,85 @@ export class RequestExecuter {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const resultRow: any[] | undefined = resultValues.find(row => row[0] === userId);
     if (resultRow) {
-      jsonMessage.body.contents[0].contents[0].text = String(resultRow[1]); //名前
-      jsonMessage.body.contents[2].contents[0].contents[1].text = String(resultRow[2]); //参加数
-      jsonMessage.body.contents[2].contents[1].contents[1].text = String(resultRow[5]); //通算ゴール数
-      jsonMessage.body.contents[2].contents[2].contents[1].text = String(resultRow[6]); //通算アシスト数
-      jsonMessage.body.contents[2].contents[3].contents[1].text = String(resultRow[11]); //得点王ランキング
-      jsonMessage.body.contents[2].contents[4].contents[1].text = String(resultRow[12]); //アシスト王ランキング
+      //個人戦績
+      jsonMessage.contents[0].body.contents[0].contents[0].text = String(resultRow[1]); //名前
+      jsonMessage.contents[0].body.contents[2].contents[0].contents[1].text = String(resultRow[2]); //参加数
+      jsonMessage.contents[0].body.contents[2].contents[1].contents[1].text = String(resultRow[5]); //通算ゴール数
+      jsonMessage.contents[0].body.contents[2].contents[2].contents[1].text = String(resultRow[6]); //通算アシスト数
+      jsonMessage.contents[0].body.contents[2].contents[3].contents[1].text = String(resultRow[11]); //得点王ランキング
+      jsonMessage.contents[0].body.contents[2].contents[4].contents[1].text = String(resultRow[12]); //アシスト王ランキング
 
-      jsonMessage.body.contents[4].contents[0].contents[1].text = String(resultRow[9]); //１位獲得数
-      jsonMessage.body.contents[4].contents[1].contents[1].text = String(resultRow[10]); //最下位獲得数
-      jsonMessage.body.contents[4].contents[2].contents[1].text = String(resultRow[8]); //チームポイント獲得数
-      // console.log(GasProps.instance.reportSheetUrl);
-      // jsonMessage.footer.contents[0].uri = GasProps.instance.reportSheetUrl; //伝助URL
-      // jsonMessage.footer.contents[1].uri = densukeUtil.getDensukeUrl(); //伝助URL
+      jsonMessage.contents[0].body.contents[4].contents[0].contents[1].text = String(resultRow[9]); //１位獲得数
+      jsonMessage.contents[0].body.contents[4].contents[1].contents[1].text = String(resultRow[10]); //最下位獲得数
+      jsonMessage.contents[0].body.contents[4].contents[2].contents[1].text = String(resultRow[8]); //チームポイント獲得数
+      if (resultRow[13] === 1) {
+        jsonMessage.contents[0].body.contents[0].contents[1] = {};
+        jsonMessage.contents[0].body.contents[0].contents[1].type = 'image';
+        jsonMessage.contents[0].body.contents[0].contents[1].url = 'https://lh3.googleusercontent.com/d/1fAy83HzkttX06Vm-wt5oRPWlB-JOWcC0';
+        jsonMessage.contents[0].body.contents[0].contents[1].size = 'xxs';
+        jsonMessage.contents[0].body.contents[0].contents[1].align = 'end';
+      }
+    }
+    //ランキング
+    const gRankingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.GRankingSheet;
+    const gRankValues = gRankingSheet.getDataRange().getValues();
+    // let index = 0;
+    for (const ranking of gRankValues) {
+      if (ranking[0] !== '' && ranking[0] !== '伝助名称' && ranking[2] > 0) {
+        jsonMessage.contents[1].body.contents.push({
+          type: 'box',
+          layout: 'baseline',
+          spacing: 'sm',
+          contents: [
+            {
+              type: 'text',
+              text: ranking[1],
+              wrap: true,
+              flex: 1,
+            },
+            {
+              type: 'text',
+              text: ranking[0],
+              flex: 4,
+            },
+            {
+              type: 'text',
+              text: ranking[2] + '点',
+              flex: 1,
+            },
+          ],
+        });
+      }
+    }
+
+    const aRankingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.ARankingSheet;
+    const aRankValues = aRankingSheet.getDataRange().getValues();
+    for (const ranking of aRankValues) {
+      if (ranking[0] !== '' && ranking[0] !== '伝助名称' && ranking[2] > 0) {
+        jsonMessage.contents[2].body.contents.push({
+          type: 'box',
+          layout: 'baseline',
+          spacing: 'sm',
+          contents: [
+            {
+              type: 'text',
+              text: ranking[1],
+              wrap: true,
+              flex: 1,
+            },
+            {
+              type: 'text',
+              text: ranking[0],
+              flex: 4,
+            },
+            {
+              type: 'text',
+              text: ranking[2] + '点',
+              flex: 1,
+            },
+          ],
+        });
+      }
     }
   }
 

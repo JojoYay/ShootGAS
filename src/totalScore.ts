@@ -4,9 +4,9 @@ export class TotalScore {
   public playTime: number = 0;
   public sunnyPlay: number = 0;
   public rainyPlay: number = 0;
-  public gRankingTitle: string = '';
+  // public gRankingTitle: string = '';
   public goalCount: number = 0;
-  public aRankingTitle: string = '';
+  // public aRankingTitle: string = '';
   public assistCount: number = 0;
   public mipCount: number = 0;
   public teamPoint: number = 0;

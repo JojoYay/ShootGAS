@@ -179,6 +179,10 @@ export class ScoreBook {
       rank = 1;
       prevScore = null;
       prevRank = 1;
+
+      const eventData: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.eventResultheet;
+      const mipNames: string[] = this.checkMip(eventData.getDataRange().getValues());
+
       for (let i = 1; i < rangeVals.length; i++) {
         const currentScore = rangeVals[i][6];
         if (currentScore !== prevScore) {
@@ -189,18 +193,23 @@ export class ScoreBook {
           rank++;
         }
         prevScore = currentScore;
+        const currentName = rangeVals[i][1];
+        const currentGranking = rangeVals[i][11];
+        const currentAranking = rangeVals[i][12];
+        if (currentGranking === '1位' || currentAranking === '1位' || mipNames.includes(currentName)) {
+          totalResult.getRange(i + 1, 14).setValue(1);
+        }
       }
     }
   }
-
-  // // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  // private getEventRow(eventSheetVal: any[][], actDate: string) {
-  //   return eventSheetVal[
-  //     eventSheetVal.findIndex(item => {
-  //       item[1] === actDate;
-  //     })
-  //   ];
-  // }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private checkMip(eventDataVal: any[][]): string[] {
+    const resultNames: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      resultNames.push(eventDataVal[i][5]);
+    }
+    return resultNames;
+  }
 
   private getTotalSheet(sheets: GoogleAppsScript.Spreadsheet.Sheet[]): GoogleAppsScript.Spreadsheet.Sheet {
     for (const sheet of sheets) {
@@ -345,10 +354,6 @@ export class ScoreBook {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const eventValues: any[][] = eventDetail.getDataRange().getValues(); //こっちが入力したシート
     const allVals = scoreSheet.getDataRange().getValues(); //こっちがランキングのシート
-    // const newLocal_1 = scoreSheet.getLastRow();
-    // console.log('allValues:');
-    // console.log(allVals);
-    // console.log('eventValues:');
     // console.log(eventValues);
     const lastCol = scoreSheet.getLastColumn();
     let index: number = 3;

@@ -1,296 +1,349 @@
 {
-    "type": "bubble",
-    "hero": {
-      "type": "image",
-      "url": "https://lh3.googleusercontent.com/d/12EoBJ8eAjnhUNqDWW6gxpx50W1gaPHdt",
-      "size": "full",
-      "aspectRatio": "2:1",
-      "aspectMode": "cover",
-      "action": {
-        "type": "uri",
-        "uri": "https://line.me/"
-      }
-    },
-    "body": {
-      "type": "box",
-      "layout": "vertical",
-      "contents": [
-        {
-          "type": "box",
-          "layout": "horizontal",
-          "contents": [
-            {
-              "type": "text",
-              "text": "やまだじょ",
-              "weight": "bold",
-              "size": "lg",
-              "color": "#32467F"
-            },
-            {
-              "type": "button",
-              "action": {
-                "type": "uri",
-                "label": "action",
-                "uri": "http://linecorp.com/"
-              },
-              "height": "sm"
-            }
-          ]
-        },
-        {
-          "type": "separator",
-          "margin": "lg",
-          "color": "#32467F"
-        },
-        {
-          "type": "box",
-          "layout": "vertical",
-          "margin": "lg",
-          "spacing": "sm",
-          "contents": [
-            {
-              "type": "box",
-              "layout": "baseline",
-              "spacing": "sm",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": "試合参加数",
-                  "color": "#7C7C7C",
-                  "size": "sm",
-                  "flex": 5
-                },
-                {
-                  "type": "text",
-                  "text": "34",
-                  "wrap": true,
-                  "color": "#666666",
-                  "size": "sm",
-                  "flex": 1
-                }
-              ]
-            },
-            {
-              "type": "box",
-              "layout": "baseline",
-              "spacing": "sm",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": "通算ゴール数",
-                  "color": "#7C7C7C",
-                  "size": "sm",
-                  "flex": 5
-                },
-                {
-                  "type": "text",
-                  "text": "3",
-                  "wrap": true,
-                  "color": "#666666",
-                  "size": "sm",
-                  "flex": 1
-                }
-              ]
-            },
-            {
-              "type": "box",
-              "layout": "baseline",
-              "spacing": "sm",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": "通算アシスト数",
-                  "color": "#7C7C7C",
-                  "size": "sm",
-                  "flex": 5
-                },
-                {
-                  "type": "text",
-                  "text": "12",
-                  "wrap": true,
-                  "color": "#666666",
-                  "size": "sm",
-                  "flex": 1
-                }
-              ]
-            },
-            {
-              "type": "box",
-              "layout": "baseline",
-              "spacing": "sm",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": "得点王ランキング",
-                  "color": "#7C7C7C",
-                  "size": "sm",
-                  "flex": 5
-                },
-                {
-                  "type": "text",
-                  "text": "33",
-                  "wrap": true,
-                  "color": "#666666",
-                  "size": "sm",
-                  "flex": 1
-                }
-              ]
-            },
-            {
-              "type": "box",
-              "layout": "baseline",
-              "spacing": "sm",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": "アシスト王ランキング",
-                  "color": "#7C7C7C",
-                  "size": "sm",
-                  "flex": 5
-                },
-                {
-                  "type": "text",
-                  "text": "3",
-                  "wrap": true,
-                  "color": "#666666",
-                  "size": "sm",
-                  "flex": 1
-                }
-              ]
-            }
-  
-          ],
-          "paddingBottom": "lg"
-        },
-        {
-          "type": "text",
-          "text": "岡本カップ成績",
-          "weight": "bold",
-          "size": "sm",
-          "color": "#32467F"
-        },
-        {
-          "type": "box",
-          "layout": "vertical",
-          "margin": "lg",
-          "spacing": "sm",
-          "contents": [
-            {
-              "type": "box",
-              "layout": "baseline",
-              "spacing": "sm",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": "1位獲得数",
-                  "color": "#7C7C7C",
-                  "size": "sm",
-                  "flex": 5
-                },
-                {
-                  "type": "text",
-                  "text": "2",
-                  "wrap": true,
-                  "color": "#666666",
-                  "size": "sm",
-                  "flex": 1
-                }
-              ]
-            },
-            {
-              "type": "box",
-              "layout": "baseline",
-              "spacing": "sm",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": "最下位獲得数",
-                  "color": "#7C7C7C",
-                  "size": "sm",
-                  "flex": 5
-                },
-                {
-                  "type": "text",
-                  "text": "3",
-                  "wrap": true,
-                  "color": "#666666",
-                  "size": "sm",
-                  "flex": 1
-                }
-              ]
-            },
-            {
-              "type": "box",
-              "layout": "baseline",
-              "spacing": "sm",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": "チーム獲得ポイント",
-                  "color": "#7C7C7C",
-                  "size": "sm",
-                  "flex": 5
-                },
-                {
-                  "type": "text",
-                  "text": "5",
-                  "wrap": true,
-                  "color": "#666666",
-                  "size": "sm",
-                  "flex": 1
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "separator",
-          "margin": "lg",
-          "color": "#32467F"
-        }
-      ]
-    },
-    "footer": {
-      "type": "box",
-      "layout": "horizontal",
-      "spacing": "sm",
-      "contents": [
-        {
-          "type": "button",
-          "style": "link",
-          "height": "sm",
-          "action": {
-            "type": "uri",
-            "label": "REPORT",
-            "uri": "https://line.me/"
-          },
-          "color": "#FACC43"
-        },
-        {
-          "type": "button",
-          "action": {
-            "type": "uri",
-            "label": "DENSUKE",
-            "uri": "http://linecorp.com/"
-          },
-          "color": "#FACC43",
-          "height": "sm",
-          "style": "link"
-        }
-      ],
-      "flex": 0
-    },
-    "styles": {
-      "header": {
-        "separator": true,
-        "backgroundColor": "#fff2cc",
-        "separatorColor": "#000000"
-      },
-      "body": {
-        "backgroundColor": "#C4C4C4"
-      },
-      "footer": {
-        "backgroundColor": "#32467F"
-      }
-    }
-  }
+	"type": "carousel",
+	"contents": [
+		{
+			"type": "bubble",
+			"hero": {
+				"type": "image",
+				"url": "https://lh3.googleusercontent.com/d/12EoBJ8eAjnhUNqDWW6gxpx50W1gaPHdt",
+				"size": "full",
+				"aspectRatio": "2:1",
+				"aspectMode": "cover",
+				"action": {
+					"type": "uri",
+					"uri": "https://line.me/"
+				}
+			},
+			"body": {
+				"type": "box",
+				"layout": "vertical",
+				"contents": [
+					{
+						"type": "box",
+						"layout": "horizontal",
+						"contents": [
+							{
+								"type": "text",
+								"text": "名称未設定",
+								"weight": "bold",
+								"size": "lg",
+								"color": "#32467F"
+							},
+							{
+								"type": "image",
+								"url": "https://lh3.googleusercontent.com/d/1fAy83HzkttX06Vm-wt5oRPWlB-JOWcC0",
+								"size": "xxs",
+								"align": "end"
+							}
+						]
+					},
+					{
+						"type": "separator",
+						"margin": "lg",
+						"color": "#32467F"
+					},
+					{
+						"type": "box",
+						"layout": "vertical",
+						"margin": "lg",
+						"spacing": "sm",
+						"contents": [
+							{
+								"type": "box",
+								"layout": "baseline",
+								"spacing": "sm",
+								"contents": [
+									{
+										"type": "text",
+										"text": "試合参加数",
+										"color": "#7C7C7C",
+										"size": "sm",
+										"flex": 5
+									},
+									{
+										"type": "text",
+										"text": "--",
+										"wrap": true,
+										"color": "#666666",
+										"size": "sm",
+										"flex": 1
+									}
+								]
+							},
+							{
+								"type": "box",
+								"layout": "baseline",
+								"spacing": "sm",
+								"contents": [
+									{
+										"type": "text",
+										"text": "通算ゴール数",
+										"color": "#7C7C7C",
+										"size": "sm",
+										"flex": 5
+									},
+									{
+										"type": "text",
+										"text": "--",
+										"wrap": true,
+										"color": "#666666",
+										"size": "sm",
+										"flex": 1
+									}
+								]
+							},
+							{
+								"type": "box",
+								"layout": "baseline",
+								"spacing": "sm",
+								"contents": [
+									{
+										"type": "text",
+										"text": "通算アシスト数",
+										"color": "#7C7C7C",
+										"size": "sm",
+										"flex": 5
+									},
+									{
+										"type": "text",
+										"text": "--",
+										"wrap": true,
+										"color": "#666666",
+										"size": "sm",
+										"flex": 1
+									}
+								]
+							},
+							{
+								"type": "box",
+								"layout": "baseline",
+								"spacing": "sm",
+								"contents": [
+									{
+										"type": "text",
+										"text": "得点王ランキング",
+										"color": "#7C7C7C",
+										"size": "sm",
+										"flex": 5
+									},
+									{
+										"type": "text",
+										"text": "--",
+										"wrap": true,
+										"color": "#666666",
+										"size": "sm",
+										"flex": 1
+									}
+								]
+							},
+							{
+								"type": "box",
+								"layout": "baseline",
+								"spacing": "sm",
+								"contents": [
+									{
+										"type": "text",
+										"text": "アシスト王ランキング",
+										"color": "#7C7C7C",
+										"size": "sm",
+										"flex": 5
+									},
+									{
+										"type": "text",
+										"text": "--",
+										"wrap": true,
+										"color": "#666666",
+										"size": "sm",
+										"flex": 1
+									}
+								]
+							}
+						],
+						"paddingBottom": "lg"
+					},
+					{
+						"type": "text",
+						"text": "岡本カップ成績",
+						"weight": "bold",
+						"size": "sm",
+						"color": "#32467F"
+					},
+					{
+						"type": "box",
+						"layout": "vertical",
+						"margin": "lg",
+						"spacing": "sm",
+						"contents": [
+							{
+								"type": "box",
+								"layout": "baseline",
+								"spacing": "sm",
+								"contents": [
+									{
+										"type": "text",
+										"text": "1位獲得数",
+										"color": "#7C7C7C",
+										"size": "sm",
+										"flex": 5
+									},
+									{
+										"type": "text",
+										"text": "--",
+										"wrap": true,
+										"color": "#666666",
+										"size": "sm",
+										"flex": 1
+									}
+								]
+							},
+							{
+								"type": "box",
+								"layout": "baseline",
+								"spacing": "sm",
+								"contents": [
+									{
+										"type": "text",
+										"text": "最下位獲得数",
+										"color": "#7C7C7C",
+										"size": "sm",
+										"flex": 5
+									},
+									{
+										"type": "text",
+										"text": "--",
+										"wrap": true,
+										"color": "#666666",
+										"size": "sm",
+										"flex": 1
+									}
+								]
+							},
+							{
+								"type": "box",
+								"layout": "baseline",
+								"spacing": "sm",
+								"contents": [
+									{
+										"type": "text",
+										"text": "チーム獲得ポイント",
+										"color": "#7C7C7C",
+										"size": "sm",
+										"flex": 5
+									},
+									{
+										"type": "text",
+										"text": "--",
+										"wrap": true,
+										"color": "#666666",
+										"size": "sm",
+										"flex": 1
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			"styles": {
+				"header": {
+					"separator": true,
+					"backgroundColor": "#fff2cc",
+					"separatorColor": "#000000"
+				},
+				"body": {
+					"backgroundColor": "#C4C4C4"
+				}
+			}
+		},
+		{
+			"type": "bubble",
+			"hero": {
+				"type": "image",
+				"url": "https://lh3.googleusercontent.com/d/1sQmBAdd2n8xV8eFIAh5ruyLr3GcrGH_c",
+				"size": "full",
+				"aspectMode": "cover",
+				"aspectRatio": "3:2"
+			},
+			"body": {
+				"type": "box",
+				"layout": "vertical",
+				"contents": [
+					{
+						"type": "box",
+						"layout": "baseline",
+						"spacing": "sm",
+						"contents": [
+							{
+								"type": "text",
+								"text": "1位獲得数",
+								"flex": 5
+							},
+							{
+								"type": "text",
+								"text": "一位",
+								"wrap": true,
+								"flex": 1
+							},
+							{
+								"type": "text",
+								"text": "3点",
+								"flex": 1
+							}
+						]
+					}
+				]
+			},
+			"styles": {
+				"header": {
+					"separator": false,
+					"backgroundColor": "#95D2B3"
+				}
+			}
+		},
+		{
+			"type": "bubble",
+			"hero": {
+				"type": "image",
+				"url": "https://lh3.googleusercontent.com/d/1uPzOgLJCrSINw7Iu6SnL8bgnNYUuXM2i",
+				"size": "full",
+				"aspectMode": "cover",
+				"aspectRatio": "3:2"
+			},
+			"body": {
+				"type": "box",
+				"layout": "vertical",
+				"contents": [
+					{
+						"type": "box",
+						"layout": "baseline",
+						"spacing": "sm",
+						"contents": [
+							{
+								"type": "text",
+								"text": "名前",
+								"flex": 4
+							},
+							{
+								"type": "text",
+								"text": "1位",
+								"wrap": true,
+								"flex": 1
+							},
+							{
+								"type": "text",
+								"text": "3点",
+								"flex": 1
+							}
+						]
+					}
+				]
+			},
+			"styles": {
+				"header": {
+					"separator": false,
+					"backgroundColor": "#95D2B3"
+				}
+			}
+		}
+	]
+}
