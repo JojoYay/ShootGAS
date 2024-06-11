@@ -134,6 +134,7 @@ export class RequestExecuter {
       jsonMessage.contents[0].body.contents[2].contents[2].contents[1].text = String(resultRow[6]); //通算アシスト数
       jsonMessage.contents[0].body.contents[2].contents[3].contents[1].text = String(resultRow[11]); //得点王ランキング
       jsonMessage.contents[0].body.contents[2].contents[4].contents[1].text = String(resultRow[12]); //アシスト王ランキング
+      jsonMessage.contents[0].body.contents[2].contents[5].contents[1].text = String(resultRow[13]); //岡本カップランキング
 
       jsonMessage.contents[0].body.contents[4].contents[0].contents[1].text = String(resultRow[9]); //１位獲得数
       jsonMessage.contents[0].body.contents[4].contents[1].contents[1].text = String(resultRow[10]); //最下位獲得数
