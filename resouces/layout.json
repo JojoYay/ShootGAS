@@ -5,10 +5,10 @@
 			"type": "bubble",
 			"hero": {
 				"type": "image",
-				"url": "https://lh3.googleusercontent.com/d/12EoBJ8eAjnhUNqDWW6gxpx50W1gaPHdt",
+				"url": "https://lh3.googleusercontent.com/d/1x23Slq1HkHjfl4zochEydxwH3iAVx-6e",
 				"size": "full",
-				"aspectRatio": "2:1",
 				"aspectMode": "cover",
+				"aspectRatio": "3:2",
 				"action": {
 					"type": "uri",
 					"uri": "https://line.me/"
@@ -28,12 +28,6 @@
 								"weight": "bold",
 								"size": "lg",
 								"color": "#32467F"
-							},
-							{
-								"type": "image",
-								"url": "https://lh3.googleusercontent.com/d/1fAy83HzkttX06Vm-wt5oRPWlB-JOWcC0",
-								"size": "xxs",
-								"align": "end"
 							}
 						]
 					},
@@ -56,7 +50,6 @@
 									{
 										"type": "text",
 										"text": "試合参加数",
-										"color": "#7C7C7C",
 										"size": "sm",
 										"flex": 5
 									},
@@ -64,7 +57,6 @@
 										"type": "text",
 										"text": "--",
 										"wrap": true,
-										"color": "#666666",
 										"size": "sm",
 										"flex": 1
 									}
@@ -78,7 +70,6 @@
 									{
 										"type": "text",
 										"text": "通算ゴール数",
-										"color": "#7C7C7C",
 										"size": "sm",
 										"flex": 5
 									},
@@ -86,7 +77,6 @@
 										"type": "text",
 										"text": "--",
 										"wrap": true,
-										"color": "#666666",
 										"size": "sm",
 										"flex": 1
 									}
@@ -100,7 +90,6 @@
 									{
 										"type": "text",
 										"text": "通算アシスト数",
-										"color": "#7C7C7C",
 										"size": "sm",
 										"flex": 5
 									},
@@ -108,7 +97,6 @@
 										"type": "text",
 										"text": "--",
 										"wrap": true,
-										"color": "#666666",
 										"size": "sm",
 										"flex": 1
 									}
@@ -122,7 +110,6 @@
 									{
 										"type": "text",
 										"text": "得点王ランキング",
-										"color": "#7C7C7C",
 										"size": "sm",
 										"flex": 5
 									},
@@ -130,7 +117,6 @@
 										"type": "text",
 										"text": "--",
 										"wrap": true,
-										"color": "#666666",
 										"size": "sm",
 										"flex": 1
 									}
@@ -144,7 +130,6 @@
 									{
 										"type": "text",
 										"text": "アシスト王ランキング",
-										"color": "#7C7C7C",
 										"size": "sm",
 										"flex": 5
 									},
@@ -152,7 +137,6 @@
 										"type": "text",
 										"text": "--",
 										"wrap": true,
-										"color": "#666666",
 										"size": "sm",
 										"flex": 1
 									}
@@ -182,7 +166,6 @@
 									{
 										"type": "text",
 										"text": "1位獲得数",
-										"color": "#7C7C7C",
 										"size": "sm",
 										"flex": 5
 									},
@@ -190,7 +173,6 @@
 										"type": "text",
 										"text": "--",
 										"wrap": true,
-										"color": "#666666",
 										"size": "sm",
 										"flex": 1
 									}
@@ -204,7 +186,6 @@
 									{
 										"type": "text",
 										"text": "最下位獲得数",
-										"color": "#7C7C7C",
 										"size": "sm",
 										"flex": 5
 									},
@@ -212,7 +193,6 @@
 										"type": "text",
 										"text": "--",
 										"wrap": true,
-										"color": "#666666",
 										"size": "sm",
 										"flex": 1
 									}
@@ -226,7 +206,6 @@
 									{
 										"type": "text",
 										"text": "チーム獲得ポイント",
-										"color": "#7C7C7C",
 										"size": "sm",
 										"flex": 5
 									},
@@ -234,7 +213,6 @@
 										"type": "text",
 										"text": "--",
 										"wrap": true,
-										"color": "#666666",
 										"size": "sm",
 										"flex": 1
 									}
@@ -249,9 +227,6 @@
 					"separator": true,
 					"backgroundColor": "#fff2cc",
 					"separatorColor": "#000000"
-				},
-				"body": {
-					"backgroundColor": "#C4C4C4"
 				}
 			}
 		},
@@ -259,7 +234,7 @@
 			"type": "bubble",
 			"hero": {
 				"type": "image",
-				"url": "https://lh3.googleusercontent.com/d/1sQmBAdd2n8xV8eFIAh5ruyLr3GcrGH_c",
+				"url": "https://lh3.googleusercontent.com/d/1JR6CHwyqJ7rZ51JEUU7ASFI-8b-jcp5k",
 				"size": "full",
 				"aspectMode": "cover",
 				"aspectRatio": "3:2"
@@ -267,31 +242,7 @@
 			"body": {
 				"type": "box",
 				"layout": "vertical",
-				"contents": [
-					{
-						"type": "box",
-						"layout": "baseline",
-						"spacing": "sm",
-						"contents": [
-							{
-								"type": "text",
-								"text": "1位獲得数",
-								"flex": 5
-							},
-							{
-								"type": "text",
-								"text": "一位",
-								"wrap": true,
-								"flex": 1
-							},
-							{
-								"type": "text",
-								"text": "3点",
-								"flex": 1
-							}
-						]
-					}
-				]
+				"contents": []
 			},
 			"styles": {
 				"header": {
@@ -304,7 +255,7 @@
 			"type": "bubble",
 			"hero": {
 				"type": "image",
-				"url": "https://lh3.googleusercontent.com/d/1uPzOgLJCrSINw7Iu6SnL8bgnNYUuXM2i",
+				"url": "https://lh3.googleusercontent.com/d/1IbOQUC9KE0u3WiT9K2L5sPRInD3Q8hxI",
 				"size": "full",
 				"aspectMode": "cover",
 				"aspectRatio": "3:2"
@@ -312,31 +263,28 @@
 			"body": {
 				"type": "box",
 				"layout": "vertical",
-				"contents": [
-					{
-						"type": "box",
-						"layout": "baseline",
-						"spacing": "sm",
-						"contents": [
-							{
-								"type": "text",
-								"text": "名前",
-								"flex": 4
-							},
-							{
-								"type": "text",
-								"text": "1位",
-								"wrap": true,
-								"flex": 1
-							},
-							{
-								"type": "text",
-								"text": "3点",
-								"flex": 1
-							}
-						]
-					}
-				]
+				"contents": []
+			},
+			"styles": {
+				"header": {
+					"separator": false,
+					"backgroundColor": "#95D2B3"
+				}
+			}
+		},
+		{
+			"type": "bubble",
+			"hero": {
+				"type": "image",
+				"url": "https://lh3.googleusercontent.com/d/10ZeDujSqWSvNaq3ikOzXPISrdB_FvLWY",
+				"size": "full",
+				"aspectMode": "cover",
+				"aspectRatio": "3:2"
+			},
+			"body": {
+				"type": "box",
+				"layout": "vertical",
+				"contents": []
 			},
 			"styles": {
 				"header": {

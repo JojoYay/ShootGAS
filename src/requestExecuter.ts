@@ -138,7 +138,7 @@ export class RequestExecuter {
       jsonMessage.contents[0].body.contents[4].contents[0].contents[1].text = String(resultRow[9]); //１位獲得数
       jsonMessage.contents[0].body.contents[4].contents[1].contents[1].text = String(resultRow[10]); //最下位獲得数
       jsonMessage.contents[0].body.contents[4].contents[2].contents[1].text = String(resultRow[8]); //チームポイント獲得数
-      if (resultRow[13] === 1) {
+      if (resultRow[14] === 1) {
         jsonMessage.contents[0].body.contents[0].contents[1] = {};
         jsonMessage.contents[0].body.contents[0].contents[1].type = 'image';
         jsonMessage.contents[0].body.contents[0].contents[1].url = 'https://lh3.googleusercontent.com/d/1fAy83HzkttX06Vm-wt5oRPWlB-JOWcC0';
@@ -208,7 +208,7 @@ export class RequestExecuter {
               },
             ],
           });
-        } else if (ranking[2] === '3位') {
+        } else if (ranking[1] === '3位') {
           jsonMessage.contents[1].body.contents.push({
             type: 'box',
             layout: 'baseline',
@@ -258,6 +258,7 @@ export class RequestExecuter {
                 type: 'text',
                 text: ranking[1],
                 wrap: true,
+
                 flex: 1,
               },
               {
@@ -300,7 +301,7 @@ export class RequestExecuter {
               },
             ],
           });
-        } else if (ranking[2] === '3位') {
+        } else if (ranking[1] === '3位') {
           jsonMessage.contents[2].body.contents.push({
             type: 'box',
             layout: 'baseline',
@@ -324,6 +325,99 @@ export class RequestExecuter {
               {
                 type: 'text',
                 text: ranking[2] + '点',
+                flex: 1,
+              },
+            ],
+          });
+        }
+      }
+    }
+
+    const oRankingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.ORankingSheet;
+    const oRankValues = oRankingSheet.getDataRange().getValues();
+    for (const ranking of oRankValues) {
+      if (ranking[0] !== '' && ranking[0] !== '伝助名称' && ranking[2] > 0) {
+        if (ranking[1] === '1位') {
+          jsonMessage.contents[3].body.contents.push({
+            type: 'box',
+            layout: 'baseline',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'icon',
+                url: 'https://lh3.googleusercontent.com/d/1ishdfKxuj1fuz7kU6HOZ0NXh7jrZAr0H',
+              },
+              {
+                type: 'text',
+                text: ranking[1],
+                wrap: true,
+
+                flex: 1,
+              },
+              {
+                type: 'text',
+                text: ranking[0],
+                flex: 4,
+              },
+              {
+                type: 'text',
+                text: ranking[2] + 'pt',
+                flex: 1,
+              },
+            ],
+          });
+        } else if (ranking[1] === '2位') {
+          jsonMessage.contents[3].body.contents.push({
+            type: 'box',
+            layout: 'baseline',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'icon',
+                url: 'https://lh3.googleusercontent.com/d/1KKI0m8X3iR6nk1KC0eLbMHvY3QgWxUjz',
+              },
+              {
+                type: 'text',
+                text: ranking[1],
+                wrap: true,
+                flex: 1,
+              },
+              {
+                type: 'text',
+                text: ranking[0],
+                flex: 4,
+              },
+              {
+                type: 'text',
+                text: ranking[2] + 'pt',
+                flex: 1,
+              },
+            ],
+          });
+        } else if (ranking[1] === '3位') {
+          jsonMessage.contents[3].body.contents.push({
+            type: 'box',
+            layout: 'baseline',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'icon',
+                url: 'https://lh3.googleusercontent.com/d/1iqWrPdjUDe66MguqAjAiR08pYEAFL-u4',
+              },
+              {
+                type: 'text',
+                text: ranking[1],
+                wrap: true,
+                flex: 1,
+              },
+              {
+                type: 'text',
+                text: ranking[0],
+                flex: 4,
+              },
+              {
+                type: 'text',
+                text: ranking[2] + 'pt',
                 flex: 1,
               },
             ],

@@ -17,6 +17,7 @@ export class GasProps {
   private PERSONAL_TOTAL_SHEET_NAME: string = 'Total';
   private G_RANKING_SHEET_NAME: string = '得点王ランキング';
   private A_RANKING_SHEET_NAME: string = 'アシスト王ランキング';
+  private O_RANKING_SHEET_NAME: string = '岡本カップランキング';
 
   public get settingSheet(): GoogleAppsScript.Spreadsheet.Sheet {
     const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
@@ -45,6 +46,15 @@ export class GasProps {
     return aRanking;
   }
 
+  public get ORankingSheet(): GoogleAppsScript.Spreadsheet.Sheet {
+    const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+    const oRanking: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName(this.O_RANKING_SHEET_NAME);
+    if (!oRanking) {
+      throw new Error('oRankingSheet was not found.');
+    }
+    return oRanking;
+  }
+
   public get cashBookSheet(): GoogleAppsScript.Spreadsheet.Sheet {
     const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
     const cashBook: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName(this.CASH_BOOK_SHEET_NAME);
@@ -63,7 +73,7 @@ export class GasProps {
     return cashBook;
   }
 
-  public get eventResultheet(): GoogleAppsScript.Spreadsheet.Sheet {
+  public get eventResultSheet(): GoogleAppsScript.Spreadsheet.Sheet {
     const eventResultsSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
     const eventData: GoogleAppsScript.Spreadsheet.Sheet | null = eventResultsSS.getSheetByName(this.EVENT_DATA_SHEET_NAME);
     if (!eventData) {

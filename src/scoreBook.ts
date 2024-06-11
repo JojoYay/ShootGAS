@@ -7,27 +7,47 @@ import { GasUtil } from './gasUtil';
 export enum Title {
   TOKUTEN = '得点王ランキング',
   ASSIST = 'アシスト王ランキング',
-  OKAMOTO = '岡本カップ',
+  OKAMOTO = '岡本カップランキング',
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function testaaaaa() {
+function testaaaa() {
   const scoreBook: ScoreBook = new ScoreBook();
-
-  // const densukeUtil = new DensukeUtil();
-  // const $ = densukeUtil.getDensukeCheerio();
-  // const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
-  // const members = densukeUtil.extractMembers($);
-  // const attendees = densukeUtil.extractAttendees($, ScriptProps.instance.ROWNUM, '○', members);
-
-  // scoreBook.generateScoreBook(actDate, attendees, Title.TOKUTEN);
-  // scoreBook.generateScoreBook(actDate, attendees, Title.ASSIST);
-
   scoreBook.makeEventFormat();
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function calcAllResult() {
+  const scoreBook: ScoreBook = new ScoreBook();
+  const reportSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+  // const reportSheets: GoogleAppsScript.Spreadsheet.Sheet[] = reportSS.getSheets();
+  const eventSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.eventResultSheet;
+  const eventSummaryVal = eventSheet.getDataRange().getValues();
+  for (let i = eventSummaryVal.length - 1; i >= 1; i--) {
+    const actDate: string = eventSummaryVal[i][1];
+    const reportSheet: GoogleAppsScript.Spreadsheet.Sheet | null = reportSS.getSheetByName(actDate);
+    if (reportSheet) {
+      console.log(actDate);
+      const attendees = scoreBook.getAttendeesFromRecord(reportSheet);
+      scoreBook.generateOkamotoBook(actDate, attendees);
+      scoreBook.generateScoreBook(actDate, attendees, Title.TOKUTEN);
+      scoreBook.generateScoreBook(actDate, attendees, Title.ASSIST);
+    }
+  }
+  // scoreBook.makeEventFormat();
   scoreBook.aggregateScore();
 }
 
 export class ScoreBook {
+  public getAttendeesFromRecord(report: GoogleAppsScript.Spreadsheet.Sheet): string[] {
+    const result: string[] = [];
+    const repoVals = report.getDataRange().getValues();
+    for (let i = 9; i < repoVals.length; i++) {
+      result.push(repoVals[i][0]);
+    }
+    return result;
+  }
+
   public aggregateScore(): void {
     const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
     const eventDetails: GoogleAppsScript.Spreadsheet.Sheet[] = eventSS.getSheets();
@@ -174,13 +194,30 @@ export class ScoreBook {
         prevScore = currentScore;
       }
 
+      rank = 1;
+      prevScore = null;
+      prevRank = 1;
+      totalResult.getRange(2, 1, lastRow, lastCol).sort({ column: 8, ascending: false });
+      rangeVals = totalResult.getDataRange().getValues();
+      for (let i = 1; i < rangeVals.length; i++) {
+        const currentScore = rangeVals[i][5];
+        if (currentScore !== prevScore) {
+          prevRank = rank;
+        }
+        totalResult.getRange(i + 1, 14).setValue(prevRank + '位');
+        if (currentScore !== prevScore) {
+          rank++;
+        }
+        prevScore = currentScore;
+      }
+
       totalResult.getRange(2, 1, lastRow, lastCol).sort({ column: 7, ascending: false });
       rangeVals = totalResult.getDataRange().getValues();
       rank = 1;
       prevScore = null;
       prevRank = 1;
 
-      const eventData: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.eventResultheet;
+      const eventData: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.eventResultSheet;
       const mipNames: string[] = this.checkMip(eventData.getDataRange().getValues());
 
       for (let i = 1; i < rangeVals.length; i++) {
@@ -197,7 +234,7 @@ export class ScoreBook {
         const currentGranking = rangeVals[i][11];
         const currentAranking = rangeVals[i][12];
         if (currentGranking === '1位' || currentAranking === '1位' || mipNames.includes(currentName)) {
-          totalResult.getRange(i + 1, 14).setValue(1);
+          totalResult.getRange(i + 1, 15).setValue(1);
         }
       }
     }
@@ -277,7 +314,7 @@ export class ScoreBook {
   }
 
   private updateEventSheet(actDate: string, attendees: string[]): void {
-    const eventData: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.eventResultheet;
+    const eventData: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.eventResultSheet;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rangeValues: any[][] = eventData.getDataRange().getValues();
     const now: Date = new Date();
@@ -332,6 +369,100 @@ export class ScoreBook {
     }
   }
 
+  public generateOkamotoBook(actDate: string, attendees: string[]) {
+    const reportSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+    let scoreSheet: GoogleAppsScript.Spreadsheet.Sheet | null = reportSS.getSheetByName(Title.OKAMOTO);
+    if (!scoreSheet) {
+      scoreSheet = reportSS.insertSheet(Title.OKAMOTO);
+      // scoreSheet.appendRow(['伝助名称', 'line名称', '合計得点', actDate]);
+      scoreSheet.appendRow(['伝助名称', '順位', '合計ポイント']);
+      scoreSheet.insertRowBefore(1);
+    }
+    if (!this.isActDateExists(actDate, scoreSheet)) {
+      scoreSheet.insertColumnBefore(4);
+      scoreSheet.getRange('D2').setValue(actDate);
+    }
+    this.addAttendee(scoreSheet, attendees, true);
+    const scoreValues = scoreSheet.getDataRange().getValues();
+    const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
+    const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = this.getEventDetailSheet(eventSS, actDate); //ちょっとこのメソッドは危ない（順序によっては新規で作ってる）
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const detailValues: any[][] = eventDetail.getDataRange().getValues(); //こっちが入力したシート
+    const eventSummary: GoogleAppsScript.Spreadsheet.Sheet = this.getEventDataSheet(eventSS.getSheets());
+    const eventRow = eventSummary
+      .getDataRange()
+      .getValues()
+      .find(item => item[1] === actDate);
+    if (!eventRow) {
+      throw new Error(actDate + ' event is not found in EventData Sheet');
+    }
+    const resultPoints = [];
+    for (let i = 7; i < 13; i++) {
+      if (eventRow[i]) {
+        resultPoints.push(eventRow[i]);
+      } else {
+        resultPoints.push(0);
+      }
+    }
+    let index = 3;
+    const lastCol = scoreSheet.getLastColumn();
+    for (const score of scoreValues) {
+      if (score[0] === '伝助名称' || score[0] === '') {
+        continue;
+      }
+      const resultRow = detailValues.find(item => !!item[0] && item[0] === score[0]); //無い場合もある
+      console.log(resultRow);
+      if (resultRow) {
+        let point: number = 0;
+        const team: string = resultRow[1];
+        if (team === 'チーム1') {
+          point = resultPoints[0];
+        } else if (team === 'チーム2') {
+          point = resultPoints[1];
+        } else if (team === 'チーム3') {
+          point = resultPoints[2];
+          ('');
+        } else if (team === 'チーム4') {
+          point = resultPoints[3];
+        } else if (team === 'チーム5') {
+          point = resultPoints[4];
+          ('');
+        } else if (team === 'チーム6') {
+          point = resultPoints[5];
+        }
+        scoreSheet.getRange(index, 4).setValue(point);
+      }
+      const range = scoreSheet.getRange(index, 4, 1, lastCol - 3);
+      const formula = `=SUM(${range.getA1Notation()})`;
+      scoreSheet.getRange(index, 3).setFormula(formula);
+
+      index++;
+    }
+    const finalRow = scoreSheet.getLastRow();
+    const finalCol = scoreSheet.getLastColumn();
+    scoreSheet.getRange(2, 1, finalRow - 1, finalCol).setBorder(true, true, true, true, true, true);
+    scoreSheet.getRange(3, 1, finalRow - 1, finalCol).sort({ column: 3, ascending: false });
+    scoreSheet.getRange(2, 1, 1, finalCol).setBackground('#fff2cc');
+    scoreSheet.activate();
+    reportSS.moveActiveSheet(1);
+
+    let rank = 1;
+    let prevScore = null;
+    let prevRank = 1;
+    const rangeVals = scoreSheet.getDataRange().getValues();
+    for (let i = 2; i < rangeVals.length; i++) {
+      const currentScore = rangeVals[i][2];
+      if (currentScore !== prevScore) {
+        prevRank = rank;
+      }
+      scoreSheet.getRange(i + 1, 2).setValue(prevRank + '位');
+      if (currentScore !== prevScore) {
+        rank++;
+      }
+      prevScore = currentScore;
+    }
+  }
+
   public generateScoreBook(actDate: string, attendees: string[], title: Title): void {
     const reportSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
     // const goalCount: string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
@@ -374,7 +505,7 @@ export class ScoreBook {
             scoreSheet.getRange(index, 4).setValue(eventRow[2]);
           }
         }
-        const range = scoreSheet.getRange(index, 4, 1, lastCol - 2);
+        const range = scoreSheet.getRange(index, 4, 1, lastCol - 3);
         const formula = `=SUM(${range.getA1Notation()})`;
         scoreSheet.getRange(index, 3).setFormula(formula);
       }
