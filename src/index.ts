@@ -8,37 +8,37 @@ const gasUtil: GasUtil = new GasUtil();
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.Content.TextOutput {
-  return ContentService.createTextOutput('Hello World');
+    return ContentService.createTextOutput('Hello World');
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Content.TextOutput {
-  const requestExecuter: RequestExecuter = new RequestExecuter();
-  const postEventHander: PostEventHandler = new PostEventHandler(e);
-  for (const item of COMMAND_MAP) {
-    if (item.condition(postEventHander)) {
-      executeMethod(requestExecuter, item.func, postEventHander);
+    const requestExecuter: RequestExecuter = new RequestExecuter();
+    const postEventHander: PostEventHandler = new PostEventHandler(e);
+    for (const item of COMMAND_MAP) {
+        if (item.condition(postEventHander)) {
+            executeMethod(requestExecuter, item.func, postEventHander);
+        }
     }
-  }
-  if (postEventHander.isFlex) {
-    lineUtil.sendFlexReply(postEventHander.replyToken, postEventHander.messageJson);
-  } else {
-    lineUtil.sendLineReply(postEventHander.replyToken, postEventHander.resultMessage, postEventHander.resultImage);
-  }
-  if (postEventHander.paynowOwnerMsg) {
-    lineUtil.sendLineMessage(gasUtil.getLineUserId(gasUtil.getDensukeName(gasUtil.getPaynowOwner())), postEventHander.paynowOwnerMsg);
-  }
-  return ContentService.createTextOutput(JSON.stringify({ content: 'post ok' })).setMimeType(ContentService.MimeType.JSON);
+    if (postEventHander.isFlex) {
+        lineUtil.sendFlexReply(postEventHander.replyToken, postEventHander.messageJson);
+    } else {
+        lineUtil.sendLineReply(postEventHander.replyToken, postEventHander.resultMessage, postEventHander.resultImage);
+    }
+    if (postEventHander.paynowOwnerMsg) {
+        lineUtil.sendLineMessage(gasUtil.getLineUserId(gasUtil.getDensukeName(gasUtil.getPaynowOwner())), postEventHander.paynowOwnerMsg);
+    }
+    return ContentService.createTextOutput(JSON.stringify({ content: 'post ok' })).setMimeType(ContentService.MimeType.JSON);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function executeMethod(obj: any, methodName: string, args: any) {
-  if (typeof obj[methodName] === 'function') {
-    return obj[methodName](args);
-  } else {
-    //こいつは基本的にCOMMAND_MAPに指定したメソッド名がRequestExecuterに存在する場合は発生しない（ので無視してよい）
-    throw new Error(`Method ${methodName} does not exist on the object ${obj}.`);
-  }
+    if (typeof obj[methodName] === 'function') {
+        return obj[methodName](args);
+    } else {
+        //こいつは基本的にCOMMAND_MAPに指定したメソッド名がRequestExecuterに存在する場合は発生しない（ので無視してよい）
+        throw new Error(`Method ${methodName} does not exist on the object ${obj}.`);
+    }
 }
 
 // function errorMessage(postEventHander: PostEventHandler): void {

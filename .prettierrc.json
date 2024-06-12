@@ -4,5 +4,5 @@
   "arrowParens": "avoid",
   "quoteProps": "consistent",
   "printWidth": 150,
-  "tabWidth": 2
+  "tabWidth": 4
 }

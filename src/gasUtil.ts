@@ -4,205 +4,205 @@ import { ScriptProps } from './scriptProps';
 
 const lineUtil: LineUtil = new LineUtil();
 export class GasUtil {
-  public isKanji(userId: string): boolean {
-    return this.getKanjiIds().includes(userId);
-  }
-
-  private getKanjiIds(): string[] {
-    const kanjiIds: string[] = [];
-    const mappingSheet = GasProps.instance.mappingSheet;
-    const values = mappingSheet.getDataRange().getValues();
-    for (let i = values.length - 1; i >= 0; i--) {
-      if (values[i][3] === '幹事') {
-        kanjiIds.push(values[i][2]);
-      }
+    public isKanji(userId: string): boolean {
+        return this.getKanjiIds().includes(userId);
     }
-    return kanjiIds;
-  }
 
-  public getUnpaid(actDate: string): string[] {
-    const unpaid: string[] = [];
-    const repo = this.getReportSheet(actDate, false);
-    const values = repo.getDataRange().getValues();
-    for (let i = 9; i < values.length; i++) {
-      if (!values[i][2]) {
-        unpaid.push(values[i][0]);
-      }
-    }
-    return unpaid;
-  }
-
-  public getUnRegister(actDate: string): string[] {
-    const unregister: string[] = [];
-    const repo = this.getReportSheet(actDate, false);
-    const values = repo.getDataRange().getValues();
-    for (let i = 9; i < values.length; i++) {
-      if (!values[i][1]) {
-        unregister.push(values[i][0]);
-      }
-    }
-    return unregister;
-  }
-
-  public registerMapping(lineName: string, densukeName: string, userId: string): void {
-    const mappingSheet = GasProps.instance.mappingSheet;
-    const values = mappingSheet.getDataRange().getValues();
-    for (let i = values.length - 1; i >= 0; i--) {
-      if (values[i][0] === lineName) {
-        mappingSheet.deleteRow(i + 1);
-        break;
-      }
-    }
-    mappingSheet.appendRow([lineName, densukeName, userId]);
-  }
-
-  public uploadPayNowPic(densukeName: string, messageId: string, actDate: string): void {
-    const fileNm = actDate + '_' + densukeName;
-    // const folder = GasProps.instance.payNowFolder;
-    // const files = folder.getFilesByName(fileNm);
-    // if (files.hasNext()) {
-    //   const file = files.next();
-    //   file.setTrashed(true);
-    // }
-    lineUtil.getLineImage(messageId, fileNm);
-  }
-
-  public getReportSheet(actDate: string, isGenerate: boolean = false): GoogleAppsScript.Spreadsheet.Sheet {
-    const report: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
-    let reportSheet: GoogleAppsScript.Spreadsheet.Sheet | null = report.getSheetByName(actDate);
-    if (!reportSheet) {
-      if (isGenerate) {
-        reportSheet = report.insertSheet(actDate);
-        reportSheet.activate();
-        report.moveActiveSheet(1);
-      } else {
-        throw new Error('reportSheet was not found. actDate:' + actDate);
-      }
-    }
-    return reportSheet;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public getLineUserIdRangeValue(): any[][] {
-    const mappingSheet = GasProps.instance.mappingSheet;
-    return mappingSheet.getDataRange().getValues();
-  }
-
-  public getLineUserId(densukeName: string): string {
-    let userId = '';
-    const mappingSheet = GasProps.instance.mappingSheet;
-    const values = mappingSheet.getDataRange().getValues();
-    for (let i = values.length - 1; i >= 0; i--) {
-      if (values[i][1] === densukeName) {
-        userId = values[i][2];
-        break;
-      }
-    }
-    return userId;
-  }
-
-  public getLineName(densukeName: string) {
-    let lineName = null;
-    const mappingSheet = GasProps.instance.mappingSheet;
-    const values = mappingSheet.getDataRange().getValues();
-    for (let i = values.length - 1; i >= 0; i--) {
-      if (values[i][1] === densukeName) {
-        lineName = values[i][0];
-        break;
-      }
-    }
-    return lineName;
-  }
-
-  public getDensukeName(lineName: string): string {
-    let densukeName = null;
-    const mappingSheet = GasProps.instance.mappingSheet;
-    const values = mappingSheet.getDataRange().getValues();
-    for (let i = values.length - 1; i >= 0; i--) {
-      if (values[i][0] === lineName) {
-        densukeName = values[i][1];
-        break;
-      }
-    }
-    return densukeName;
-  }
-
-  public updateLineNameOfLatestReport(lineName: string, densukeName: string, actDate: string): void {
-    const repo = this.getReportSheet(actDate, false);
-    const values = repo.getDataRange().getValues();
-    for (let i = 0; i < values.length; i++) {
-      if (values[i][0] === densukeName) {
-        repo.getRange(i + 1, 2).setValue(lineName);
-        break;
-      }
-    }
-  }
-
-  public updatePaymentStatus(desunekeName: string, actDate: string): void {
-    const repo = this.getReportSheet(actDate, false);
-    const values = repo.getDataRange().getValues();
-    for (let i = values.length - 1; i >= 0; i--) {
-      if (values[i][0] === desunekeName) {
-        const val: GoogleAppsScript.Spreadsheet.RichTextValue | null = this.getPaymentUrl(desunekeName, actDate);
-        if (val) {
-          repo.getRange(i + 1, 3).setRichTextValue(val);
+    private getKanjiIds(): string[] {
+        const kanjiIds: string[] = [];
+        const mappingSheet = GasProps.instance.mappingSheet;
+        const values = mappingSheet.getDataRange().getValues();
+        for (let i = values.length - 1; i >= 0; i--) {
+            if (values[i][3] === '幹事') {
+                kanjiIds.push(values[i][2]);
+            }
         }
-        break;
-      }
+        return kanjiIds;
     }
-  }
 
-  public getPaymentUrl(densukeName: string, actDate: string): GoogleAppsScript.Spreadsheet.RichTextValue | null {
-    const payNowOwner = this.getPaynowOwner();
-    if (payNowOwner === densukeName) {
-      return SpreadsheetApp.newRichTextValue().setText('PayNow口座主').build();
+    public getUnpaid(actDate: string): string[] {
+        const unpaid: string[] = [];
+        const repo = this.getReportSheet(actDate, false);
+        const values = repo.getDataRange().getValues();
+        for (let i = 9; i < values.length; i++) {
+            if (!values[i][2]) {
+                unpaid.push(values[i][0]);
+            }
+        }
+        return unpaid;
     }
-    return this.getFileUrlInFolder(actDate, densukeName);
-  }
 
-  public getPaynowOwner(): string {
-    const settingSheet = GasProps.instance.settingSheet;
-    const payNowOwner = settingSheet.getRange('B6').getValue();
-    return payNowOwner;
-  }
+    public getUnRegister(actDate: string): string[] {
+        const unregister: string[] = [];
+        const repo = this.getReportSheet(actDate, false);
+        const values = repo.getDataRange().getValues();
+        for (let i = 9; i < values.length; i++) {
+            if (!values[i][1]) {
+                unregister.push(values[i][0]);
+            }
+        }
+        return unregister;
+    }
 
-  private getFileUrlInFolder(actDate: string, densukeName: string): GoogleAppsScript.Spreadsheet.RichTextValue | null {
-    const folder = GasProps.instance.payNowFolder;
-    const fileName = actDate + '_' + densukeName;
-    const files = folder.getFilesByName(fileName);
-    const urls: string[] = [];
-    if (!files.hasNext()) {
-      return null;
+    public registerMapping(lineName: string, densukeName: string, userId: string): void {
+        const mappingSheet = GasProps.instance.mappingSheet;
+        const values = mappingSheet.getDataRange().getValues();
+        for (let i = values.length - 1; i >= 0; i--) {
+            if (values[i][0] === lineName) {
+                mappingSheet.deleteRow(i + 1);
+                break;
+            }
+        }
+        mappingSheet.appendRow([lineName, densukeName, userId]);
     }
-    while (files.hasNext()) {
-      const file = files.next();
-      urls.push(file.getUrl());
-    }
-    console.log(urls);
-    const rtv = SpreadsheetApp.newRichTextValue().setText('');
-    if (urls.length > 0) {
-      rtv.setText(urls.join('\n'));
-      let totalChar = -1;
-      for (let i = 0; i < urls.length; i++) {
-        const start = totalChar + 1;
-        const end = start + urls[i].length;
-        totalChar = end;
-        rtv.setLinkUrl(start, end, urls[i]);
-      }
-    }
-    return rtv.build();
-  }
 
-  public archiveFiles(actDate: string): void {
-    const sourceFolder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
-    const destinationFolder: GoogleAppsScript.Drive.Folder = GasProps.instance.archiveFolder;
-    const files: GoogleAppsScript.Drive.FileIterator = sourceFolder.getFiles();
-    const prefix: string = actDate + '_';
-    while (files.hasNext()) {
-      const file: GoogleAppsScript.Drive.File = files.next();
-      if (!file.getName().startsWith(prefix)) {
-        file.moveTo(destinationFolder);
-      }
+    public uploadPayNowPic(densukeName: string, messageId: string, actDate: string): void {
+        const fileNm = actDate + '_' + densukeName;
+        // const folder = GasProps.instance.payNowFolder;
+        // const files = folder.getFilesByName(fileNm);
+        // if (files.hasNext()) {
+        //   const file = files.next();
+        //   file.setTrashed(true);
+        // }
+        lineUtil.getLineImage(messageId, fileNm);
     }
-  }
+
+    public getReportSheet(actDate: string, isGenerate: boolean = false): GoogleAppsScript.Spreadsheet.Sheet {
+        const report: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+        let reportSheet: GoogleAppsScript.Spreadsheet.Sheet | null = report.getSheetByName(actDate);
+        if (!reportSheet) {
+            if (isGenerate) {
+                reportSheet = report.insertSheet(actDate);
+                reportSheet.activate();
+                report.moveActiveSheet(1);
+            } else {
+                throw new Error('reportSheet was not found. actDate:' + actDate);
+            }
+        }
+        return reportSheet;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    public getLineUserIdRangeValue(): any[][] {
+        const mappingSheet = GasProps.instance.mappingSheet;
+        return mappingSheet.getDataRange().getValues();
+    }
+
+    public getLineUserId(densukeName: string): string {
+        let userId = '';
+        const mappingSheet = GasProps.instance.mappingSheet;
+        const values = mappingSheet.getDataRange().getValues();
+        for (let i = values.length - 1; i >= 0; i--) {
+            if (values[i][1] === densukeName) {
+                userId = values[i][2];
+                break;
+            }
+        }
+        return userId;
+    }
+
+    public getLineName(densukeName: string) {
+        let lineName = null;
+        const mappingSheet = GasProps.instance.mappingSheet;
+        const values = mappingSheet.getDataRange().getValues();
+        for (let i = values.length - 1; i >= 0; i--) {
+            if (values[i][1] === densukeName) {
+                lineName = values[i][0];
+                break;
+            }
+        }
+        return lineName;
+    }
+
+    public getDensukeName(lineName: string): string {
+        let densukeName = null;
+        const mappingSheet = GasProps.instance.mappingSheet;
+        const values = mappingSheet.getDataRange().getValues();
+        for (let i = values.length - 1; i >= 0; i--) {
+            if (values[i][0] === lineName) {
+                densukeName = values[i][1];
+                break;
+            }
+        }
+        return densukeName;
+    }
+
+    public updateLineNameOfLatestReport(lineName: string, densukeName: string, actDate: string): void {
+        const repo = this.getReportSheet(actDate, false);
+        const values = repo.getDataRange().getValues();
+        for (let i = 0; i < values.length; i++) {
+            if (values[i][0] === densukeName) {
+                repo.getRange(i + 1, 2).setValue(lineName);
+                break;
+            }
+        }
+    }
+
+    public updatePaymentStatus(desunekeName: string, actDate: string): void {
+        const repo = this.getReportSheet(actDate, false);
+        const values = repo.getDataRange().getValues();
+        for (let i = values.length - 1; i >= 0; i--) {
+            if (values[i][0] === desunekeName) {
+                const val: GoogleAppsScript.Spreadsheet.RichTextValue | null = this.getPaymentUrl(desunekeName, actDate);
+                if (val) {
+                    repo.getRange(i + 1, 3).setRichTextValue(val);
+                }
+                break;
+            }
+        }
+    }
+
+    public getPaymentUrl(densukeName: string, actDate: string): GoogleAppsScript.Spreadsheet.RichTextValue | null {
+        const payNowOwner = this.getPaynowOwner();
+        if (payNowOwner === densukeName) {
+            return SpreadsheetApp.newRichTextValue().setText('PayNow口座主').build();
+        }
+        return this.getFileUrlInFolder(actDate, densukeName);
+    }
+
+    public getPaynowOwner(): string {
+        const settingSheet = GasProps.instance.settingSheet;
+        const payNowOwner = settingSheet.getRange('B6').getValue();
+        return payNowOwner;
+    }
+
+    private getFileUrlInFolder(actDate: string, densukeName: string): GoogleAppsScript.Spreadsheet.RichTextValue | null {
+        const folder = GasProps.instance.payNowFolder;
+        const fileName = actDate + '_' + densukeName;
+        const files = folder.getFilesByName(fileName);
+        const urls: string[] = [];
+        if (!files.hasNext()) {
+            return null;
+        }
+        while (files.hasNext()) {
+            const file = files.next();
+            urls.push(file.getUrl());
+        }
+        console.log(urls);
+        const rtv = SpreadsheetApp.newRichTextValue().setText('');
+        if (urls.length > 0) {
+            rtv.setText(urls.join('\n'));
+            let totalChar = -1;
+            for (let i = 0; i < urls.length; i++) {
+                const start = totalChar + 1;
+                const end = start + urls[i].length;
+                totalChar = end;
+                rtv.setLinkUrl(start, end, urls[i]);
+            }
+        }
+        return rtv.build();
+    }
+
+    public archiveFiles(actDate: string): void {
+        const sourceFolder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
+        const destinationFolder: GoogleAppsScript.Drive.Folder = GasProps.instance.archiveFolder;
+        const files: GoogleAppsScript.Drive.FileIterator = sourceFolder.getFiles();
+        const prefix: string = actDate + '_';
+        while (files.hasNext()) {
+            const file: GoogleAppsScript.Drive.File = files.next();
+            if (!file.getName().startsWith(prefix)) {
+                file.moveTo(destinationFolder);
+            }
+        }
+    }
 }
