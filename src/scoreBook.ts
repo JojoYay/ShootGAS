@@ -17,6 +17,11 @@ function testaaaa() {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+function test1() {
+    return 'hello';
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function calcAllResult() {
     const scoreBook: ScoreBook = new ScoreBook();
     const reportSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
@@ -187,7 +192,8 @@ export class ScoreBook {
                 if (currentScore !== prevScore) {
                     prevRank = rank;
                 }
-                totalResult.getRange(i + 1, 12).setValue(prevRank + '位');
+                // totalResult.getRange(i + 1, 12).setValue(prevRank + '位');
+                totalResult.getRange(i + 1, 12).setValue(prevRank);
                 if (currentScore !== prevScore) {
                     rank++;
                 }
@@ -204,7 +210,8 @@ export class ScoreBook {
                 if (currentScore !== prevScore) {
                     prevRank = rank;
                 }
-                totalResult.getRange(i + 1, 14).setValue(prevRank + '位');
+                // totalResult.getRange(i + 1, 14).setValue(prevRank + '位');
+                totalResult.getRange(i + 1, 14).setValue(prevRank);
                 if (currentScore !== prevScore) {
                     rank++;
                 }
@@ -225,7 +232,8 @@ export class ScoreBook {
                 if (currentScore !== prevScore) {
                     prevRank = rank;
                 }
-                totalResult.getRange(i + 1, 13).setValue(prevRank + '位');
+                // totalResult.getRange(i + 1, 13).setValue(prevRank + '位');
+                totalResult.getRange(i + 1, 13).setValue(prevRank);
                 if (currentScore !== prevScore) {
                     rank++;
                 }
@@ -233,7 +241,8 @@ export class ScoreBook {
                 const currentName = rangeVals[i][1];
                 const currentGranking = rangeVals[i][11];
                 const currentAranking = rangeVals[i][12];
-                if (currentGranking === '1位' || currentAranking === '1位' || mipNames.includes(currentName)) {
+                // if (currentGranking === '1位' || currentAranking === '1位' || mipNames.includes(currentName)) {
+                if (currentGranking === 1 || currentAranking === 1 || mipNames.includes(currentName)) {
                     totalResult.getRange(i + 1, 15).setValue(1);
                 }
             }
@@ -297,7 +306,7 @@ export class ScoreBook {
         const teamNameVal = SpreadsheetApp.newDataValidation().requireValueInList(teamName).build();
         // const teamPoint: string[] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
         // const teamPointVal = SpreadsheetApp.newDataValidation().requireValueInList(teamPoint).build();
-        const goalCount: string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+        const goalCount: string[] = ['', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
         const goalCountVal = SpreadsheetApp.newDataValidation().requireValueInList(goalCount).build();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const allNewAttendees: any[][] = eventDetail.getDataRange().getValues();
@@ -375,12 +384,15 @@ export class ScoreBook {
         if (!scoreSheet) {
             scoreSheet = reportSS.insertSheet(Title.OKAMOTO);
             // scoreSheet.appendRow(['伝助名称', 'line名称', '合計得点', actDate]);
-            scoreSheet.appendRow(['伝助名称', '順位', '合計ポイント']);
+            scoreSheet.appendRow(['伝助名称', '順位', '前回順位', '合計ポイント']);
             scoreSheet.insertRowBefore(1);
         }
         if (!this.isActDateExists(actDate, scoreSheet)) {
-            scoreSheet.insertColumnBefore(4);
-            scoreSheet.getRange('D2').setValue(actDate);
+            scoreSheet.insertColumnBefore(5);
+            scoreSheet.getRange('E2').setValue(actDate);
+        }
+        if (scoreSheet.getLastColumn() > 5) {
+            scoreSheet.getRange(3, 2, scoreSheet.getLastRow() - 1, 1).copyTo(scoreSheet.getRange(3, 3, scoreSheet.getLastRow() - 1, 1));
         }
         this.addAttendee(scoreSheet, attendees, true);
         const scoreValues = scoreSheet.getDataRange().getValues();
@@ -430,18 +442,18 @@ export class ScoreBook {
                 } else if (team === 'チーム6') {
                     point = resultPoints[5];
                 }
-                scoreSheet.getRange(index, 4).setValue(point);
+                scoreSheet.getRange(index, 5).setValue(point);
             }
-            const range = scoreSheet.getRange(index, 4, 1, lastCol - 3);
+            const range = scoreSheet.getRange(index, 5, 1, lastCol - 4);
             const formula = `=SUM(${range.getA1Notation()})`;
-            scoreSheet.getRange(index, 3).setFormula(formula);
+            scoreSheet.getRange(index, 4).setFormula(formula);
 
             index++;
         }
         const finalRow = scoreSheet.getLastRow();
         const finalCol = scoreSheet.getLastColumn();
         scoreSheet.getRange(2, 1, finalRow - 1, finalCol).setBorder(true, true, true, true, true, true);
-        scoreSheet.getRange(3, 1, finalRow - 1, finalCol).sort({ column: 3, ascending: false });
+        scoreSheet.getRange(3, 1, finalRow - 1, finalCol).sort({ column: 4, ascending: false });
         scoreSheet.getRange(2, 1, 1, finalCol).setBackground('#fff2cc');
         scoreSheet.activate();
         reportSS.moveActiveSheet(1);
@@ -451,11 +463,12 @@ export class ScoreBook {
         let prevRank = 1;
         const rangeVals = scoreSheet.getDataRange().getValues();
         for (let i = 2; i < rangeVals.length; i++) {
-            const currentScore = rangeVals[i][2];
+            const currentScore = rangeVals[i][3];
             if (currentScore !== prevScore) {
                 prevRank = rank;
             }
-            scoreSheet.getRange(i + 1, 2).setValue(prevRank + '位');
+            // scoreSheet.getRange(i + 1, 2).setValue(prevRank + '位');
+            scoreSheet.getRange(i + 1, 2).setValue(prevRank);
             if (currentScore !== prevScore) {
                 rank++;
             }
@@ -471,12 +484,15 @@ export class ScoreBook {
         if (!scoreSheet) {
             scoreSheet = reportSS.insertSheet(title);
             // scoreSheet.appendRow(['伝助名称', 'line名称', '合計得点', actDate]);
-            scoreSheet.appendRow(['伝助名称', '順位', '合計得点']);
+            scoreSheet.appendRow(['伝助名称', '順位', '前回順位', '合計得点']);
             scoreSheet.insertRowBefore(1);
         }
         if (!this.isActDateExists(actDate, scoreSheet)) {
-            scoreSheet.insertColumnBefore(4);
-            scoreSheet.getRange('D2').setValue(actDate);
+            scoreSheet.insertColumnBefore(5);
+            scoreSheet.getRange('E2').setValue(actDate);
+        }
+        if (scoreSheet.getLastColumn() > 5) {
+            scoreSheet.getRange(3, 2, scoreSheet.getLastRow() - 1, 1).copyTo(scoreSheet.getRange(3, 3, scoreSheet.getLastRow() - 1, 1));
         }
         this.addAttendee(scoreSheet, attendees, true);
 
@@ -500,14 +516,14 @@ export class ScoreBook {
                 // console.log('resultRow[0]:' + eventRow[0]);
                 if (eventRow[0] === allRow[0]) {
                     if (title === Title.ASSIST) {
-                        scoreSheet.getRange(index, 4).setValue(eventRow[3]);
+                        scoreSheet.getRange(index, 5).setValue(eventRow[3]);
                     } else if (title === Title.TOKUTEN) {
-                        scoreSheet.getRange(index, 4).setValue(eventRow[2]);
+                        scoreSheet.getRange(index, 5).setValue(eventRow[2]);
                     }
                 }
-                const range = scoreSheet.getRange(index, 4, 1, lastCol - 3);
+                const range = scoreSheet.getRange(index, 5, 1, lastCol - 3);
                 const formula = `=SUM(${range.getA1Notation()})`;
-                scoreSheet.getRange(index, 3).setFormula(formula);
+                scoreSheet.getRange(index, 4).setFormula(formula);
             }
             index++;
         }
@@ -515,7 +531,7 @@ export class ScoreBook {
         const finalRow = scoreSheet.getLastRow();
         const finalCol = scoreSheet.getLastColumn();
         scoreSheet.getRange(2, 1, finalRow - 1, finalCol).setBorder(true, true, true, true, true, true);
-        scoreSheet.getRange(3, 1, finalRow - 1, finalCol).sort({ column: 3, ascending: false });
+        scoreSheet.getRange(3, 1, finalRow - 1, finalCol).sort({ column: 4, ascending: false });
         scoreSheet.getRange(2, 1, 1, finalCol).setBackground('#fff2cc');
         scoreSheet.activate();
         reportSS.moveActiveSheet(1);
@@ -525,11 +541,12 @@ export class ScoreBook {
         let prevRank = 1;
         const rangeVals = scoreSheet.getDataRange().getValues();
         for (let i = 2; i < rangeVals.length; i++) {
-            const currentScore = rangeVals[i][2];
+            const currentScore = rangeVals[i][3];
             if (currentScore !== prevScore) {
                 prevRank = rank;
             }
-            scoreSheet.getRange(i + 1, 2).setValue(prevRank + '位');
+            // scoreSheet.getRange(i + 1, 2).setValue(prevRank + '位');
+            scoreSheet.getRange(i + 1, 2).setValue(prevRank);
             if (currentScore !== prevScore) {
                 rank++;
             }
@@ -567,13 +584,13 @@ export class ScoreBook {
         const values = scoreSheet.getDataRange().getValues();
         // console.log(values);
         for (let i = values.length - 1; i >= 1; i--) {
-            if (values[i][1] === 0) {
+            if (values[i][3] === 0) {
                 scoreSheet.deleteRow(i + 1);
             }
         }
     }
 
     private isActDateExists(actDate: string, scoreSheet: GoogleAppsScript.Spreadsheet.Sheet): boolean {
-        return actDate === scoreSheet.getRange('D2').getValue();
+        return actDate === scoreSheet.getRange('E2').getValue();
     }
 }

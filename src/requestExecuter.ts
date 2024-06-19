@@ -29,9 +29,9 @@ export class RequestExecuter {
             flexMsg.contents.push(card);
             card.body.contents[0].url = this.getPicUrl(videoValues[i][2]);
             card.body.contents[2].text = videoValues[i][1];
-            card.body.contents[3].text = Utilities.formatDate(videoValues[i][0], 'SGT', 'yyyy/MM/dd');
+            card.body.contents[3].text = Utilities.formatDate(videoValues[i][0], 'GMT+0800', 'yyyy/MM/dd');
             card.body.action.uri = videoValues[i][2];
-            console.log(Utilities.formatDate(videoValues[i][0], 'SGT', 'yyyy/MM/dd'));
+            console.log(Utilities.formatDate(videoValues[i][0], 'GMT+0800', 'yyyy/MM/dd'));
         }
     }
 
@@ -147,7 +147,7 @@ export class RequestExecuter {
     }
 
     public myResult(postEventHander: PostEventHandler): void {
-        if (!postEventHander.userId) {
+        if (!postEventHander.userId && !gasUtil.getDensukeName(lineUtil.getLineDisplayName(postEventHander.userId))) {
             postEventHander.resultMessage = '初回登録が終わっていません。"登録"と入力し、初回登録を完了させてください。';
         }
         postEventHander.isFlex = true;
@@ -160,18 +160,27 @@ export class RequestExecuter {
     }
 
     private translatePlace(place: string, lang: string): string {
-        if (lang !== 'ja') {
-            if (place === '1位') {
-                return '1st';
-            } else if (place === '2位') {
-                return '2nd';
-            } else if (place === '3位') {
-                return '3rd';
-            } else {
-                return place.substring(0, place.length - 1) + 'th';
-            }
+        if (place === '1') {
+            return lang !== 'ja' ? '1st' : '1位';
+        } else if (place === '2') {
+            return lang !== 'ja' ? '2nd' : '2位';
+        } else if (place === '3') {
+            return lang !== 'ja' ? '3rd' : '3位';
+        } else {
+            return lang !== 'ja' ? place + 'th' : place + '位';
         }
-        return place;
+    }
+
+    private chooseMedal(place: number): string {
+        if (place === 1) {
+            return 'https://lh3.googleusercontent.com/d/1ishdfKxuj1fuz7kU6HOZ0NXh7jrZAr0H';
+        } else if (place === 2) {
+            return 'https://lh3.googleusercontent.com/d/1KKI0m8X3iR6nk1KC0eLbMHvY3QgWxUjz';
+        } else if (place === 3) {
+            return 'https://lh3.googleusercontent.com/d/1iqWrPdjUDe66MguqAjAiR08pYEAFL-u4';
+        } else {
+            return 'https://lh3.googleusercontent.com/d/1wMh5Ofoxq89EBIuijDhM-CG52kzUwP1g';
+        }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -217,288 +226,77 @@ export class RequestExecuter {
             }
         }
         //ランキング
-        const gRankingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.gRankingSheet;
-        const gRankValues = gRankingSheet.getDataRange().getValues();
-        // let index = 0;
         let ten: string = '点';
         if (lang !== 'ja') {
             ten = '';
         }
-        for (const ranking of gRankValues) {
-            if (ranking[0] !== '' && ranking[0] !== '伝助名称' && ranking[2] > 0) {
-                if (ranking[1] === '1位') {
-                    jsonMessage.contents[1].body.contents.push({
-                        type: 'box',
-                        layout: 'baseline',
-                        spacing: 'sm',
-                        contents: [
-                            {
-                                type: 'icon',
-                                url: 'https://lh3.googleusercontent.com/d/1ishdfKxuj1fuz7kU6HOZ0NXh7jrZAr0H',
-                            },
-                            {
-                                type: 'text',
-                                text: lang === 'ja' ? ranking[1] : '1st',
-                                wrap: true,
-                                flex: 1,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[0],
-                                flex: 4,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[2] + ten,
-                                flex: 1,
-                            },
-                        ],
-                    });
-                } else if (ranking[1] === '2位') {
-                    jsonMessage.contents[1].body.contents.push({
-                        type: 'box',
-                        layout: 'baseline',
-                        spacing: 'sm',
-                        contents: [
-                            {
-                                type: 'icon',
-                                url: 'https://lh3.googleusercontent.com/d/1KKI0m8X3iR6nk1KC0eLbMHvY3QgWxUjz',
-                            },
-                            {
-                                type: 'text',
-                                text: lang === 'ja' ? ranking[1] : '2nd',
-                                wrap: true,
-                                flex: 1,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[0],
-                                flex: 4,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[2] + ten,
-                                flex: 1,
-                            },
-                        ],
-                    });
-                } else if (ranking[1] === '3位') {
-                    jsonMessage.contents[1].body.contents.push({
-                        type: 'box',
-                        layout: 'baseline',
-                        spacing: 'sm',
-                        contents: [
-                            {
-                                type: 'icon',
-                                url: 'https://lh3.googleusercontent.com/d/1iqWrPdjUDe66MguqAjAiR08pYEAFL-u4',
-                            },
-                            {
-                                type: 'text',
-                                text: lang === 'ja' ? ranking[1] : '3rd',
-                                wrap: true,
-                                flex: 1,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[0],
-                                flex: 4,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[2] + ten,
-                                flex: 1,
-                            },
-                        ],
-                    });
-                }
-            }
-        }
+        const gRankingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.gRankingSheet;
+        const gRankValues = gRankingSheet.getDataRange().getValues();
+        this.writeRankingContents(gRankValues, jsonMessage, lang, ten, 1);
 
         const aRankingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.aRankingSheet;
         const aRankValues = aRankingSheet.getDataRange().getValues();
-        for (const ranking of aRankValues) {
-            if (ranking[0] !== '' && ranking[0] !== '伝助名称' && ranking[2] > 0) {
-                if (ranking[1] === '1位') {
-                    jsonMessage.contents[2].body.contents.push({
-                        type: 'box',
-                        layout: 'baseline',
-                        spacing: 'sm',
-                        contents: [
-                            {
-                                type: 'icon',
-                                url: 'https://lh3.googleusercontent.com/d/1ishdfKxuj1fuz7kU6HOZ0NXh7jrZAr0H',
-                            },
-                            {
-                                type: 'text',
-                                text: lang === 'ja' ? ranking[1] : '1st',
-                                wrap: true,
-
-                                flex: 1,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[0],
-                                flex: 4,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[2] + ten,
-                                flex: 1,
-                            },
-                        ],
-                    });
-                } else if (ranking[1] === '2位') {
-                    jsonMessage.contents[2].body.contents.push({
-                        type: 'box',
-                        layout: 'baseline',
-                        spacing: 'sm',
-                        contents: [
-                            {
-                                type: 'icon',
-                                url: 'https://lh3.googleusercontent.com/d/1KKI0m8X3iR6nk1KC0eLbMHvY3QgWxUjz',
-                            },
-                            {
-                                type: 'text',
-                                text: lang === 'ja' ? ranking[1] : '2nd',
-                                wrap: true,
-                                flex: 1,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[0],
-                                flex: 4,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[2] + ten,
-                                flex: 1,
-                            },
-                        ],
-                    });
-                } else if (ranking[1] === '3位') {
-                    jsonMessage.contents[2].body.contents.push({
-                        type: 'box',
-                        layout: 'baseline',
-                        spacing: 'sm',
-                        contents: [
-                            {
-                                type: 'icon',
-                                url: 'https://lh3.googleusercontent.com/d/1iqWrPdjUDe66MguqAjAiR08pYEAFL-u4',
-                            },
-                            {
-                                type: 'text',
-                                text: lang === 'ja' ? ranking[1] : '3rd',
-                                wrap: true,
-                                flex: 1,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[0],
-                                flex: 4,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[2] + ten,
-                                flex: 1,
-                            },
-                        ],
-                    });
-                }
-            }
-        }
+        this.writeRankingContents(aRankValues, jsonMessage, lang, ten, 2);
 
         const oRankingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.oRankingSheet;
         const oRankValues = oRankingSheet.getDataRange().getValues();
-        for (const ranking of oRankValues) {
-            if (ranking[0] !== '' && ranking[0] !== '伝助名称' && ranking[2] > 0) {
-                if (ranking[1] === '1位') {
-                    jsonMessage.contents[3].body.contents.push({
-                        type: 'box',
-                        layout: 'baseline',
-                        spacing: 'sm',
-                        contents: [
-                            {
-                                type: 'icon',
-                                url: 'https://lh3.googleusercontent.com/d/1ishdfKxuj1fuz7kU6HOZ0NXh7jrZAr0H',
-                            },
-                            {
-                                type: 'text',
-                                text: lang === 'ja' ? ranking[1] : '1st',
-                                wrap: true,
+        this.writeRankingContents(oRankValues, jsonMessage, lang, 'pt', 3);
+    }
 
-                                flex: 1,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[0],
-                                flex: 4,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[2] + 'pt',
-                                flex: 1,
-                            },
-                        ],
-                    });
-                } else if (ranking[1] === '2位') {
-                    jsonMessage.contents[3].body.contents.push({
-                        type: 'box',
-                        layout: 'baseline',
-                        spacing: 'sm',
-                        contents: [
-                            {
-                                type: 'icon',
-                                url: 'https://lh3.googleusercontent.com/d/1KKI0m8X3iR6nk1KC0eLbMHvY3QgWxUjz',
-                            },
-                            {
-                                type: 'text',
-                                text: lang === 'ja' ? ranking[1] : '2nd',
-                                wrap: true,
-                                flex: 1,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[0],
-                                flex: 4,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[2] + 'pt',
-                                flex: 1,
-                            },
-                        ],
-                    });
-                } else if (ranking[1] === '3位') {
-                    jsonMessage.contents[3].body.contents.push({
-                        type: 'box',
-                        layout: 'baseline',
-                        spacing: 'sm',
-                        contents: [
-                            {
-                                type: 'icon',
-                                url: 'https://lh3.googleusercontent.com/d/1iqWrPdjUDe66MguqAjAiR08pYEAFL-u4',
-                            },
-                            {
-                                type: 'text',
-                                text: lang === 'ja' ? ranking[1] : '3rd',
-                                wrap: true,
-                                flex: 1,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[0],
-                                flex: 4,
-                            },
-                            {
-                                type: 'text',
-                                text: ranking[2] + 'pt',
-                                flex: 1,
-                            },
-                        ],
-                    });
-                }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    private writeRankingContents(aRankValues: any[][], jsonMessage: any, lang: string, ten: string, contentsIndex: number) {
+        for (const ranking of aRankValues) {
+            if (ranking[0] !== '' && ranking[0] !== '伝助名称' && ranking[1] < 4 && ranking[3] > 0) {
+                // if (ranking[1] === '1') {
+                jsonMessage.contents[contentsIndex].body.contents.push({
+                    type: 'box',
+                    layout: 'baseline',
+                    spacing: 'sm',
+                    contents: [
+                        {
+                            type: 'icon',
+                            url: this.chooseMedal(ranking[1]),
+                        },
+                        {
+                            type: 'text',
+                            text: this.translatePlace(ranking[1], lang),
+                            wrap: true,
+
+                            flex: 1,
+                        },
+                        {
+                            type: 'text',
+                            text: ranking[0],
+                            flex: 4,
+                        },
+                        {
+                            type: 'text',
+                            text: ranking[3] + ten,
+                            flex: 1,
+                        },
+                        {
+                            type: 'icon',
+                            url: this.rankingArrow(ranking[1], ranking[2]),
+                            margin: 'none',
+                            offsetTop: '2px',
+                        },
+                    ],
+                });
             }
         }
+    }
+
+    private rankingArrow(place: number, past: number): string {
+        if (!past) {
+            return 'https://lh3.googleusercontent.com/d/1KsKJg9LNZOS0pMGq4Yqzv10ZfBGDsEKB';
+        } else if (place < past) {
+            return 'https://lh3.googleusercontent.com/d/1h8FcN6ESmMc4gKKGpRvi2x3Nk_ss9eIZ';
+        } else if (place > past) {
+            return 'https://lh3.googleusercontent.com/d/1fmHGmCjYTlmEoElnh-S441K3r0zmoCXt';
+        } else if (place === past) {
+            return 'https://lh3.googleusercontent.com/d/1KjbGAgb9Cid7Osoj7UZwY-V8fp5or5sa';
+        }
+        return '';
     }
 
     public aggregate(postEventHander: PostEventHandler): void {

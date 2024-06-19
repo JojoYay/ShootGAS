@@ -8,7 +8,10 @@ const gasUtil: GasUtil = new GasUtil();
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.Content.TextOutput {
-    return ContentService.createTextOutput('Hello World');
+    console.log(e);
+    const value: string = e.parameters['param'][0];
+    const reply = { result: value, number: 1553 };
+    return ContentService.createTextOutput(JSON.stringify(reply));
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -12,7 +12,7 @@
     "build": "npm run clean && npm run bundle && ncp appsscript.json dist/appsscript.json",
     "license": "license-check-and-add add -f license-config.json",
     "test": "jest test/ --passWithNoTests --detectOpenHandles",
-    "deploy":      "npm run lint && npm run test && npm run build && ncp .clasp-dev.json .clasp.json && clasp push -f && clasp deploy -i AKfycbzOv8KYnAsa2JCQ6KSDyF_fW8kIScH39IAyu3GNqm0kS1z9MuXlyv5Xj4Ry3xR-cfjzHg",
+    "deploy":      "npm run lint && npm run test && npm run build && ncp .clasp-dev.json .clasp.json && clasp push -f && clasp deploy -i AKfycbw7wL2okZJ8z9Vv7G4nQS3asz-pEmoRSJrNMKmI50p2ZsegfcyxWAUwxoVcAHiiYIQWZA",
     "deploy:prod": "npm run lint && npm run test && npm run build && ncp .clasp-prod.json .clasp.json && clasp push && clasp deploy -i AKfycbysS9XmULaZ9HtsLjWDYKrEuNZ7ws9xtK-Qmy3jbNfrCKYXU3upWYybefshFlX2ypfG"
   },
   "engines": {
