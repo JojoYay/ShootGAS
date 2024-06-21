@@ -60,7 +60,7 @@ export class RequestExecuter {
         const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
         const densukeNameNew = postEventHander.messageText.split('@@register@@')[1];
         if (members.includes(densukeNameNew)) {
-            if (this.hasMultipleOccurrences(members, densukeNameNew)) {
+            if (densukeUtil.hasMultipleOccurrences(members, densukeNameNew)) {
                 if (postEventHander.lang === 'ja') {
                     postEventHander.resultMessage =
                         '伝助上で"' + densukeNameNew + '"という名前が複数存在しています。重複のない名前に更新して再度登録して下さい。';
@@ -430,18 +430,5 @@ export class RequestExecuter {
         } finally {
             ScriptProps.endTest();
         }
-    }
-
-    private hasMultipleOccurrences(array: string[], searchString: string): boolean {
-        let count = 0;
-        for (const item of array) {
-            if (item === searchString) {
-                count++;
-            }
-            if (count >= 2) {
-                return true;
-            }
-        }
-        return false;
     }
 }

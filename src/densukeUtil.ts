@@ -231,6 +231,19 @@ export class DensukeUtil {
         return summary;
     }
 
+    public hasMultipleOccurrences(array: string[], searchString: string): boolean {
+        let count = 0;
+        for (const item of array) {
+            if (item === searchString) {
+                count++;
+            }
+            if (count >= 2) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // private archiveFiles(actDate: string): void {
     //   const folderProp = ScriptProps.instance.folderId;
     //   const archiveProp = ScriptProps.instance.archiveFolder;

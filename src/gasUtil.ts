@@ -114,6 +114,10 @@ export class GasUtil {
         return lineName;
     }
 
+    public isRegistered(userId: string): boolean {
+        return !!this.getDensukeName(lineUtil.getLineDisplayName(userId));
+    }
+
     public getDensukeName(lineName: string): string {
         let densukeName = null;
         const mappingSheet = GasProps.instance.mappingSheet;

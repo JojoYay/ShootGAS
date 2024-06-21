@@ -1,4 +1,6 @@
 import { GasUtil } from './gasUtil';
+import { GetEventHandler } from './getEventHandler';
+import { LiffApi } from './liffApi';
 import { LineUtil } from './lineUtil';
 import { COMMAND_MAP, PostEventHandler } from './postEventHandler';
 import { RequestExecuter } from './requestExecuter';
@@ -9,9 +11,9 @@ const gasUtil: GasUtil = new GasUtil();
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.Content.TextOutput {
     console.log(e);
-    const value: string = e.parameters['param'][0];
-    const reply = { result: value, number: 1553 };
-    return ContentService.createTextOutput(JSON.stringify(reply));
+    const getEventHandler: GetEventHandler = new GetEventHandler(e);
+    executeMethod(new LiffApi(), getEventHandler.func, getEventHandler);
+    return ContentService.createTextOutput(JSON.stringify(getEventHandler.result));
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
