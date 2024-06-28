@@ -17,11 +17,6 @@ function testaaaa() {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function test1() {
-    return 'hello';
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function calcAllResult() {
     const scoreBook: ScoreBook = new ScoreBook();
     const reportSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);

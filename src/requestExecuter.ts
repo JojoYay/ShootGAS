@@ -245,6 +245,7 @@ export class RequestExecuter {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private writeRankingContents(aRankValues: any[][], jsonMessage: any, lang: string, ten: string, contentsIndex: number) {
+        // const densukeVals = GasProps.instance.mappingSheet.getDataRange().getValues();
         for (const ranking of aRankValues) {
             if (ranking[0] !== '' && ranking[0] !== '伝助名称' && ranking[1] < 4 && ranking[3] > 0) {
                 // if (ranking[1] === '1') {
@@ -264,6 +265,12 @@ export class RequestExecuter {
 
                             flex: 1,
                         },
+                        // {
+                        //     aspectMode: 'cover',
+                        //     size: '20px',
+                        //     type: 'image',
+                        //     url: this.rankingPic(ranking[0], densukeVals),
+                        // },
                         {
                             type: 'text',
                             text: ranking[0],
@@ -285,6 +292,17 @@ export class RequestExecuter {
             }
         }
     }
+
+    // // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // private rankingPic(densukeNm: string, densukeVals: any[][]): string {
+    //     const userId = gasUtil.getLineUserId(densukeNm);
+    //     const row = densukeVals.find(item => item[2] === userId);
+    //     let url = 'https://lh3.googleusercontent.com/d/1wMh5Ofoxq89EBIuijDhM-CG52kzUwP1g';
+    //     if (row && row[4]) {
+    //         url = row[4];
+    //     }
+    //     return url;
+    // }
 
     private rankingArrow(place: number, past: number): string {
         if (!past) {

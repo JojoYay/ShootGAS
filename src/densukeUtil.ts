@@ -151,6 +151,7 @@ export class DensukeUtil {
         for (let i = values.length; i >= 10; i--) {
             report.deleteRow(i);
         }
+        this.reCalcTotalVal(cashBook);
         for (let i = 0; i < attendees.length; i++) {
             const lineName = gasUtil.getLineName(attendees[i]);
             report.appendRow([attendees[i], lineName]);
@@ -170,22 +171,39 @@ export class DensukeUtil {
         report.getRange(9, 1, rlastRow - 8, 3).setBorder(true, true, true, true, true, true);
         report.getRange(9, 1, 1, 3).setBackground('#fff2cc');
 
-        const attendOrg = orgPrice + attendFeeTotal;
-        if (cashBook) {
-            cashBook.appendRow([dd, actDate, '参加費(' + attendees.length + '名)', '' + attendFeeTotal, '' + attendOrg]);
-            cashBook.appendRow([dd, actDate, 'ピッチ使用料金', '-' + rentalFee, '' + (orgPrice - rentalFee + attendFeeTotal)]);
-            const clastRow = cashBook.getLastRow();
-            // console.log('lastRow:' + clastRow);
-            cashBook.getRange(1, 1, 1, 5).setBackground('#fff2cc');
-            cashBook.getRange(1, 1, clastRow, 5).setBorder(true, true, true, true, true, true);
-        } else {
-            throw new Error('Cash Book not found');
-        }
-        this.copySheetInSpreadsheet();
+        // const attendOrg = orgPrice + attendFeeTotal;
+        // if (cashBook) {
+        // cashBook.appendRow([dd, actDate, '参加費(' + attendees.length + '名)', '' + attendFeeTotal, '' + attendOrg]);
+        // cashBook.appendRow([dd, actDate, 'ピッチ使用料金', '-' + rentalFee, '' + (orgPrice - rentalFee + attendFeeTotal)]);
+        cashBook.appendRow([dd, actDate, '参加費(' + attendees.length + '名)', '' + attendFeeTotal, '=' + 'E' + lastRow + '+D' + (lastRow + 1)]);
+        cashBook.appendRow([dd, actDate, 'ピッチ使用料金', '-' + rentalFee, '=' + 'E' + (lastRow + 1) + '+D' + (lastRow + 2)]);
+        const clastRow = cashBook.getLastRow();
+        // console.log('lastRow:' + clastRow);
+        // cashBook.getRange(1, 1, 1, 5).setBackground('#fff2cc');
+        cashBook.getRange(1, 1, clastRow, 5).setBorder(true, true, true, true, true, true);
+        this.reCalcTotalVal(cashBook);
+
+        // } else {
+        //     throw new Error('Cash Book not found');
+        // }
+
+        // this.copySheetInSpreadsheet();
 
         // const scoreBook: ScoreBook = new ScoreBook();
         // scoreBook.generateScoreBook(actDate, attendees, Title.ASSIST);
         // scoreBook.generateScoreBook(actDate, attendees, Title.TOKUTEN);
+    }
+
+    private reCalcTotalVal(cashBook: GoogleAppsScript.Spreadsheet.Sheet) {
+        const allData = cashBook.getDataRange().getValues();
+        let index = 1;
+        for (const allRow of allData) {
+            if (allRow[3] && allRow[3] !== '金額(SGD)') {
+                const formula = `E${index - 1}+D${index}`;
+                cashBook.getRange(index, 5).setFormula(formula);
+            }
+            index++;
+        }
     }
 
     private copySheetInSpreadsheet(): void {

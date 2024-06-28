@@ -66,7 +66,7 @@ export class GasProps {
     }
 
     public get cashBookSheet(): GoogleAppsScript.Spreadsheet.Sheet {
-        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
         const cashBook: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName(this.CASH_BOOK_SHEET_NAME);
         if (!cashBook) {
             throw new Error('cashBookSheet was not found.');

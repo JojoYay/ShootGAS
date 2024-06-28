@@ -33,7 +33,7 @@ export class GasTestSuite {
         this.copySheetData(juneData, actualJune);
 
         const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
-        const files = folder.getFilesByName('6/2(日)_相馬究(Kiwamu Soma)');
+        const files = folder.getFilesByName('6/2(日)_Soma');
         if (files.hasNext()) {
             const f = files.next();
             f.setTrashed(true);
@@ -132,7 +132,7 @@ export class GasTestSuite {
         requestExecuter.payNow(postEventHander);
         const expectation1: string = '6/2(日)の支払いを登録しました。ありがとうございます！\n' + GasProps.instance.reportSheetUrl;
         const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
-        const resultfiles = folder.getFilesByName('6/2(日)_相馬究(Kiwamu Soma)');
+        const resultfiles = folder.getFilesByName('6/2(日)_Soma');
         if (postEventHander.resultMessage === expectation1 && resultfiles.hasNext()) {
             postEventHander.testResult.push('testPayNow1:passed');
         } else {
@@ -177,7 +177,7 @@ export class GasTestSuite {
             const files = orgFolder.getFilesByName('payNowSample.jpg');
             const file = files.next();
             const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
-            file.makeCopy('6/2(日)_Rocky', folder);
+            file.makeCopy('6/2(日)_ロッキー', folder);
 
             postEventHander.messageText = '集計';
             requestExecuter.aggregate(postEventHander);
@@ -191,7 +191,7 @@ export class GasTestSuite {
             }
         } finally {
             const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
-            const files = folder.getFilesByName('6/2(日)_Rocky');
+            const files = folder.getFilesByName('6/2(日)_ロッキー');
             if (files.hasNext()) {
                 const file = files.next();
                 file.setTrashed(true);
@@ -232,7 +232,7 @@ export class GasTestSuite {
             const files = orgFolder.getFilesByName('payNowSample.jpg');
             const file = files.next();
             const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
-            file.makeCopy('6/2(日)_Rocky', folder);
+            file.makeCopy('6/2(日)_ロッキー', folder);
 
             postEventHander.messageText = '集計';
             requestExecuter.aggregate(postEventHander);
@@ -247,7 +247,7 @@ export class GasTestSuite {
             }
         } finally {
             const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
-            const files = folder.getFilesByName('6/2(日)_Rocky');
+            const files = folder.getFilesByName('6/2(日)_ロッキー');
             if (files.hasNext()) {
                 const file = files.next();
                 file.setTrashed(true);
@@ -272,7 +272,7 @@ export class GasTestSuite {
             const files = orgFolder.getFilesByName('payNowSample.jpg');
             const file = files.next();
             const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
-            file.makeCopy('6/2(日)_yagisho', folder);
+            file.makeCopy('6/2(日)_八木', folder);
 
             postEventHander.messageText = '集計';
             requestExecuter.aggregate(postEventHander);
@@ -287,7 +287,7 @@ export class GasTestSuite {
             }
         } finally {
             const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
-            const files = folder.getFilesByName('6/2(日)_yagisho');
+            const files = folder.getFilesByName('6/2(日)_八木');
             if (files.hasNext()) {
                 const file = files.next();
                 file.setTrashed(true);
@@ -312,7 +312,7 @@ export class GasTestSuite {
             const files = orgFolder.getFilesByName('payNowSample.jpg');
             const file = files.next();
             const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
-            file.makeCopy('6/2(日)_yagisho', folder);
+            file.makeCopy('6/2(日)_八木', folder);
 
             postEventHander.messageText = '集計';
             requestExecuter.aggregate(postEventHander);
@@ -327,7 +327,7 @@ export class GasTestSuite {
             }
         } finally {
             const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
-            const files = folder.getFilesByName('6/2(日)_yagisho');
+            const files = folder.getFilesByName('6/2(日)_八木');
             if (files.hasNext()) {
                 const file = files.next();
                 file.setTrashed(true);

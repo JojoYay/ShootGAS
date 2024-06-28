@@ -6,27 +6,52 @@ import { LineUtil } from './lineUtil';
 import { ScriptProps } from './scriptProps';
 
 export class LiffApi {
-    private test(getEventHandler: GetEventHandler) {
+    private test(getEventHandler: GetEventHandler): void {
         const value: string = getEventHandler.e.parameters['param'][0];
         getEventHandler.result = { result: value };
     }
 
-    private getVideo(getEventHandler: GetEventHandler) {
+    private getVideo(getEventHandler: GetEventHandler): void {
         const videos: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
         getEventHandler.result = { result: videos.getDataRange().getValues() };
     }
 
-    private getMembers(getEventHandler: GetEventHandler) {
+    private getMembers(getEventHandler: GetEventHandler): void {
         const den: DensukeUtil = new DensukeUtil();
         const members = den.extractMembers();
-        getEventHandler.result = { result: members };
+        // getEventHandler.result = { result: members };
+        getEventHandler.result.members = members;
     }
 
-    private getDensukeName(getEventHandler: GetEventHandler) {
+    private getDensukeName(getEventHandler: GetEventHandler): void {
         const gasUtil: GasUtil = new GasUtil();
         const lineUtil: LineUtil = new LineUtil();
         const userId = getEventHandler.e.parameters['userId'][0];
-        getEventHandler.result = { result: gasUtil.getDensukeName(lineUtil.getLineDisplayName(userId)) };
+        // getEventHandler.result = { result: gasUtil.getDensukeName(lineUtil.getLineDisplayName(userId)) };
+        getEventHandler.result.densukeName = gasUtil.getDensukeName(lineUtil.getLineDisplayName(userId));
+    }
+
+    private getRanking(getEventHandler: GetEventHandler): void {
+        const gRank = GasProps.instance.gRankingSheet.getDataRange().getValues();
+        const aRank = GasProps.instance.aRankingSheet.getDataRange().getValues();
+        const oRank = GasProps.instance.oRankingSheet.getDataRange().getValues();
+        getEventHandler.result.gRank = gRank;
+        getEventHandler.result.aRank = aRank;
+        getEventHandler.result.oRank = oRank;
+    }
+
+    private getStats(getEventHandler: GetEventHandler): void {
+        const resultSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.personalTotalSheet;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const resultValues: any[][] = resultSheet.getDataRange().getValues();
+        getEventHandler.result.stats = resultValues;
+    }
+
+    private getUsers(getEventHandler: GetEventHandler): void {
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const resultValues: any[][] = mappingSheet.getDataRange().getValues();
+        getEventHandler.result.users = resultValues;
     }
 
     private register(getEventHandler: GetEventHandler): void {
@@ -37,6 +62,7 @@ export class LiffApi {
         const lineName = lineUtil.getLineDisplayName(userId);
         const lang = lineUtil.getLineLang(userId);
         const $ = densukeUtil.getDensukeCheerio();
+        densukeUtil.generateSummaryBase($); //先に更新しておかないとエラーになる（伝助が更新されている場合）
         const members = densukeUtil.extractMembers($);
         const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
         const densukeNameNew = getEventHandler.e.parameters['densukeName'][0];

@@ -88,7 +88,7 @@ export class LineUtil {
         Logger.log(response.getContentText());
     }
 
-    private getLineUserProfile(userId: string) {
+    public getLineUserProfile(userId: string) {
         const url = `https://api.line.me/v2/bot/profile/${userId}`;
         const headers = {
             Authorization: 'Bearer ' + ScriptProps.instance.lineAccessToken,
