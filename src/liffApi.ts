@@ -23,6 +23,11 @@ export class LiffApi {
         getEventHandler.result.members = members;
     }
 
+    private getRegisteredMembers(getEventHandler: GetEventHandler): void {
+        const members: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        getEventHandler.result.members = members.getDataRange().getValues();
+    }
+
     private getDensukeName(getEventHandler: GetEventHandler): void {
         const gasUtil: GasUtil = new GasUtil();
         const lineUtil: LineUtil = new LineUtil();
@@ -40,6 +45,52 @@ export class LiffApi {
         getEventHandler.result.oRank = oRank;
     }
 
+    private getExpenseWithStatus(getEventHandler: GetEventHandler): void {
+        const title: string = getEventHandler.e.parameters['title'][0];
+        const userId: string = getEventHandler.e.parameters['userId'][0];
+        const rootFolder = DriveApp.getFolderById(ScriptProps.instance.expenseFolder);
+        const folderIt = rootFolder.getFoldersByName(title);
+        if (!folderIt.hasNext()) {
+            getEventHandler.result.statusMsg = 'no such expense folder found:' + title;
+            console.log('no such expense folder found:' + title);
+        }
+        const expenseFolder = folderIt.next();
+        const lineUtil: LineUtil = new LineUtil();
+        // console.log('userId ' + userId);
+        const lineName: string = lineUtil.getLineDisplayName(userId);
+        const fileIt = expenseFolder.getFilesByName(title + '_' + lineName);
+        if (fileIt.hasNext()) {
+            const file = fileIt.next();
+            getEventHandler.result.statusMsg = '支払い済み';
+            const picUrl: string = 'https://lh3.googleusercontent.com/d/' + file.getId();
+            getEventHandler.result.picUrl = picUrl;
+        } else {
+            let spreadSheet: GoogleAppsScript.Spreadsheet.Spreadsheet | null = null;
+            const fileIt2 = expenseFolder.getFilesByName(title);
+            if (fileIt2.hasNext()) {
+                const sheetFile = fileIt2.next();
+                spreadSheet = SpreadsheetApp.openById(sheetFile.getId());
+            } else {
+                throw new Error('SpreadSheet is not available:' + title);
+            }
+
+            const sheet: GoogleAppsScript.Spreadsheet.Sheet = spreadSheet.getActiveSheet();
+            const sheetVal = sheet.getDataRange().getValues();
+            const gasUtil: GasUtil = new GasUtil();
+            const densukeName = gasUtil.getDensukeName(lineName);
+            const userRow = sheetVal.find(item => item[0] === densukeName);
+            const settingSheet = GasProps.instance.settingSheet;
+            const addy = settingSheet.getRange('B2').getValue();
+            if (userRow) {
+                getEventHandler.result.statusMsg =
+                    '支払額：$' + userRow[2] + ' PayNow先:' + addy + '\n支払い済みのスクリーンショットをこちらにアップロードして下さい';
+                getEventHandler.result.picUrl = '';
+            } else {
+                getEventHandler.result.statusMsg = '支払い人として登録されていません。管理者にご確認下さい。';
+            }
+        }
+    }
+
     private getStats(getEventHandler: GetEventHandler): void {
         const resultSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.personalTotalSheet;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,6 +103,74 @@ export class LiffApi {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const resultValues: any[][] = mappingSheet.getDataRange().getValues();
         getEventHandler.result.users = resultValues;
+    }
+
+    private generateExReport(getEventHandler: GetEventHandler): void {
+        const users: string[] = getEventHandler.e.parameters['users'];
+        const price: string = getEventHandler.e.parameters['price'][0];
+        const title: string = getEventHandler.e.parameters['title'][0];
+
+        let newSpreadsheet = null;
+        const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.expenseFolder;
+        const folderIt = folder.getFoldersByName(title);
+        let expenseFolder: GoogleAppsScript.Drive.Folder;
+        if (folderIt.hasNext()) {
+            expenseFolder = folderIt.next();
+        } else {
+            expenseFolder = folder.createFolder(title);
+        }
+        const fileIt = expenseFolder.getFilesByName(title);
+        if (fileIt.hasNext()) {
+            const file = fileIt.next();
+            newSpreadsheet = SpreadsheetApp.openById(file.getId());
+        } else {
+            newSpreadsheet = SpreadsheetApp.create(title);
+            const fileId = newSpreadsheet.getId();
+            const file = DriveApp.getFileById(fileId);
+            file.moveTo(expenseFolder);
+        }
+        const fileId = newSpreadsheet.getId();
+        const sheet = newSpreadsheet.getActiveSheet();
+        sheet.clear(); //まず全部消す
+        sheet.appendRow(['名称', title]);
+        sheet.appendRow(['人数', users.length]);
+        sheet.appendRow(['合計金額', users.length * Number(price)]);
+        sheet.appendRow(['参加者（伝助名称）', '参加者（Line名称）', '金額', '支払い状況', '受け取り状況']);
+        let index = 5;
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const mapVal = mappingSheet.getDataRange().getValues();
+        const status: string[] = ['受渡済', ''];
+        const statusVal = SpreadsheetApp.newDataValidation().requireValueInList(status).build();
+        for (const user of users) {
+            const mapRow = mapVal.find(item => item[1] === user);
+            console.log(user);
+            sheet.getRange(index, 1).setValue(user);
+            sheet.getRange(index, 2).setValue(mapRow?.[0]);
+            sheet.getRange(index, 3).setValue(price);
+
+            const fileIt = expenseFolder.getFilesByName(title + '_' + mapRow?.[1]);
+            if (fileIt.hasNext()) {
+                const file = fileIt.next();
+                const picUrl: string = 'https://lh3.googleusercontent.com/d/' + file.getId();
+                sheet.getRange(index, 4).setValue(picUrl);
+            }
+            // sheet.getRange(index, 1).setValue(lu.getLineDisplayName());
+            sheet.getRange(index, 5).setDataValidation(statusVal);
+            index++;
+        }
+
+        const lastCol = sheet.getLastColumn();
+        const lastRow = sheet.getLastRow();
+        sheet.getRange(4, 1, lastRow - 3, lastCol).setBorder(true, true, true, true, true, true);
+        sheet.getRange(4, 1, 1, lastCol).setBackground('#fff2cc');
+
+        const range = sheet.getRange(5, 3, lastRow - 4, 1);
+        const formula = `=SUM(${range.getA1Notation()})`;
+        sheet.getRange(3, 2).setFormula(formula);
+
+        getEventHandler.result.folder = 'https://drive.google.com/drive/folders/' + ScriptProps.instance.folderId + '?usp=sharing';
+        getEventHandler.result.sheet = GasProps.instance.generateSheetUrl(fileId);
+        getEventHandler.result.url = ScriptProps.instance.liffUrl + '/expense/input?title=' + title;
     }
 
     private register(getEventHandler: GetEventHandler): void {

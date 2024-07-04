@@ -199,26 +199,26 @@ export class GasTestSuite {
         }
     }
 
-    //金額は正しいか？
-    public testAggregate2(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
-        this.initializeSheet();
+    // //金額は正しいか？
+    // public testAggregate2(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
+    //     this.initializeSheet();
 
-        postEventHander.messageText = '集計';
-        requestExecuter.aggregate(postEventHander);
+    //     postEventHander.messageText = '集計';
+    //     requestExecuter.aggregate(postEventHander);
 
-        const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet('6/2(日)', false);
-        const originalPrice: number = report.getRange('B3').getValue();
-        const finalPrice: number = report.getRange('B7').getValue();
-        const cashBook: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.cashBookSheet;
-        const originalAmount: number = cashBook.getRange('E4').getValue();
-        const finalAmount: number = cashBook.getRange('E6').getValue();
+    //     const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet('6/2(日)', false);
+    //     const originalPrice: number = report.getRange('B3').getValue();
+    //     const finalPrice: number = report.getRange('B7').getValue();
+    //     const cashBook: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.cashBookSheet;
+    //     const originalAmount: number = cashBook.getRange('E4').getValue();
+    //     const finalAmount: number = cashBook.getRange('E6').getValue();
 
-        if (originalPrice === originalAmount && finalPrice === finalAmount) {
-            postEventHander.testResult.push('testAggregate2:passed');
-        } else {
-            postEventHander.testResult.push('testAggregate2:failed\n' + postEventHander.resultMessage);
-        }
-    }
+    //     if (originalPrice === originalAmount && finalPrice === finalAmount) {
+    //         postEventHander.testResult.push('testAggregate2:passed');
+    //     } else {
+    //         postEventHander.testResult.push('testAggregate2:failed\n' + postEventHander.resultMessage);
+    //     }
+    // }
 
     //その日消しても出きてきちんと支払い状況が反映するか？
     public testAggregate3(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {

@@ -32,6 +32,14 @@ export class ScriptProps {
         return reportProp;
     }
 
+    public get liffUrl(): string {
+        const liffUrl: string | null = PropertiesService.getScriptProperties().getProperty('liffUrl');
+        if (!liffUrl) {
+            throw new Error('Script Property (liffUrl) was not found');
+        }
+        return liffUrl;
+    }
+
     public get settingSheet(): string {
         let settingProp: string | null = PropertiesService.getScriptProperties().getProperty('settingSheet');
         if (!settingProp) {
@@ -71,6 +79,17 @@ export class ScriptProps {
             archiveFolderProp = '10a1hJaEBPDTyl8d33hRWn2JiYZpCm6Vd';
         }
         return archiveFolderProp;
+    }
+
+    public get expenseFolder(): string {
+        let expenseFolder: string | null = PropertiesService.getScriptProperties().getProperty('expenseFolder');
+        if (!expenseFolder) {
+            throw new Error('Script Property (expenseFolder) was not found');
+        }
+        if (ScriptProps._mode === 'test') {
+            expenseFolder = '1L-VtfOiBNHrl3-dOkPUvpYrTna71G9gA'; //まだ使ってないけど一応
+        }
+        return expenseFolder;
     }
 
     public get channelQr(): string {

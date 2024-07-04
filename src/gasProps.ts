@@ -109,6 +109,10 @@ export class GasProps {
         return DriveApp.getFolderById(ScriptProps.instance.archiveFolder);
     }
 
+    public get expenseFolder(): GoogleAppsScript.Drive.Folder {
+        return DriveApp.getFolderById(ScriptProps.instance.expenseFolder);
+    }
+
     public get payNowFolderUrl(): string {
         return 'https://drive.google.com/drive/folders/' + ScriptProps.instance.folderId + '?usp=sharing';
     }
@@ -125,7 +129,7 @@ export class GasProps {
         return this.generateSheetUrl(ScriptProps.instance.eventResults);
     }
 
-    private generateSheetUrl(prop: string): string {
+    public generateSheetUrl(prop: string): string {
         if (ScriptProps.isTesting()) {
             return 'https://docs.google.com/spreadsheets/d/' + prop + '?usp=sharing';
         }

@@ -12,6 +12,52 @@ const lineUtil: LineUtil = new LineUtil();
 const gasUtil: GasUtil = new GasUtil();
 
 export class RequestExecuter {
+    public upload(postEventHander: PostEventHandler): void {
+        console.log('execute upload');
+        const decodedFile = Utilities.base64Decode(postEventHander.parameter.file);
+        const lu: LineUtil = new LineUtil();
+        const lineName = lu.getLineDisplayName(postEventHander.parameter.userId);
+        const gu: GasUtil = new GasUtil();
+        const densukeName = gu.getDensukeName(lineName);
+        const title: string = postEventHander.parameter.title;
+        const blob = Utilities.newBlob(decodedFile, 'application/octet-stream', title + '_' + lineName);
+        const rootFolder = DriveApp.getFolderById(ScriptProps.instance.expenseFolder);
+
+        const folderIt = rootFolder.getFoldersByName(title);
+        if (!folderIt.hasNext()) {
+            console.log('no expense folder found:' + title);
+        }
+        const expenseFolder = folderIt.next();
+        const oldFileIt = expenseFolder.getFilesByName(title + '_' + lineName);
+        while (oldFileIt.hasNext()) {
+            oldFileIt.next().setTrashed(true);
+        }
+        const file = expenseFolder.createFile(blob);
+        console.log('File uploaded to Google Drive with ID:', file.getId());
+
+        let spreadSheet: GoogleAppsScript.Spreadsheet.Spreadsheet | null = null;
+        const fileIt = expenseFolder.getFilesByName(title);
+        if (fileIt.hasNext()) {
+            const sheetFile = fileIt.next();
+            spreadSheet = SpreadsheetApp.openById(sheetFile.getId());
+        } else {
+            throw new Error('SpreadSheet is not available:' + title);
+        }
+        const sheet: GoogleAppsScript.Spreadsheet.Sheet = spreadSheet.getActiveSheet();
+        const sheetVal = sheet.getDataRange().getValues();
+        let index = 1;
+        const picUrl: string = 'https://lh3.googleusercontent.com/d/' + file.getId();
+        for (const row of sheetVal) {
+            if (index > 4) {
+                if (row[0] === densukeName) {
+                    sheet.getRange(index, 4).setValue(picUrl);
+                }
+            }
+            index++;
+        }
+        postEventHander.reponseObj = { picUrl: picUrl, sheetUrl: GasProps.instance.generateSheetUrl(spreadSheet.getId()) };
+    }
+
     public video(postEventHander: PostEventHandler): void {
         postEventHander.isFlex = true;
         const videos: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;

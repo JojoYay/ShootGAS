@@ -35,7 +35,7 @@ function updateProfilePic() {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.Content.TextOutput {
-    console.log(e);
+    // console.log(e);
     const getEventHandler: GetEventHandler = new GetEventHandler(e);
     for (const methodName of getEventHandler.funcs) {
         executeMethod(new LiffApi(), methodName, getEventHandler);
@@ -45,6 +45,7 @@ function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.Content.TextO
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Content.TextOutput {
+    console.log('sasdsdsadsafsadd');
     const requestExecuter: RequestExecuter = new RequestExecuter();
     const postEventHander: PostEventHandler = new PostEventHandler(e);
     try {
@@ -53,24 +54,28 @@ function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Content.Tex
                 executeMethod(requestExecuter, item.func, postEventHander);
             }
         }
-        if (postEventHander.isFlex) {
-            lineUtil.sendFlexReply(postEventHander.replyToken, postEventHander.messageJson);
-        } else {
-            lineUtil.sendLineReply(postEventHander.replyToken, postEventHander.resultMessage, postEventHander.resultImage);
-        }
-        if (postEventHander.paynowOwnerMsg) {
-            lineUtil.sendLineMessage(gasUtil.getLineUserId(gasUtil.getDensukeName(gasUtil.getPaynowOwner())), postEventHander.paynowOwnerMsg);
+        if (postEventHander.type) {
+            if (postEventHander.isFlex) {
+                lineUtil.sendFlexReply(postEventHander.replyToken, postEventHander.messageJson);
+            } else {
+                lineUtil.sendLineReply(postEventHander.replyToken, postEventHander.resultMessage, postEventHander.resultImage);
+            }
+            if (postEventHander.paynowOwnerMsg) {
+                lineUtil.sendLineMessage(gasUtil.getLineUserId(gasUtil.getDensukeName(gasUtil.getPaynowOwner())), postEventHander.paynowOwnerMsg);
+            }
         }
     } catch (e) {
         postEventHander.resultMessage = '[Error] ' + (e as Error).message + '\n' + (e as Error).stack;
         lineUtil.sendLineReply(postEventHander.replyToken, postEventHander.resultMessage, null);
         throw e;
     }
-    return ContentService.createTextOutput(JSON.stringify({ content: 'post ok' })).setMimeType(ContentService.MimeType.JSON);
+    // return ContentService.createTextOutput(JSON.stringify({ content: 'post ok' })).setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify(postEventHander.reponseObj)).setMimeType(ContentService.MimeType.JSON);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function executeMethod(obj: any, methodName: string, args: any) {
+    console.log('Execute ' + methodName);
     if (typeof obj[methodName] === 'function') {
         return obj[methodName](args);
     } else {

@@ -15,6 +15,12 @@ export const COMMAND_MAP: Command[] = [
         condition: (postEventHander: PostEventHandler) => postEventHander.type === 'message' && postEventHander.messageType === 'image',
     },
     {
+        func: 'upload',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'upload',
+    },
+    {
         func: 'aggregate',
         lineCmd: '集計, aggregate',
         display: true,
@@ -135,50 +141,62 @@ export const COMMAND_MAP: Command[] = [
 ];
 
 export class PostEventHandler {
-    private _messageText: string;
-    private _messageType: string; //message or image
-    private _type: string; //messageだけ
+    private _messageText: string = '';
+    private _messageType: string = ''; //message or image
+    private _type: string = ''; //messageだけ
 
-    private _messageId: string;
-    private _replyToken: string;
-    private _userId: string;
-    private _lang: string;
+    private _messageId: string = '';
+    private _replyToken: string = '';
+    private _userId: string = '';
+    private _lang: string = '';
 
-    private _resultMessage: string;
-    private _resultImage: string | null;
-    private _paynowOwnerMsg: string | null;
-    private _testResult: string[];
+    private _resultMessage: string = '';
+    private _resultImage: string | null = null;
+    private _paynowOwnerMsg: string | null = null;
+    private _testResult: string[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private _mockDensukeCheerio: any | null;
     public isFlex: boolean = false;
     public messageJson: JSON | null = null;
 
-    public constructor(e: GoogleAppsScript.Events.DoPost) {
-        const json = JSON.parse(e.postData.contents);
-        const event = json.events[0];
-        console.log(event);
-        if (event.message) {
-            this._messageText = event.message.text;
-            this._messageType = event.message.type;
-        } else {
-            this._messageText = '';
-            this._messageType = '';
-        }
-        this._type = event.type;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    public parameter: any = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    public reponseObj: any = {};
 
-        this._userId = event.source.userId;
-        this._replyToken = event.replyToken;
-        this._messageId = event.message.id;
-        const lineUtil: LineUtil = new LineUtil();
-        this._lang = lineUtil.getLineLang(this._userId);
-        if (this._lang === 'ja') {
-            this._resultMessage = '【エラー】申し訳ありません、理解できませんでした。再度正しく入力してください。';
+    public constructor(e: GoogleAppsScript.Events.DoPost) {
+        //LINE APIの場合
+        if (e.postData && e.postData.contents) {
+            const json = JSON.parse(e.postData.contents);
+            const event = json.events[0];
+            console.log(event);
+            if (event.message) {
+                this._messageText = event.message.text;
+                this._messageType = event.message.type;
+                // } else {
+                //     this._messageText = '';
+                //     this._messageType = '';
+            }
+            this._type = event.type;
+
+            this._userId = event.source.userId;
+            this._replyToken = event.replyToken;
+            this._messageId = event.message.id;
+            const lineUtil: LineUtil = new LineUtil();
+            this._lang = lineUtil.getLineLang(this._userId);
+            if (this._lang === 'ja') {
+                this._resultMessage = '【エラー】申し訳ありません、理解できませんでした。再度正しく入力してください。';
+            } else {
+                this._resultMessage = "【Error】I'm sorry, I didn't understand. Please enter the correct input again.";
+            }
+            this._resultImage = null;
+            this._paynowOwnerMsg = null;
+            this._testResult = [];
         } else {
-            this._resultMessage = "【Error】I'm sorry, I didn't understand. Please enter the correct input again.";
+            this.parameter = e.parameter;
+            this.reponseObj = e.parameter;
+            this._userId = e.parameter.userId;
         }
-        this._resultImage = null;
-        this._paynowOwnerMsg = null;
-        this._testResult = [];
     }
 
     public get messageId(): string {
