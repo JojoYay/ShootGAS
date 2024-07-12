@@ -6,8 +6,8 @@ import { LineUtil } from './lineUtil';
 import { COMMAND_MAP, PostEventHandler } from './postEventHandler';
 import { RequestExecuter } from './requestExecuter';
 
-const lineUtil: LineUtil = new LineUtil();
-const gasUtil: GasUtil = new GasUtil();
+// const lineUtil: LineUtil = new LineUtil();
+// const gasUtil: GasUtil = new GasUtil();
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function updateProfilePic() {
@@ -46,6 +46,8 @@ function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.Content.TextO
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Content.TextOutput {
     console.log('sasdsdsadsafsadd');
+    const lineUtil: LineUtil = new LineUtil();
+    const gasUtil: GasUtil = new GasUtil();
     const requestExecuter: RequestExecuter = new RequestExecuter();
     const postEventHander: PostEventHandler = new PostEventHandler(e);
     try {

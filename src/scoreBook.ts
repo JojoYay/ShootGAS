@@ -182,6 +182,7 @@ export class ScoreBook {
             let prevScore = null;
             let prevRank = 1;
             let rangeVals = totalResult.getDataRange().getValues();
+            //得点王
             for (let i = 1; i < rangeVals.length; i++) {
                 const currentScore = rangeVals[i][5];
                 if (currentScore !== prevScore) {
@@ -198,10 +199,11 @@ export class ScoreBook {
             rank = 1;
             prevScore = null;
             prevRank = 1;
-            totalResult.getRange(2, 1, lastRow, lastCol).sort({ column: 8, ascending: false });
+            totalResult.getRange(2, 1, lastRow, lastCol).sort({ column: 9, ascending: false });
             rangeVals = totalResult.getDataRange().getValues();
+            //okamoto
             for (let i = 1; i < rangeVals.length; i++) {
-                const currentScore = rangeVals[i][5];
+                const currentScore = rangeVals[i][8];
                 if (currentScore !== prevScore) {
                     prevRank = rank;
                 }
@@ -222,6 +224,7 @@ export class ScoreBook {
             const eventData: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.eventResultSheet;
             const mipNames: string[] = this.checkMip(eventData.getDataRange().getValues());
 
+            //assist
             for (let i = 1; i < rangeVals.length; i++) {
                 const currentScore = rangeVals[i][6];
                 if (currentScore !== prevScore) {
@@ -236,8 +239,10 @@ export class ScoreBook {
                 const currentName = rangeVals[i][1];
                 const currentGranking = rangeVals[i][11];
                 const currentAranking = rangeVals[i][12];
+                const currentOranking = rangeVals[i][13];
+
                 // if (currentGranking === '1位' || currentAranking === '1位' || mipNames.includes(currentName)) {
-                if (currentGranking === 1 || currentAranking === 1 || mipNames.includes(currentName)) {
+                if (currentGranking === 1 || currentAranking === 1 || currentOranking === 1 || mipNames.includes(currentName)) {
                     totalResult.getRange(i + 1, 15).setValue(1);
                 }
             }

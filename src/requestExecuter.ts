@@ -119,6 +119,7 @@ export class RequestExecuter {
             } else {
                 gasUtil.registerMapping(lineName, densukeNameNew, postEventHander.userId);
                 gasUtil.updateLineNameOfLatestReport(lineName, densukeNameNew, actDate);
+                this.updateProfilePic();
                 if (postEventHander.lang === 'ja') {
                     postEventHander.resultMessage =
                         '伝助名称登録が完了しました。\n伝助上の名前：' +
@@ -144,6 +145,30 @@ export class RequestExecuter {
             }
         }
     }
+
+    private updateProfilePic() {
+        // const lineUtil: LineUtil = new LineUtil();
+        const densukeMappingVals = GasProps.instance.mappingSheet.getDataRange().getValues();
+        let index: number = 0;
+        for (const userRow of densukeMappingVals) {
+            if (userRow[0] !== 'ライン上の名前') {
+                const userId: string = userRow[2];
+                try {
+                    const prof = lineUtil.getLineUserProfile(userId);
+                    if (prof) {
+                        // console.log(userRow[0] + ': ' + prof.pictureUrl);
+                        GasProps.instance.mappingSheet.getRange(index + 1, 5).setValue(prof.pictureUrl);
+                    }
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                } catch (e) {
+                    console.log(userRow[0] + ': invalid UserId' + userId);
+                }
+            }
+            index++;
+        }
+        return;
+    }
+
     public payNow(postEventHander: PostEventHandler): void {
         const $ = densukeUtil.getDensukeCheerio();
         const members = densukeUtil.extractMembers($);
@@ -436,6 +461,9 @@ export class RequestExecuter {
                 '\nメッセージ利用状況：' +
                 ScriptProps.instance.messageUsage +
                 '\n' +
+                '\nAppScript：' +
+                'https://script.google.com/home/projects/1K0K--vXLzq1p97HHwCbdynsASyjFBndjbkz5YDj9_PN_yG4K1qS4pBok/executions' +
+                '\n' +
                 postEventHander.generateCommandList();
             // '\n 利用可能コマンド:集計, aggregate, 紹介, introduce, 登録, how to register, リマインド, remind, 伝助更新, update, 未払い, unpaid, 未登録参加者, unregister, @@register@@名前 ';
         } else {
@@ -465,7 +493,7 @@ export class RequestExecuter {
         scoreBook.generateScoreBook(actDate, attendees, Title.TOKUTEN);
         scoreBook.generateOkamotoBook(actDate, attendees);
 
-        postEventHander.resultMessage = 'ランキングが更新されました\n' + GasProps.instance.reportSheetUrl;
+        postEventHander.resultMessage = 'ランキングが更新されました\n' + GasProps.instance.eventResultUrl;
     }
 
     public systemTest(postEventHander: PostEventHandler): void {

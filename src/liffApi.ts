@@ -147,8 +147,8 @@ export class LiffApi {
             sheet.getRange(index, 1).setValue(user);
             sheet.getRange(index, 2).setValue(mapRow?.[0]);
             sheet.getRange(index, 3).setValue(price);
-
-            const fileIt = expenseFolder.getFilesByName(title + '_' + mapRow?.[1]);
+            // console.log('user ' + user + ' maprow1 ' + mapRow?.[1]);
+            const fileIt = expenseFolder.getFilesByName(title + '_' + mapRow?.[0]);
             if (fileIt.hasNext()) {
                 const file = fileIt.next();
                 const picUrl: string = 'https://lh3.googleusercontent.com/d/' + file.getId();
