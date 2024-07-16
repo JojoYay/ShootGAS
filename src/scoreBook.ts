@@ -133,7 +133,7 @@ export class ScoreBook {
                     totalScore.mipCount++;
                 }
                 if (allValueRow[1]) {
-                    totalScore.teamPoint += totalScore.fetchTeamPoint(eventRow, allValueRow[1]);
+                    totalScore.teamPoint += Number(totalScore.fetchTeamPoint(eventRow, allValueRow[1]));
                     if (totalScore.isTopTeam(eventRow, allValueRow[1])) {
                         totalScore.winCount++;
                     }
