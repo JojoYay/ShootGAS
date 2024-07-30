@@ -390,9 +390,9 @@ export class ScoreBook {
         if (!this.isActDateExists(actDate, scoreSheet)) {
             scoreSheet.insertColumnBefore(5);
             scoreSheet.getRange('E2').setValue(actDate);
-        }
-        if (scoreSheet.getLastColumn() > 5) {
-            scoreSheet.getRange(3, 2, scoreSheet.getLastRow() - 1, 1).copyTo(scoreSheet.getRange(3, 3, scoreSheet.getLastRow() - 1, 1));
+            if (scoreSheet.getLastColumn() > 5) {
+                scoreSheet.getRange(3, 2, scoreSheet.getLastRow() - 1, 1).copyTo(scoreSheet.getRange(3, 3, scoreSheet.getLastRow() - 1, 1));
+            }
         }
         this.addAttendee(scoreSheet, attendees, true);
         const scoreValues = scoreSheet.getDataRange().getValues();
@@ -490,9 +490,9 @@ export class ScoreBook {
         if (!this.isActDateExists(actDate, scoreSheet)) {
             scoreSheet.insertColumnBefore(5);
             scoreSheet.getRange('E2').setValue(actDate);
-        }
-        if (scoreSheet.getLastColumn() > 5) {
-            scoreSheet.getRange(3, 2, scoreSheet.getLastRow() - 1, 1).copyTo(scoreSheet.getRange(3, 3, scoreSheet.getLastRow() - 1, 1));
+            if (scoreSheet.getLastColumn() > 5) {
+                scoreSheet.getRange(3, 2, scoreSheet.getLastRow() - 1, 1).copyTo(scoreSheet.getRange(3, 3, scoreSheet.getLastRow() - 1, 1));
+            }
         }
         this.addAttendee(scoreSheet, attendees, true);
 
