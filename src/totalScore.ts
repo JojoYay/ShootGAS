@@ -47,22 +47,22 @@ export class TotalScore {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public fetchTeamPoint(eventDataRow: any[], teamValue: string): number {
         if (teamValue === 'チーム1') {
-            return eventDataRow[7] as number;
+            return eventDataRow[7];
         }
         if (teamValue === 'チーム2') {
-            return eventDataRow[8] as number;
+            return eventDataRow[8];
         }
         if (teamValue === 'チーム3') {
-            return eventDataRow[9] as number;
+            return eventDataRow[9];
         }
         if (teamValue === 'チーム4') {
-            return eventDataRow[10] as number;
+            return eventDataRow[10];
         }
         if (teamValue === 'チーム5') {
-            return eventDataRow[11] as number;
+            return eventDataRow[11];
         }
         if (teamValue === 'チーム6') {
-            return eventDataRow[12] as number;
+            return eventDataRow[12];
         }
         return 0;
 
