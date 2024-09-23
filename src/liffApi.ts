@@ -16,6 +16,13 @@ export class LiffApi {
         getEventHandler.result = { result: videos.getDataRange().getValues() };
     }
 
+    private getPayNow(getEventHandler: GetEventHandler): void {
+        const settingSheet = GasProps.instance.settingSheet;
+        const addy = settingSheet.getRange('B2').getValue();
+        // getEventHandler.result = { result: members };
+        getEventHandler.result.payNow = addy;
+    }
+
     private getMembers(getEventHandler: GetEventHandler): void {
         const den: DensukeUtil = new DensukeUtil();
         const members = den.extractMembers();
@@ -109,6 +116,7 @@ export class LiffApi {
         const users: string[] = getEventHandler.e.parameters['users'];
         const price: string = getEventHandler.e.parameters['price'][0];
         const title: string = getEventHandler.e.parameters['title'][0];
+        const payNow: string = getEventHandler.e.parameters['payNow'][0];
 
         let newSpreadsheet = null;
         const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.expenseFolder;
@@ -135,8 +143,9 @@ export class LiffApi {
         sheet.appendRow(['名称', title]);
         sheet.appendRow(['人数', users.length]);
         sheet.appendRow(['合計金額', users.length * Number(price)]);
+        sheet.appendRow(['PayNow先', payNow]);
         sheet.appendRow(['参加者（伝助名称）', '参加者（Line名称）', '金額', '支払い状況', '受け取り状況']);
-        let index = 5;
+        let index = 6;
         const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
         const mapVal = mappingSheet.getDataRange().getValues();
         const status: string[] = ['受渡済', ''];
@@ -161,10 +170,10 @@ export class LiffApi {
 
         const lastCol = sheet.getLastColumn();
         const lastRow = sheet.getLastRow();
-        sheet.getRange(4, 1, lastRow - 3, lastCol).setBorder(true, true, true, true, true, true);
-        sheet.getRange(4, 1, 1, lastCol).setBackground('#fff2cc');
+        sheet.getRange(5, 1, lastRow - 4, lastCol).setBorder(true, true, true, true, true, true);
+        sheet.getRange(5, 1, 1, lastCol).setBackground('#fff2cc');
 
-        const range = sheet.getRange(5, 3, lastRow - 4, 1);
+        const range = sheet.getRange(6, 3, lastRow - 5, 1);
         const formula = `=SUM(${range.getA1Notation()})`;
         sheet.getRange(3, 2).setFormula(formula);
 
