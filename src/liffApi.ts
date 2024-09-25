@@ -117,6 +117,7 @@ export class LiffApi {
         const price: string = getEventHandler.e.parameters['price'][0];
         const title: string = getEventHandler.e.parameters['title'][0];
         const payNow: string = getEventHandler.e.parameters['payNow'][0];
+        const receiveColumn: string = getEventHandler.e.parameters['receiveColumn'][0];
 
         let newSpreadsheet = null;
         const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.expenseFolder;
@@ -144,12 +145,18 @@ export class LiffApi {
         sheet.appendRow(['人数', users.length]);
         sheet.appendRow(['合計金額', users.length * Number(price)]);
         sheet.appendRow(['PayNow先', payNow]);
-        sheet.appendRow(['参加者（伝助名称）', '参加者（Line名称）', '金額', '支払い状況', '受け取り状況']);
+        let statusVal = null;
+        if (receiveColumn === 'true') {
+            sheet.appendRow(['参加者（伝助名称）', '参加者（Line名称）', '金額', '支払い状況', '受け取り状況']);
+            const status: string[] = ['受渡済', ''];
+            statusVal = SpreadsheetApp.newDataValidation().requireValueInList(status).build();
+        } else {
+            sheet.appendRow(['参加者（伝助名称）', '参加者（Line名称）', '金額', '支払い状況']);
+        }
         let index = 6;
         const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
         const mapVal = mappingSheet.getDataRange().getValues();
-        const status: string[] = ['受渡済', ''];
-        const statusVal = SpreadsheetApp.newDataValidation().requireValueInList(status).build();
+
         for (const user of users) {
             const mapRow = mapVal.find(item => item[1] === user);
             console.log(user);
@@ -163,8 +170,10 @@ export class LiffApi {
                 const picUrl: string = 'https://lh3.googleusercontent.com/d/' + file.getId();
                 sheet.getRange(index, 4).setValue(picUrl);
             }
-            // sheet.getRange(index, 1).setValue(lu.getLineDisplayName());
-            sheet.getRange(index, 5).setDataValidation(statusVal);
+            if (statusVal) {
+                // sheet.getRange(index, 1).setValue(lu.getLineDisplayName());
+                sheet.getRange(index, 5).setDataValidation(statusVal);
+            }
             index++;
         }
 

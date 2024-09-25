@@ -12,6 +12,33 @@ const lineUtil: LineUtil = new LineUtil();
 const gasUtil: GasUtil = new GasUtil();
 
 export class RequestExecuter {
+    public deleteEx(postEventHander: PostEventHandler): void {
+        console.log('execute deleteEx');
+        const title: string = postEventHander.parameter.title;
+        const rootFolder = DriveApp.getFolderById(ScriptProps.instance.expenseFolder);
+        const titleFolderIt: GoogleAppsScript.Drive.FolderIterator = rootFolder.getFoldersByName(title);
+        // const results = [];
+        while (titleFolderIt.hasNext()) {
+            const expenseFolder: GoogleAppsScript.Drive.Folder = titleFolderIt.next();
+            expenseFolder.setTrashed(true);
+        }
+        postEventHander.reponseObj = { msg: title };
+    }
+
+    public loadExList(postEventHander: PostEventHandler): void {
+        console.log('execute loadExList');
+        const rootFolder = DriveApp.getFolderById(ScriptProps.instance.expenseFolder);
+        const titleFolderIt: GoogleAppsScript.Drive.FolderIterator = rootFolder.getFolders();
+        const results = [];
+        while (titleFolderIt.hasNext()) {
+            const expenseFolder: GoogleAppsScript.Drive.Folder = titleFolderIt.next();
+            const title = expenseFolder.getName();
+            const url = expenseFolder.getFilesByName(title).next().getUrl();
+            results.push({ title: title, url: url });
+        }
+        postEventHander.reponseObj = { resultList: results };
+    }
+
     public upload(postEventHander: PostEventHandler): void {
         console.log('execute upload');
         const decodedFile = Utilities.base64Decode(postEventHander.parameter.file);
