@@ -514,11 +514,12 @@ export class RequestExecuter {
         const attendees = densukeUtil.extractAttendees($, ScriptProps.instance.ROWNUM, '○', members);
 
         scoreBook.makeEventFormat();
-        scoreBook.aggregateScore();
 
         scoreBook.generateScoreBook(actDate, attendees, Title.ASSIST);
         scoreBook.generateScoreBook(actDate, attendees, Title.TOKUTEN);
         scoreBook.generateOkamotoBook(actDate, attendees);
+
+        scoreBook.aggregateScore();
 
         postEventHander.resultMessage = 'ランキングが更新されました\n' + GasProps.instance.eventResultUrl;
     }

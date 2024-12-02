@@ -236,6 +236,10 @@ export class ScoreBook {
                     rank++;
                 }
                 prevScore = currentScore;
+            }
+
+            rangeVals = totalResult.getDataRange().getValues();
+            for (let i = 1; i < rangeVals.length; i++) {
                 const currentName = rangeVals[i][1];
                 const currentGranking = rangeVals[i][11];
                 const currentAranking = rangeVals[i][12];
@@ -243,6 +247,7 @@ export class ScoreBook {
 
                 // if (currentGranking === '1位' || currentAranking === '1位' || mipNames.includes(currentName)) {
                 if (currentGranking === 1 || currentAranking === 1 || currentOranking === 1 || mipNames.includes(currentName)) {
+                    // console.log(currentName + ':' + currentAranking + ' ' + rangeVals[i]);
                     totalResult.getRange(i + 1, 15).setValue(1);
                 }
             }
@@ -251,8 +256,12 @@ export class ScoreBook {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private checkMip(eventDataVal: any[][]): string[] {
         const resultNames: string[] = [];
-        for (let i = 0; i < 3; i++) {
-            resultNames.push(eventDataVal[i][5]);
+        if (eventDataVal.length > 0) {
+            for (let i = 0; i < 3; i++) {
+                if (eventDataVal[i]) {
+                    resultNames.push(eventDataVal[i][5]);
+                }
+            }
         }
         return resultNames;
     }
