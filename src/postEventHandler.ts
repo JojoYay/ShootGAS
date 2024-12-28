@@ -182,9 +182,14 @@ export class PostEventHandler {
             const json = JSON.parse(e.postData.contents);
             const event = json.events[0];
             console.log(event);
+            if (event.type === 'postback') {
+                //Menu 切り替えの場合コレ
+                return;
+            }
             if (event.message) {
                 this._messageText = event.message.text;
                 this._messageType = event.message.type;
+                this._messageId = event.message.id;
                 // } else {
                 //     this._messageText = '';
                 //     this._messageType = '';
@@ -193,7 +198,6 @@ export class PostEventHandler {
 
             this._userId = event.source.userId;
             this._replyToken = event.replyToken;
-            this._messageId = event.message.id;
             const lineUtil: LineUtil = new LineUtil();
             this._lang = lineUtil.getLineLang(this._userId);
             if (this._lang === 'ja') {
