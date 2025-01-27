@@ -13,7 +13,7 @@ export class TotalScore {
     public winCount: number = 0;
     public loseCount: number = 0;
     // public drawCpimt: number = 0;
-
+    public totalMatchs: number = 0;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public isTopTeam(eventDataRow: any[], teamValue: string): boolean {
         const teamCount: number = this.getTeamCount(eventDataRow);

@@ -34,6 +34,7 @@ function calcAllResult() {
             scoreBook.generateScoreBook(actDate, attendees, Title.ASSIST);
         }
     }
+    console.log('aaaaaaaaaaaaaaaaaaaaaaaaaaaa');
     // scoreBook.makeEventFormat();
     scoreBook.aggregateScore();
 }
@@ -101,6 +102,9 @@ export class ScoreBook {
             const g: GasUtil = new GasUtil();
             const densukeMappingValue = g.getLineUserIdRangeValue();
             // console.log(eventRow);
+            const totalMatchs = eventSheetVal.length - 1;
+            const topOkamotoPoint = this.getTopPoint(eventRow);
+            const bottomOkamotoPoint = 1; //最下位は１という事にする
             for (const allValueRow of allValues) {
                 // console.log(allValueRow);
                 if (allValueRow[0] === '名前') {
@@ -117,6 +121,7 @@ export class ScoreBook {
                     totalScore = new TotalScore();
                     dataList.push(totalScore);
                     totalScore.name = allValueRow[0];
+                    totalScore.totalMatchs = totalMatchs;
                 }
 
                 totalScore.playTime++;
@@ -133,11 +138,14 @@ export class ScoreBook {
                     totalScore.mipCount++;
                 }
                 if (allValueRow[1]) {
-                    totalScore.teamPoint += Number(totalScore.fetchTeamPoint(eventRow, allValueRow[1]));
-                    if (totalScore.isTopTeam(eventRow, allValueRow[1])) {
+                    const teamPt: number = Number(totalScore.fetchTeamPoint(eventRow, allValueRow[1]));
+                    totalScore.teamPoint += teamPt;
+                    // if (totalScore.isTopTeam(eventRow, allValueRow[1])) {
+                    if (teamPt === topOkamotoPoint) {
                         totalScore.winCount++;
                     }
-                    if (totalScore.fetchTeamPoint(eventRow, allValueRow[1]) === 0) {
+                    // if (totalScore.fetchTeamPoint(eventRow, allValueRow[1]) === 0) {
+                    if (teamPt === bottomOkamotoPoint) {
                         totalScore.loseCount++;
                     }
                 }
@@ -150,6 +158,18 @@ export class ScoreBook {
             }
         }
         return dataList;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    private getTopPoint(eventRow: any[]) {
+        let max: number = 0;
+        for (let i = 7; i <= 12; i++) {
+            const num: number = eventRow[i];
+            if (eventRow[i] && num > max) {
+                max = eventRow[i];
+            }
+        }
+        return max;
     }
 
     private writeTotalRecord(totalResult: GoogleAppsScript.Spreadsheet.Sheet, dataList: TotalScore[]) {
@@ -170,6 +190,7 @@ export class ScoreBook {
                 score.teamPoint,
                 score.winCount,
                 score.loseCount,
+                score.totalMatchs,
             ]);
         }
         lastRow = totalResult.getLastRow();
@@ -188,8 +209,7 @@ export class ScoreBook {
                 if (currentScore !== prevScore) {
                     prevRank = rank;
                 }
-                // totalResult.getRange(i + 1, 12).setValue(prevRank + '位');
-                totalResult.getRange(i + 1, 12).setValue(prevRank);
+                totalResult.getRange(i + 1, 13).setValue(prevRank);
                 if (currentScore !== prevScore) {
                     rank++;
                 }
@@ -207,8 +227,7 @@ export class ScoreBook {
                 if (currentScore !== prevScore) {
                     prevRank = rank;
                 }
-                // totalResult.getRange(i + 1, 14).setValue(prevRank + '位');
-                totalResult.getRange(i + 1, 14).setValue(prevRank);
+                totalResult.getRange(i + 1, 15).setValue(prevRank);
                 if (currentScore !== prevScore) {
                     rank++;
                 }
@@ -230,8 +249,7 @@ export class ScoreBook {
                 if (currentScore !== prevScore) {
                     prevRank = rank;
                 }
-                // totalResult.getRange(i + 1, 13).setValue(prevRank + '位');
-                totalResult.getRange(i + 1, 13).setValue(prevRank);
+                totalResult.getRange(i + 1, 14).setValue(prevRank);
                 if (currentScore !== prevScore) {
                     rank++;
                 }
@@ -241,14 +259,14 @@ export class ScoreBook {
             rangeVals = totalResult.getDataRange().getValues();
             for (let i = 1; i < rangeVals.length; i++) {
                 const currentName = rangeVals[i][1];
-                const currentGranking = rangeVals[i][11];
-                const currentAranking = rangeVals[i][12];
-                const currentOranking = rangeVals[i][13];
+                const currentGranking = rangeVals[i][12];
+                const currentAranking = rangeVals[i][13];
+                const currentOranking = rangeVals[i][14];
 
                 // if (currentGranking === '1位' || currentAranking === '1位' || mipNames.includes(currentName)) {
                 if (currentGranking === 1 || currentAranking === 1 || currentOranking === 1 || mipNames.includes(currentName)) {
                     // console.log(currentName + ':' + currentAranking + ' ' + rangeVals[i]);
-                    totalResult.getRange(i + 1, 15).setValue(1);
+                    totalResult.getRange(i + 1, 16).setValue(1);
                 }
             }
         }
