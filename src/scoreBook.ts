@@ -34,7 +34,6 @@ function calcAllResult() {
             scoreBook.generateScoreBook(actDate, attendees, Title.ASSIST);
         }
     }
-    console.log('aaaaaaaaaaaaaaaaaaaaaaaaaaaa');
     // scoreBook.makeEventFormat();
     scoreBook.aggregateScore();
 }
@@ -105,6 +104,7 @@ export class ScoreBook {
             const totalMatchs = eventSheetVal.length - 1;
             const topOkamotoPoint = this.getTopPoint(eventRow);
             const bottomOkamotoPoint = 1; //最下位は１という事にする
+
             for (const allValueRow of allValues) {
                 // console.log(allValueRow);
                 if (allValueRow[0] === '名前') {
@@ -198,7 +198,6 @@ export class ScoreBook {
         if (lastRow > 1) {
             totalResult.getRange(1, 1, lastRow, lastCol).setBorder(true, true, true, true, true, true);
             totalResult.getRange(2, 1, lastRow, lastCol).sort({ column: 6, ascending: false });
-
             let rank = 1;
             let prevScore = null;
             let prevRank = 1;
@@ -207,13 +206,17 @@ export class ScoreBook {
             for (let i = 1; i < rangeVals.length; i++) {
                 const currentScore = rangeVals[i][5];
                 if (currentScore !== prevScore) {
-                    prevRank = rank;
+                    prevRank = rank - 1;
                 }
                 totalResult.getRange(i + 1, 13).setValue(prevRank);
+
                 if (currentScore !== prevScore) {
                     rank++;
                 }
                 prevScore = currentScore;
+            }
+            for (let i = 1; i < rangeVals.length; i++) {
+                totalResult.getRange(i + 1, 17).setValue(rank - 1);
             }
 
             rank = 1;
@@ -233,6 +236,9 @@ export class ScoreBook {
                 }
                 prevScore = currentScore;
             }
+            for (let i = 1; i < rangeVals.length; i++) {
+                totalResult.getRange(i + 1, 19).setValue(rank - 1);
+            }
 
             totalResult.getRange(2, 1, lastRow, lastCol).sort({ column: 7, ascending: false });
             rangeVals = totalResult.getDataRange().getValues();
@@ -242,7 +248,6 @@ export class ScoreBook {
 
             const eventData: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.eventResultSheet;
             const mipNames: string[] = this.checkMip(eventData.getDataRange().getValues());
-
             //assist
             for (let i = 1; i < rangeVals.length; i++) {
                 const currentScore = rangeVals[i][6];
@@ -254,6 +259,9 @@ export class ScoreBook {
                     rank++;
                 }
                 prevScore = currentScore;
+            }
+            for (let i = 1; i < rangeVals.length; i++) {
+                totalResult.getRange(i + 1, 18).setValue(rank - 1);
             }
 
             rangeVals = totalResult.getDataRange().getValues();
