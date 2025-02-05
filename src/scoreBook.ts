@@ -206,7 +206,7 @@ export class ScoreBook {
             for (let i = 1; i < rangeVals.length; i++) {
                 const currentScore = rangeVals[i][5];
                 if (currentScore !== prevScore) {
-                    prevRank = rank - 1;
+                    prevRank = rank;
                 }
                 totalResult.getRange(i + 1, 13).setValue(prevRank);
 
