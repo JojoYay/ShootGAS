@@ -3,6 +3,7 @@ import { GasProps } from './gasProps';
 import { GasUtil } from './gasUtil';
 import { GetEventHandler } from './getEventHandler';
 import { LineUtil } from './lineUtil';
+import { ScoreBook } from './scoreBook';
 import { ScriptProps } from './scriptProps';
 
 export class LiffApi {
@@ -28,6 +29,20 @@ export class LiffApi {
         const members = den.extractMembers();
         // getEventHandler.result = { result: members };
         getEventHandler.result.members = members;
+    }
+
+    //Densukeではなくてスプシから取ってくる
+    private getTeams(getEventHandler: GetEventHandler): void {
+        const den: DensukeUtil = new DensukeUtil();
+        const scoreBook: ScoreBook = new ScoreBook();
+        const chee = den.getDensukeCheerio();
+        const actDate = den.extractDateFromRownum(chee, ScriptProps.instance.ROWNUM);
+        const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
+
+        const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = scoreBook.getEventDetailSheet(eventSS, actDate);
+        // console.log('resultInput: ' + actDate);
+        const values = eventDetail.getDataRange().getValues();
+        getEventHandler.result.teams = values;
     }
 
     private getRegisteredMembers(getEventHandler: GetEventHandler): void {

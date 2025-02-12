@@ -73,7 +73,7 @@ export class ScoreBook {
         this.updateEventDetails(eventDetail);
     }
 
-    private getEventDetailSheet(eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet, actDate: string): GoogleAppsScript.Spreadsheet.Sheet {
+    public getEventDetailSheet(eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet, actDate: string): GoogleAppsScript.Spreadsheet.Sheet {
         let eventDetail: GoogleAppsScript.Spreadsheet.Sheet | null = eventSS.getSheetByName(actDate);
 
         if (!eventDetail) {

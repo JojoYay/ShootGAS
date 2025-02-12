@@ -33,6 +33,12 @@ export const COMMAND_MAP: Command[] = [
         condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'deleteEx',
     },
     {
+        func: 'updateTeams',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'updateTeams',
+    },
+    {
         func: 'aggregate',
         lineCmd: '集計, aggregate',
         display: true,
@@ -181,7 +187,7 @@ export class PostEventHandler {
         if (e.postData && e.postData.contents) {
             const json = JSON.parse(e.postData.contents);
             const event = json.events[0];
-            console.log(event);
+            // console.log(event);
             if (event.type === 'postback') {
                 //Menu 切り替えの場合コレ
                 return;
@@ -199,8 +205,10 @@ export class PostEventHandler {
             this._userId = event.source.userId;
             this._replyToken = event.replyToken;
             const lineUtil: LineUtil = new LineUtil();
-            this._lang = lineUtil.getLineLang(this._userId);
-            if (this._lang === 'ja') {
+            if (this._userId) {
+                this._lang = lineUtil.getLineLang(this._userId);
+            }
+            if (this._lang && this._lang === 'ja') {
                 this._resultMessage = '【エラー】申し訳ありません、理解できませんでした。再度正しく入力してください。';
             } else {
                 this._resultMessage = "【Error】I'm sorry, I didn't understand. Please enter the correct input again.";

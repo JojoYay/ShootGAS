@@ -12,6 +12,66 @@ const lineUtil: LineUtil = new LineUtil();
 const gasUtil: GasUtil = new GasUtil();
 
 export class RequestExecuter {
+    public updateTeams(postEventHander: PostEventHandler): void {
+        console.log('execute updateTeams');
+        console.log(postEventHander.parameter);
+
+        const den: DensukeUtil = new DensukeUtil();
+        const scoreBook: ScoreBook = new ScoreBook();
+        const chee = den.getDensukeCheerio();
+        const actDate = den.extractDateFromRownum(chee, ScriptProps.instance.ROWNUM);
+        const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
+
+        const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = scoreBook.getEventDetailSheet(eventSS, actDate);
+        // console.log('resultInput: ' + actDate);
+        const values = eventDetail.getDataRange().getValues();
+        const param: { [key: string]: string } = postEventHander.parameter;
+        // const headerRow = values[0]; // ヘッダー行を取得
+        for (const k in param) {
+            if (k === 'func') {
+                continue;
+            }
+            // valuesの1列目(columnIndex=0)にkと同じ名前があるか検索
+            for (let i = 0; i < values.length; i++) {
+                if (values[i][0] === k) {
+                    // 同じ名前が見つかった場合、該当する行の2列目(columnIndex=1)にparam[k]を入力
+                    if (param[k] === '0') {
+                        eventDetail.getRange(i + 1, 2).clearContent(); // param[k]が'0'の場合はclearContent()を実行
+                    } else {
+                        eventDetail.getRange(i + 1, 2).setValue(this.convertVal(param[k])); // それ以外の場合はsetValue()を実行
+                    }
+                    break; // 同じ名前が見つかったら、それ以降の行は検索しない
+                }
+            }
+        }
+        postEventHander.reponseObj = { success: true };
+    }
+
+    private convertVal(val: string): string {
+        if (val === '1') {
+            return 'チーム1';
+        } else if (val === '2') {
+            return 'チーム2';
+        } else if (val === '3') {
+            return 'チーム3';
+        } else if (val === '4') {
+            return 'チーム4';
+        } else if (val === '5') {
+            return 'チーム5';
+        } else if (val === '6') {
+            return 'チーム6';
+        } else if (val === '7') {
+            return 'チーム7';
+        } else if (val === '8') {
+            return 'チーム8';
+        } else if (val === '9') {
+            return 'チーム9';
+        } else if (val === '10') {
+            return 'チーム10';
+        }
+        return '';
+    }
+
     public deleteEx(postEventHander: PostEventHandler): void {
         console.log('execute deleteEx');
         const title: string = postEventHander.parameter.title;

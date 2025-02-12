@@ -46,6 +46,7 @@ function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.Content.TextO
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Content.TextOutput {
     // console.log('sasdsdsadsafsadd');
+
     const lineUtil: LineUtil = new LineUtil();
     const gasUtil: GasUtil = new GasUtil();
     const requestExecuter: RequestExecuter = new RequestExecuter();
@@ -66,12 +67,19 @@ function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Content.Tex
                 lineUtil.sendLineMessage(gasUtil.getLineUserId(gasUtil.getDensukeName(gasUtil.getPaynowOwner())), postEventHander.paynowOwnerMsg);
             }
         }
-    } catch (e) {
-        postEventHander.resultMessage = '[Error] ' + (e as Error).message + '\n' + (e as Error).stack;
+    } catch (err) {
+        postEventHander.resultMessage = '[Error] ' + (err as Error).message + '\n' + (err as Error).stack;
         lineUtil.sendLineReply(postEventHander.replyToken, postEventHander.resultMessage, null);
-        throw e;
+        throw err;
     }
-    // return ContentService.createTextOutput(JSON.stringify({ content: 'post ok' })).setMimeType(ContentService.MimeType.JSON);
+    // const allowedOrigins = [
+    //     'https://shootsundayfront.web.app',
+    //     'https://test-8120f.web.app',
+    //     'https://shootsundayfront.web.app',
+    //     'https://test-8120f.web.app',
+    // ];
+    //   const origin = e.origin || e.requestHeaders.origin; // リクエストの Origin を取得 (GAS 環境によって取得方法が異なる場合あり)
+
     return ContentService.createTextOutput(JSON.stringify(postEventHander.reponseObj)).setMimeType(ContentService.MimeType.JSON);
 }
 
