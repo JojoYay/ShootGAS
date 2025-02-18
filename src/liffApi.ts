@@ -12,9 +12,65 @@ export class LiffApi {
         getEventHandler.result = { result: value };
     }
 
+    private getWinningTeam(getEventHandler: GetEventHandler): void {
+        // console.log('getWinningTeam');
+
+        const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
+        const den: DensukeUtil = new DensukeUtil();
+        const chee = den.getDensukeCheerio();
+        const actDate = den.extractDateFromRownum(chee, ScriptProps.instance.ROWNUM);
+        const shootLog: GoogleAppsScript.Spreadsheet.Sheet | null = eventSS.getSheetByName(this.getLogSheetName(actDate));
+        if (!shootLog) {
+            throw Error(this.getLogSheetName(actDate) + 'が存在しません！');
+        }
+        const matchId: string = getEventHandler.e.parameter['matchId']; // matchId をパラメータから取得
+        const shootLogVals = shootLog.getDataRange().getValues();
+        console.log('matchId:' + matchId);
+        const teamGoals: { [teamName: string]: number } = {}; // チームごとの得点を集計するオブジェクト
+
+        // shootLogVals をループして matchId が一致する行のチームごとの得点を集計 (1行目はヘッダー行と仮定)
+        for (let i = 1; i < shootLogVals.length; i++) {
+            const row = shootLogVals[i];
+            const currentRowMatchId = row[1]; // 2列目 (B列) : 試合
+            if (currentRowMatchId === matchId) {
+                // matchId が一致する行のみ処理
+                const teamName = row[2]; // 3列目 (C列) : チーム
+                if (teamName) {
+                    teamGoals[teamName] = (teamGoals[teamName] || 0) + 1; // チームの得点数をカウント
+                }
+            }
+        }
+        // console.log(teamGoals);
+        let winningTeam: string | null = null;
+        let maxGoals = -1;
+
+        // teamGoals オブジェクトから最も得点の多いチームを勝者として判定
+        for (const team in teamGoals) {
+            if (teamGoals[team] > maxGoals) {
+                maxGoals = teamGoals[team];
+                winningTeam = team;
+            }
+        }
+        // console.log('win:' + winningTeam);
+        // 勝者チーム名を responseObj に設定 (勝者がいない場合は null が設定される)
+        getEventHandler.result = { winningTeam: winningTeam };
+    }
+
     private getVideo(getEventHandler: GetEventHandler): void {
         const videos: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
         getEventHandler.result = { result: videos.getDataRange().getValues() };
+    }
+
+    private getTodayMatch(getEventHandler: GetEventHandler): void {
+        const videos: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
+        const den: DensukeUtil = new DensukeUtil();
+        const chee = den.getDensukeCheerio();
+        const actDate = den.extractDateFromRownum(chee, ScriptProps.instance.ROWNUM);
+
+        getEventHandler.result.match = videos
+            .getDataRange()
+            .getValues()
+            .filter(val => val[0] === actDate && !val[10].endsWith('_g') && val[3] && val[4]);
     }
 
     private getPayNow(getEventHandler: GetEventHandler): void {
@@ -43,6 +99,34 @@ export class LiffApi {
         // console.log('resultInput: ' + actDate);
         const values = eventDetail.getDataRange().getValues();
         getEventHandler.result.teams = values;
+    }
+
+    private getLogSheetName(actDate: string) {
+        return actDate + '_s';
+    }
+
+    private getScores(getEventHandler: GetEventHandler): void {
+        const den: DensukeUtil = new DensukeUtil();
+
+        // const scoreBook: ScoreBook = new ScoreBook();
+        const chee = den.getDensukeCheerio();
+        const actDate = den.extractDateFromRownum(chee, ScriptProps.instance.ROWNUM);
+        const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
+
+        let shootLog: GoogleAppsScript.Spreadsheet.Sheet | null = eventSS.getSheetByName(this.getLogSheetName(actDate));
+        if (!shootLog) {
+            shootLog = eventSS.insertSheet(this.getLogSheetName(actDate));
+            shootLog.activate();
+            eventSS.moveActiveSheet(0);
+            // shootLog.insertRows(shootLog.getDataRange().getLastRow(), 1);
+            shootLog.getRange(1, 1).setValue('No');
+            shootLog.getRange(1, 2).setValue('試合');
+            shootLog.getRange(1, 3).setValue('チーム');
+            shootLog.getRange(1, 4).setValue('アシスト');
+            shootLog.getRange(1, 5).setValue('ゴール');
+        }
+
+        getEventHandler.result.scores = shootLog.getDataRange().getValues();
     }
 
     private getRegisteredMembers(getEventHandler: GetEventHandler): void {

@@ -39,6 +39,30 @@ export const COMMAND_MAP: Command[] = [
         condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'updateTeams',
     },
     {
+        func: 'recordGoal',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'recordGoal',
+    },
+    {
+        func: 'updateGoal',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'updateGoal',
+    },
+    {
+        func: 'deleteGoal',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'deleteGoal',
+    },
+    {
+        func: 'closeGame',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'closeGame',
+    },
+    {
         func: 'aggregate',
         lineCmd: '集計, aggregate',
         display: true,

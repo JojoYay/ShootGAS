@@ -84,6 +84,17 @@ export class ScoreBook {
         return eventDetail;
     }
 
+    public getScoreDetailSheet(eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet, actDate: string): GoogleAppsScript.Spreadsheet.Sheet {
+        let eventDetail: GoogleAppsScript.Spreadsheet.Sheet | null = eventSS.getSheetByName(actDate);
+
+        if (!eventDetail) {
+            eventDetail = eventSS.insertSheet(actDate);
+            eventDetail.appendRow(['名前', 'チーム', '得点', 'アシスト']);
+            this.moveSheetToHead(eventDetail, eventSS);
+        }
+        return eventDetail;
+    }
+
     private exstractTotalScores(eventSheet: GoogleAppsScript.Spreadsheet.Sheet, eventDetails: GoogleAppsScript.Spreadsheet.Sheet[]) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const eventSheetVal: any[][] = eventSheet.getDataRange().getValues();

@@ -11,7 +11,7 @@ export class GetEventHandler {
     public constructor(e: GoogleAppsScript.Events.DoGet) {
         this.e = e;
         this.funcs = e.parameters['func'];
-        console.log('funcs: ' + this.funcs);
+        // console.log('funcs: ' + this.funcs);
         // this.userId = e.parameters['userId'][0];
         // if (!this.userId || !gasUtil.isRegistered(this.userId)) {
         // if (!this.userId) {

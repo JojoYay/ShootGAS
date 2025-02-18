@@ -85,7 +85,7 @@ function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Content.Tex
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function executeMethod(obj: any, methodName: string, args: any) {
-    console.log('Execute ' + methodName);
+    // console.log('Execute ' + methodName);
     if (typeof obj[methodName] === 'function') {
         return obj[methodName](args);
     } else {
