@@ -100,7 +100,7 @@ export class ScoreBook {
         const eventSheetVal: any[][] = eventSheet.getDataRange().getValues();
         const dataList: TotalScore[] = [];
         for (const sheet of eventDetails) {
-            if (sheet.getSheetName() === 'Total' || sheet.getSheetName() === 'EventData') {
+            if (sheet.getSheetName() === 'Total' || sheet.getSheetName() === 'EventData' || sheet.getSheetName().endsWith('_s')) {
                 continue;
             }
             const allValues = sheet.getDataRange().getValues();

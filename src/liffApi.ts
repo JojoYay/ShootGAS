@@ -41,24 +41,82 @@ export class LiffApi {
             }
         }
         // console.log(teamGoals);
-        let winningTeam: string | null = null;
+        let winningTeam: string = 'draw';
         let maxGoals = -1;
+        let teamsWithMaxGoals: string[] = []; // 最大得点のチームを格納する配列
 
-        // teamGoals オブジェクトから最も得点の多いチームを勝者として判定
         for (const team in teamGoals) {
             if (teamGoals[team] > maxGoals) {
                 maxGoals = teamGoals[team];
                 winningTeam = team;
+                teamsWithMaxGoals = [team]; // 新しい最大得点チームが見つかったので配列を更新
+            } else if (teamGoals[team] === maxGoals) {
+                teamsWithMaxGoals.push(team); // 最大得点と同点のチームを追加
             }
+        }
+
+        if (teamsWithMaxGoals.length > 1) {
+            winningTeam = 'draw'; // 最大得点のチームが複数存在する場合は引分け
         }
         // console.log('win:' + winningTeam);
         // 勝者チーム名を responseObj に設定 (勝者がいない場合は null が設定される)
-        getEventHandler.result = { winningTeam: winningTeam };
+        getEventHandler.result.winningTeam = winningTeam;
     }
 
     private getVideo(getEventHandler: GetEventHandler): void {
         const videos: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
         getEventHandler.result = { result: videos.getDataRange().getValues() };
+    }
+
+    private getInfoOfTheDay(getEventHandler: GetEventHandler): void {
+        const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
+        const videos: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
+        let actDate: string = getEventHandler.e.parameter['actDate'];
+        console.log('info', actDate);
+        //ない場合は今のやつ その場合全体のVideoリスト・日付のリストも含める
+        if (!actDate) {
+            const den: DensukeUtil = new DensukeUtil();
+            const chee = den.getDensukeCheerio();
+            actDate = den.extractDateFromRownum(chee, ScriptProps.instance.ROWNUM);
+            getEventHandler.result.videos = videos.getDataRange().getValues();
+            getEventHandler.result.actDates = [
+                ...new Set(
+                    videos
+                        .getDataRange()
+                        .getValues()
+                        .map(val => val[0])
+                        .reverse()
+                ),
+            ];
+            const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.eventResultSheet;
+            getEventHandler.result.events = eventDetail.getDataRange().getValues();
+        }
+
+        // getEventHandler.result.videos = videos
+        //     .getDataRange()
+        //     .getValues();
+        // .slice(1)
+        // .filter(val => val[0] === actDate)
+        // .sort((a, b) => {
+        //     const a_g = typeof a[10] === 'string' && a[10].endsWith('_g');
+        //     const b_g = typeof b[10] === 'string' && b[10].endsWith('_g');
+        //     if (a_g && !b_g) {
+        //         return -1; // a comes before b
+        //     } else if (!a_g && b_g) {
+        //         return 1; // b comes before a
+        //     } else {
+        //         return 0; // no change in order
+        //     }
+        // });
+
+        const shootLog: GoogleAppsScript.Spreadsheet.Sheet | null = eventSS.getSheetByName(this.getLogSheetName(actDate));
+        if (shootLog) {
+            getEventHandler.result.shootLogs = shootLog
+                .getDataRange()
+                .getValues()
+                .slice(1)
+                .filter(val => val[1].startsWith(actDate));
+        }
     }
 
     private getTodayMatch(getEventHandler: GetEventHandler): void {
@@ -99,6 +157,47 @@ export class LiffApi {
         // console.log('resultInput: ' + actDate);
         const values = eventDetail.getDataRange().getValues();
         getEventHandler.result.teams = values;
+
+        const count = this.getMatchType(actDate);
+        getEventHandler.result.matchCount = count;
+    }
+
+    private getMatchType(actDate: string) {
+        const videoSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
+        const videoVals = videoSheet.getDataRange().getValues();
+        let count = 0;
+        for (let i = videoVals.length - 1; i >= 0; i--) {
+            // Start from the last row and go backwards
+            const val = videoVals[i];
+            if (val[0] === actDate) {
+                // Check if the first column matches actDate
+                if (typeof val[10] !== 'string' || !val[10].endsWith('_g')) {
+                    // Check the second condition
+                    count++;
+                }
+            } else {
+                if (count > 0) {
+                    break; // If the first column does not match actDate, break the loop
+                }
+            }
+        }
+        return this.convertMatchCount(count);
+    }
+
+    private convertMatchCount(c: number): string {
+        let result = '3';
+        switch (c) {
+            case 3: //3チームの場合
+                result = '3';
+                break;
+            case 4:
+                result = '4';
+                break;
+            case 10:
+                result = '5';
+                break;
+        }
+        return result;
     }
 
     private getLogSheetName(actDate: string) {
@@ -185,8 +284,9 @@ export class LiffApi {
             const gasUtil: GasUtil = new GasUtil();
             const densukeName = gasUtil.getDensukeName(lineName);
             const userRow = sheetVal.find(item => item[0] === densukeName);
-            const settingSheet = GasProps.instance.settingSheet;
-            const addy = settingSheet.getRange('B2').getValue();
+            // const settingSheet = GasProps.instance.settingSheet;
+            // const addy = settingSheet.getRange('B2').getValue();
+            const addy = sheet.getRange('B4').getValue();
             if (userRow) {
                 getEventHandler.result.statusMsg =
                     '支払額：$' + userRow[2] + ' PayNow先:' + addy + '\n支払い済みのスクリーンショットをこちらにアップロードして下さい';
