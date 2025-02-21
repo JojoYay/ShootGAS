@@ -309,6 +309,8 @@ export class RequestExecuter {
                     if (param[k] === '0') {
                         eventDetail.getRange(i + 1, 2).clearContent(); // param[k]が'0'の場合はclearContent()を実行
                     } else {
+                        console.log('key: ' + k + ' value: ' + this.convertVal(param[k]));
+
                         eventDetail.getRange(i + 1, 2).setValue(this.convertVal(param[k])); // それ以外の場合はsetValue()を実行
                     }
                     break; // 同じ名前が見つかったら、それ以降の行は検索しない
