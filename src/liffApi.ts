@@ -75,16 +75,29 @@ export class LiffApi {
         console.log('info', actDate);
         //ない場合は今のやつ その場合全体のVideoリスト・日付のリストも含める
         if (!actDate) {
-            const den: DensukeUtil = new DensukeUtil();
-            const chee = den.getDensukeCheerio();
-            actDate = den.extractDateFromRownum(chee, ScriptProps.instance.ROWNUM);
-            getEventHandler.result.videos = videos.getDataRange().getValues();
+            // const den: DensukeUtil = new DensukeUtil();
+            // const chee = den.getDensukeCheerio();
+            const videoVals = videos.getDataRange().getValues();
+            console.log('videoVals', videoVals);
+            if (videoVals.length > 1) {
+                actDate = videoVals[videoVals.length - 1][0]; // videosシートの最終行の１列目の値を取得
+            }
+            console.log(actDate);
+            getEventHandler.result.videos = videoVals;
             getEventHandler.result.actDates = [
                 ...new Set(
                     videos
                         .getDataRange()
                         .getValues()
-                        .map(val => val[0])
+                        .map(val => {
+                            if (typeof val[0] === 'string') {
+                                return val[0]; // Stringの場合はそのまま返す
+                            } else if (val[0] instanceof Date) {
+                                return Utilities.formatDate(val[0], 'Asia/Singapore', 'yyyy/MM/dd'); // Date型の場合はシンガポール時刻でフォーマット
+                            } else {
+                                return ''; // その他の型の場合は空文字を返す (必要に応じて変更)
+                            }
+                        })
                         .reverse()
                 ),
             ];

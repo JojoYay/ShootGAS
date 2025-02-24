@@ -211,7 +211,7 @@ export class RequestExecuter {
         const scorer: string = postEventHander.parameter['scorer'];
         const assister: string | null = postEventHander.parameter['assister'];
 
-        shootLog.appendRow([no + 1, matchId, team, scorer, assister ? assister : '']);
+        shootLog.appendRow([no + 1, matchId, team, assister ? assister : '', scorer]);
 
         postEventHander.reponseObj = { success: true };
     }
@@ -245,8 +245,8 @@ export class RequestExecuter {
             // 'no' に一致する行が見つかった場合、データを更新
             shootLog.getRange(rowNumberToUpdate, 2).setValue(matchId); // 2列目 (B列) : 試合
             shootLog.getRange(rowNumberToUpdate, 3).setValue(team); // 3列目 (C列) : チーム
-            shootLog.getRange(rowNumberToUpdate, 4).setValue(scorer); // 4列目 (D列) : ゴール
-            shootLog.getRange(rowNumberToUpdate, 5).setValue(assister ? assister : ''); // 5列目 (E列) : アシスト
+            shootLog.getRange(rowNumberToUpdate, 5).setValue(scorer); // 4列目 (D列) : ゴール
+            shootLog.getRange(rowNumberToUpdate, 4).setValue(assister ? assister : ''); // 5列目 (E列) : アシスト
         } else {
             console.error(`No row found with No: ${no}. Appending new row instead.`);
             shootLog.appendRow([no, matchId, team, scorer, assister ? assister : '']); // No はそのまま parameter の no を使用
@@ -416,8 +416,8 @@ export class RequestExecuter {
             case '3': //3チームの場合
                 videoSheet.insertRows(lastRow + 1, 4);
                 this.addRow(videoSheet, lastRow + 1, actDate, eventDetails, '#1 Team1 vs Team2', 'Team1', 'Team2', '-3_1');
-                this.addRow(videoSheet, lastRow + 2, actDate, eventDetails, '#2 Team2 vs Team3', 'Team2', 'Team3', '-3_2');
-                this.addRow(videoSheet, lastRow + 3, actDate, eventDetails, '#3 Team1 vs Team3', 'Team1', 'Team3', '-3_3');
+                this.addRow(videoSheet, lastRow + 3, actDate, eventDetails, '#3 Team1 vs Team3', 'Team1', 'Team3', '-3_2');
+                this.addRow(videoSheet, lastRow + 2, actDate, eventDetails, '#2 Team2 vs Team3', 'Team2', 'Team3', '-3_3');
                 this.addRow(videoSheet, lastRow + 4, actDate, eventDetails, 'ゴール集', '', '', '-3_g');
                 break;
             case '4': //4チームの場合
