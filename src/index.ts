@@ -21,7 +21,13 @@ function updateProfilePic() {
                 const prof = lineUtil.getLineUserProfile(userId);
                 if (prof) {
                     console.log(userRow[0] + ': ' + prof.pictureUrl);
-                    GasProps.instance.mappingSheet.getRange(index + 1, 5).setValue(prof.pictureUrl);
+                    if (prof.pictureUrl) {
+                        GasProps.instance.mappingSheet.getRange(index + 1, 5).setValue(prof.pictureUrl);
+                    } else if (prof.userName === 'yagisho') {
+                        GasProps.instance.mappingSheet
+                            .getRange(index + 1, 5)
+                            .setValue('https://lh3.googleusercontent.com/d/1Qc2YASdbIoikuT5bNcdnObhznf-WD5rK');
+                    }
                 }
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (e) {
