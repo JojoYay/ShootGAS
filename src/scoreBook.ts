@@ -84,17 +84,6 @@ export class ScoreBook {
         return eventDetail;
     }
 
-    public getScoreDetailSheet(eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet, actDate: string): GoogleAppsScript.Spreadsheet.Sheet {
-        let eventDetail: GoogleAppsScript.Spreadsheet.Sheet | null = eventSS.getSheetByName(actDate);
-
-        if (!eventDetail) {
-            eventDetail = eventSS.insertSheet(actDate);
-            eventDetail.appendRow(['名前', 'チーム', '得点', 'アシスト']);
-            this.moveSheetToHead(eventDetail, eventSS);
-        }
-        return eventDetail;
-    }
-
     private exstractTotalScores(eventSheet: GoogleAppsScript.Spreadsheet.Sheet, eventDetails: GoogleAppsScript.Spreadsheet.Sheet[]) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const eventSheetVal: any[][] = eventSheet.getDataRange().getValues();
@@ -107,7 +96,7 @@ export class ScoreBook {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const eventRow: any[] | undefined = eventSheetVal.find(item => item[1] === sheet.getSheetName());
             if (!eventRow) {
-                throw new Error('eventがないなんてことはない');
+                throw new Error('以下のデータが見つかりません actDat/SheetName:' + sheet.getSheetName());
             }
             const g: GasUtil = new GasUtil();
             const densukeMappingValue = g.getLineUserIdRangeValue();
@@ -145,7 +134,13 @@ export class ScoreBook {
                 } else if (eventRow[4] === '雨') {
                     totalScore.rainyPlay++;
                 }
-                if (eventRow[5] === totalScore.name) {
+                if (
+                    eventRow[5] === totalScore.name ||
+                    eventRow[17] === totalScore.name ||
+                    eventRow[18] === totalScore.name ||
+                    eventRow[19] === totalScore.name ||
+                    eventRow[20] === totalScore.name
+                ) {
                     totalScore.mipCount++;
                 }
                 if (allValueRow[1]) {
@@ -174,7 +169,7 @@ export class ScoreBook {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private getTopPoint(eventRow: any[]) {
         let max: number = 0;
-        for (let i = 7; i <= 12; i++) {
+        for (let i = 7; i <= 16; i++) {
             const num: number = eventRow[i];
             if (eventRow[i] && num > max) {
                 max = eventRow[i];
@@ -348,7 +343,7 @@ export class ScoreBook {
     }
 
     private updateEventDetails(eventDetail: GoogleAppsScript.Spreadsheet.Sheet): void {
-        const teamName: string[] = ['チーム1', 'チーム2', 'チーム3', 'チーム4', 'チーム5', 'チーム6'];
+        const teamName: string[] = ['チーム1', 'チーム2', 'チーム3', 'チーム4', 'チーム5', 'チーム6', 'チーム7', 'チーム8', 'チーム9', 'チーム10'];
         const teamNameVal = SpreadsheetApp.newDataValidation().requireValueInList(teamName).build();
         // const teamPoint: string[] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
         // const teamPointVal = SpreadsheetApp.newDataValidation().requireValueInList(teamPoint).build();
@@ -417,6 +412,15 @@ export class ScoreBook {
         eventData.getRange(lastRow, 11).setDataValidation(teamPointVal);
         eventData.getRange(lastRow, 12).setDataValidation(teamPointVal);
         eventData.getRange(lastRow, 13).setDataValidation(teamPointVal);
+        //追加
+        eventData.getRange(lastRow, 14).setDataValidation(teamPointVal);
+        eventData.getRange(lastRow, 15).setDataValidation(teamPointVal);
+        eventData.getRange(lastRow, 16).setDataValidation(teamPointVal);
+        eventData.getRange(lastRow, 17).setDataValidation(teamPointVal);
+        eventData.getRange(lastRow, 18).setDataValidation(attendVal);
+        eventData.getRange(lastRow, 19).setDataValidation(attendVal);
+        eventData.getRange(lastRow, 20).setDataValidation(attendVal);
+        eventData.getRange(lastRow, 21).setDataValidation(attendVal);
 
         if (lastRow > 2) {
             const newRowRange: GoogleAppsScript.Spreadsheet.Range = eventData.getRange(lastRow, 1, 1, lastCol - 1);
@@ -455,7 +459,7 @@ export class ScoreBook {
             throw new Error(actDate + ' event is not found in EventData Sheet');
         }
         const resultPoints = [];
-        for (let i = 7; i < 13; i++) {
+        for (let i = 7; i < 17; i++) {
             if (eventRow[i]) {
                 resultPoints.push(eventRow[i]);
             } else {
@@ -479,14 +483,20 @@ export class ScoreBook {
                     point = resultPoints[1];
                 } else if (team === 'チーム3') {
                     point = resultPoints[2];
-                    ('');
                 } else if (team === 'チーム4') {
                     point = resultPoints[3];
                 } else if (team === 'チーム5') {
                     point = resultPoints[4];
-                    ('');
                 } else if (team === 'チーム6') {
                     point = resultPoints[5];
+                } else if (team === 'チーム7') {
+                    point = resultPoints[6];
+                } else if (team === 'チーム8') {
+                    point = resultPoints[7];
+                } else if (team === 'チーム9') {
+                    point = resultPoints[8];
+                } else if (team === 'チーム10') {
+                    point = resultPoints[9];
                 }
                 scoreSheet.getRange(index, 5).setValue(point);
             }

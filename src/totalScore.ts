@@ -4,50 +4,17 @@ export class TotalScore {
     public playTime: number = 0;
     public sunnyPlay: number = 0;
     public rainyPlay: number = 0;
-    // public gRankingTitle: string = '';
     public goalCount: number = 0;
-    // public aRankingTitle: string = '';
     public assistCount: number = 0;
     public mipCount: number = 0;
     public teamPoint: number = 0;
     public winCount: number = 0;
     public loseCount: number = 0;
-    // public drawCpimt: number = 0;
     public totalMatchs: number = 0;
     public totalOrank: number = 0;
     public totalGrank: number = 0;
     public totalArank: number = 0;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    public isTopTeam(eventDataRow: any[], teamValue: string): boolean {
-        const teamCount: number = this.getTeamCount(eventDataRow);
-        if (teamCount === 2) {
-            return this.fetchTeamPoint(eventDataRow, teamValue) === 1;
-        } else if (teamCount === 3) {
-            return this.fetchTeamPoint(eventDataRow, teamValue) === 2;
-        } else if (teamCount === 4) {
-            return this.fetchTeamPoint(eventDataRow, teamValue) === 3;
-        } else if (teamCount === 5) {
-            return this.fetchTeamPoint(eventDataRow, teamValue) === 4;
-        } else if (teamCount === 6) {
-            return this.fetchTeamPoint(eventDataRow, teamValue) === 5;
-        }
-        return false;
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    public getTeamCount(eventDataRow: any[]): number {
-        if (!eventDataRow[10]) {
-            return 3;
-        } else if (!eventDataRow[11]) {
-            return 4;
-        } else if (!eventDataRow[12]) {
-            return 5;
-        } else if (!eventDataRow[13]) {
-            return 6;
-        }
-        return -1;
-    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public fetchTeamPoint(eventDataRow: any[], teamValue: string): number {
         if (teamValue === 'チーム1') {
@@ -68,32 +35,19 @@ export class TotalScore {
         if (teamValue === 'チーム6') {
             return eventDataRow[12];
         }
-        return 0;
+        if (teamValue === 'チーム7') {
+            return eventDataRow[13];
+        }
+        if (teamValue === 'チーム8') {
+            return eventDataRow[14];
+        }
+        if (teamValue === 'チーム9') {
+            return eventDataRow[15];
+        }
+        if (teamValue === 'チーム10') {
+            return eventDataRow[16];
+        }
 
-        // let teamPointIndex = 0;
-        // switch (teamValue) {
-        //   case 'チーム1':
-        //     teamPointIndex = 8;
-        //     break;
-        //   case 'チーム2':
-        //     teamPointIndex = 9;
-        //     break;
-        //   case 'チーム3':
-        //     teamPointIndex = 10;
-        //     break;
-        //   case 'チーム4':
-        //     teamPointIndex = 11;
-        //     break;
-        //   case 'チーム5':
-        //     teamPointIndex = 12;
-        //     break;
-        //   case 'チーム6':
-        //     teamPointIndex = 13;
-        //     break;
-        //   default:
-        //     teamPointIndex = 0;
-        //     break;
-        // }
-        // return eventDataRow[teamPointIndex] || 0;
+        return 0;
     }
 }
