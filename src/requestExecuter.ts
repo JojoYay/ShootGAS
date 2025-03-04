@@ -12,6 +12,82 @@ const lineUtil: LineUtil = new LineUtil();
 const gasUtil: GasUtil = new GasUtil();
 
 export class RequestExecuter {
+    public updateParticipation(postEventHander: PostEventHandler): void {
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        const attendanceSheet: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('attendance');
+        if (!attendanceSheet) {
+            console.error('シート "attendance" が見つかりません。');
+            return; // or throw an error
+        }
+        const attendanceValues = attendanceSheet.getDataRange().getValues(); // 出席シートのデータを取得
+        const headerRow = attendanceValues[0]; // ヘッダー行を保持
+        const param = postEventHander.parameter;
+        const updates: Record<string, Record<string, string>> = {};
+
+        // パラメータを処理して updates オブジェクトに整理
+        for (const key in param) {
+            const lastUnderscoreIndex = key.lastIndexOf('_');
+            if (lastUnderscoreIndex !== -1) {
+                const paramName = key.substring(0, lastUnderscoreIndex);
+                const index = key.substring(lastUnderscoreIndex + 1);
+                if (!updates[index]) {
+                    updates[index] = {};
+                }
+                updates[index][paramName] = param[key];
+            }
+        }
+
+        console.log(updates);
+        for (const index in updates) {
+            const updateData = updates[index];
+            let rowNumberToUpdate: number | null = null;
+            if (updateData['attendance_id']) {
+                // attendance_id が存在する場合、更新
+                const attendanceId = updateData['attendance_id'];
+                for (let i = 1; i < attendanceValues.length; i++) {
+                    // ヘッダー行を skip
+                    if (attendanceValues[i][0] === attendanceId) {
+                        // 0列目が attendance_id 列と仮定
+                        rowNumberToUpdate = i + 1;
+                        break;
+                    }
+                }
+            }
+
+            if (rowNumberToUpdate) {
+                // 既存の行を更新
+                console.log(`attendance_id: ${updateData['attendance_id']} の行を更新`);
+                const row = rowNumberToUpdate;
+                // 各パラメータを該当の列に更新 (列位置はheaderRowからcolumnIndexを検索して特定)
+                ['user_id', 'year', 'month', 'date', 'status', 'calendar_id'].forEach(paramName => {
+                    if (updateData[paramName]) {
+                        const colIndex = headerRow.indexOf(paramName); // ヘッダー行から列番号を取得
+                        if (colIndex > -1) {
+                            attendanceSheet.getRange(row, colIndex + 1).setValue(updateData[paramName]);
+                        }
+                    }
+                });
+            } else {
+                // 新規追加
+                console.log('新規行を追加');
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const newRowData: any[] = [];
+                // ヘッダー行に基づいて新しい行データを作成
+                headerRow.forEach(header => {
+                    if (header === 'attendance_id') {
+                        newRowData.push(Utilities.getUuid()); // attendance_id がない場合は新規にUUIDを生成
+                    } else if (updateData[header]) {
+                        newRowData.push(updateData[header]);
+                    } else {
+                        newRowData.push(''); // データがない場合は空文字
+                    }
+                });
+                console.log(newRowData);
+                attendanceSheet.appendRow(newRowData);
+            }
+        }
+    }
+
     //毎回全部集計してアシストと得点を入れなおす
     public closeGame(postEventHander: PostEventHandler): void {
         const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
@@ -506,6 +582,52 @@ export class RequestExecuter {
                         .join(', ')
                 );
                 break;
+            case 'Team6':
+                videoSheet.getRange(row, 6).setValue(
+                    eventDetails
+                        .slice(1)
+                        .filter(val => val[1] === 'チーム6')
+                        .map(val => val[0])
+                        .join(', ')
+                );
+                break;
+            case 'Team7':
+                videoSheet.getRange(row, 6).setValue(
+                    eventDetails
+                        .slice(1)
+                        .filter(val => val[1] === 'チーム7')
+                        .map(val => val[0])
+                        .join(', ')
+                );
+                break;
+            case 'Team8':
+                videoSheet.getRange(row, 6).setValue(
+                    eventDetails
+                        .slice(1)
+                        .filter(val => val[1] === 'チーム8')
+                        .map(val => val[0])
+                        .join(', ')
+                );
+                break;
+            case 'Team9':
+                videoSheet.getRange(row, 6).setValue(
+                    eventDetails
+                        .slice(1)
+                        .filter(val => val[1] === 'チーム9')
+                        .map(val => val[0])
+                        .join(', ')
+                );
+                break;
+            case 'Team10':
+                videoSheet.getRange(row, 6).setValue(
+                    eventDetails
+                        .slice(1)
+                        .filter(val => val[1] === 'チーム10')
+                        .map(val => val[0])
+                        .join(', ')
+                );
+                break;
+
             default:
                 break;
         }
@@ -555,6 +677,52 @@ export class RequestExecuter {
                         .join(', ')
                 );
                 break;
+            case 'Team6':
+                videoSheet.getRange(row, 6).setValue(
+                    eventDetails
+                        .slice(1)
+                        .filter(val => val[1] === 'チーム6')
+                        .map(val => val[0])
+                        .join(', ')
+                );
+                break;
+            case 'Team7':
+                videoSheet.getRange(row, 6).setValue(
+                    eventDetails
+                        .slice(1)
+                        .filter(val => val[1] === 'チーム7')
+                        .map(val => val[0])
+                        .join(', ')
+                );
+                break;
+            case 'Team8':
+                videoSheet.getRange(row, 6).setValue(
+                    eventDetails
+                        .slice(1)
+                        .filter(val => val[1] === 'チーム8')
+                        .map(val => val[0])
+                        .join(', ')
+                );
+                break;
+            case 'Team9':
+                videoSheet.getRange(row, 6).setValue(
+                    eventDetails
+                        .slice(1)
+                        .filter(val => val[1] === 'チーム9')
+                        .map(val => val[0])
+                        .join(', ')
+                );
+                break;
+            case 'Team10':
+                videoSheet.getRange(row, 6).setValue(
+                    eventDetails
+                        .slice(1)
+                        .filter(val => val[1] === 'チーム10')
+                        .map(val => val[0])
+                        .join(', ')
+                );
+                break;
+
             default:
                 break;
         }

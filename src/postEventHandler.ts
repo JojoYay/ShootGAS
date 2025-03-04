@@ -15,6 +15,12 @@ export const COMMAND_MAP: Command[] = [
         condition: (postEventHander: PostEventHandler) => postEventHander.type === 'message' && postEventHander.messageType === 'image',
     },
     {
+        func: 'updateParticipation',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'updateParticipation',
+    },
+    {
         func: 'upload',
         lineCmd: '',
         display: false,

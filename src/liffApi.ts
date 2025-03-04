@@ -12,6 +12,24 @@ export class LiffApi {
         getEventHandler.result = { result: value };
     }
 
+    private getAttendance(getEventHandler: GetEventHandler): void {
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        const attendance: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('attendance');
+        if (!attendance) {
+            throw new Error('attendance sheet was not found.');
+        }
+        getEventHandler.result.attendance = attendance.getDataRange().getValues();
+    }
+
+    private loadCalendar(getEventHandler: GetEventHandler): void {
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        const calendar: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('calendar');
+        if (!calendar) {
+            throw new Error('calendar sheet was not found.');
+        }
+        getEventHandler.result.calendar = calendar.getDataRange().getValues();
+    }
+
     private getWinningTeam(getEventHandler: GetEventHandler): void {
         // console.log('getWinningTeam');
 
@@ -104,23 +122,6 @@ export class LiffApi {
             const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.eventResultSheet;
             getEventHandler.result.events = eventDetail.getDataRange().getValues();
         }
-
-        // getEventHandler.result.videos = videos
-        //     .getDataRange()
-        //     .getValues();
-        // .slice(1)
-        // .filter(val => val[0] === actDate)
-        // .sort((a, b) => {
-        //     const a_g = typeof a[10] === 'string' && a[10].endsWith('_g');
-        //     const b_g = typeof b[10] === 'string' && b[10].endsWith('_g');
-        //     if (a_g && !b_g) {
-        //         return -1; // a comes before b
-        //     } else if (!a_g && b_g) {
-        //         return 1; // b comes before a
-        //     } else {
-        //         return 0; // no change in order
-        //     }
-        // });
 
         const shootLog: GoogleAppsScript.Spreadsheet.Sheet | null = eventSS.getSheetByName(this.getLogSheetName(actDate));
         if (shootLog) {
