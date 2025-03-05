@@ -12,6 +12,141 @@ const lineUtil: LineUtil = new LineUtil();
 const gasUtil: GasUtil = new GasUtil();
 
 export class RequestExecuter {
+    public createCalendar(postEventHander: PostEventHandler): void {
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('calendar');
+        if (!calendarSheet) {
+            console.error('シート "calendar" が見つかりません。');
+            throw new Error('シート "calendar" が見つかりません。');
+        }
+        const id: string = Utilities.getUuid();
+        const eventType: string = postEventHander.parameter['event_type'];
+        const eventName: string = postEventHander.parameter['event_name'];
+        const sDate: string = postEventHander.parameter['start_datetime'];
+        const eDate: string = postEventHander.parameter['end_datetime'];
+        const place: string = postEventHander.parameter['place'];
+        const remark: string = postEventHander.parameter['remark'];
+        const recursiveType: number = 0;
+        const headerRow = calendarSheet.getDataRange().getValues()[0]; // ヘッダー行を取得
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const newRowData: any[] = [];
+        headerRow.forEach(header => {
+            switch (header) {
+                case 'ID':
+                    newRowData.push(id);
+                    break;
+                case 'event_type':
+                    newRowData.push(eventType);
+                    break;
+                case 'event_name':
+                    newRowData.push(eventName);
+                    break;
+                case 'start_datetime':
+                    newRowData.push(sDate);
+                    break;
+                case 'end_datetime':
+                    newRowData.push(eDate);
+                    break;
+                case 'place':
+                    newRowData.push(place);
+                    break;
+                case 'remark':
+                    newRowData.push(remark);
+                    break;
+                case 'recursive_type':
+                    newRowData.push(recursiveType);
+                    break;
+                // ID は自動で振られる想定 or スプレッドシート側で設定
+                default:
+                    newRowData.push(''); // その他のヘッダーの場合は空文字をセット
+            }
+        });
+        calendarSheet.appendRow(newRowData);
+    }
+
+    public updateCalendar(postEventHander: PostEventHandler): void {
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('calendar');
+        if (!calendarSheet) {
+            console.error('シート "calendar" が見つかりません。');
+            throw new Error('シート "calendar" が見つかりません。');
+        }
+        // id パラメータから更新対象のIDを取得
+        const id: string = postEventHander.parameter['id'];
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const eventType: string = postEventHander.parameter['event_type'];
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const eventName: string = postEventHander.parameter['event_name'];
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const sDate: string = postEventHander.parameter['start_datetime'];
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const eDate: string = postEventHander.parameter['end_datetime'];
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const place: string = postEventHander.parameter['place'];
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const remark: string = postEventHander.parameter['remark'];
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const recursiveType: number = 0; // default value
+        const values = calendarSheet.getDataRange().getValues();
+        const headerRow = values[0]; // ヘッダー行を取得
+
+        let rowNumberToUpdate: number | null = null;
+        // データの行をループして 'id' に一致する行を探す (1行目はヘッダー行と仮定)
+        for (let i = 1; i < values.length; i++) {
+            if (values[i][0].toString() === id.toString()) {
+                rowNumberToUpdate = i + 1; // スプレッドシートの行番号は1から始まるので +1
+                break; // 'id' が見つかったのでループを抜ける
+            }
+        }
+
+        if (rowNumberToUpdate) {
+            // 'id' に一致する行が見つかった場合、データを更新
+            console.log(`id: ${id} の行を更新`);
+            const row = rowNumberToUpdate;
+            // 各パラメータを該当の列に更新 (列位置はheaderRowからcolumnIndexを検索して特定)
+            ['event_type', 'event_name', 'start_datetime', 'end_datetime', 'place', 'remark', 'recursive_type'].forEach(paramName => {
+                if (postEventHander.parameter[paramName]) {
+                    const colIndex = headerRow.indexOf(paramName); // ヘッダー行から列番号を取得
+                    if (colIndex > -1) {
+                        calendarSheet.getRange(row, colIndex + 1).setValue(postEventHander.parameter[paramName]);
+                    }
+                }
+            });
+        } else {
+            console.error(`No row found with id: ${id}.`);
+            throw new Error(`No row found with id: ${id}.`); // ID が見つからない場合はエラーをthrow
+        }
+    }
+
+    public deleteCalendar(postEventHander: PostEventHandler): void {
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('calendar');
+        if (!calendarSheet) {
+            console.error('シート "calendar" が見つかりません。');
+            throw new Error('シート "calendar" が見つかりません。');
+        }
+        // id パラメータから削除対象のIDを取得
+        const id: string = postEventHander.parameter['id'];
+        const values = calendarSheet.getDataRange().getValues();
+
+        let rowNumberToDelete: number | null = null;
+        // データの行をループして 'id' に一致する行を探す (1行目はヘッダー行と仮定)
+        for (let i = 1; i < values.length; i++) {
+            if (values[i][0].toString() === id.toString()) {
+                rowNumberToDelete = i + 1; // スプレッドシートの行番号は1から始まるので +1
+                break; // 'id' が見つかったのでループを抜ける
+            }
+        }
+        if (rowNumberToDelete) {
+            // 'id' に一致する行が見つかった場合、行を削除
+            console.log(`id: ${id} の行を削除`);
+            calendarSheet.deleteRow(rowNumberToDelete);
+        } else {
+            console.error(`No row found with id: ${id}.`);
+            throw new Error(`No row found with id: ${id}.`); // ID が見つからない場合はエラーをthrow
+        }
+    }
+
     public updateParticipation(postEventHander: PostEventHandler): void {
         const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
         const attendanceSheet: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('attendance');
