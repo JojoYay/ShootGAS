@@ -1,8 +1,9 @@
-import { DensukeUtil } from './densukeUtil';
+// import { DensukeUtil } from './densukeUtil';
 import { GasProps } from './gasProps';
 import { GasUtil } from './gasUtil';
 import { GetEventHandler } from './getEventHandler';
 import { LineUtil } from './lineUtil';
+import { SchedulerUtil } from './schedulerUtil';
 import { ScoreBook } from './scoreBook';
 import { ScriptProps } from './scriptProps';
 
@@ -34,9 +35,11 @@ export class LiffApi {
         // console.log('getWinningTeam');
 
         const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
-        const den: DensukeUtil = new DensukeUtil();
-        const chee = den.getDensukeCheerio();
-        const actDate = den.extractDateFromRownum(chee, ScriptProps.instance.ROWNUM);
+        // const den: DensukeUtil = new DensukeUtil();
+        const su: SchedulerUtil = new SchedulerUtil();
+
+        // const chee = den.getDensukeCheerio();
+        const actDate = su.extractDateFromRownum();
         const shootLog: GoogleAppsScript.Spreadsheet.Sheet | null = eventSS.getSheetByName(this.getLogSheetName(actDate));
         if (!shootLog) {
             throw Error(this.getLogSheetName(actDate) + 'が存在しません！');
@@ -135,9 +138,9 @@ export class LiffApi {
 
     private getTodayMatch(getEventHandler: GetEventHandler): void {
         const videos: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
-        const den: DensukeUtil = new DensukeUtil();
-        const chee = den.getDensukeCheerio();
-        const actDate = den.extractDateFromRownum(chee, ScriptProps.instance.ROWNUM);
+        // const den: DensukeUtil = new DensukeUtil();
+        const su: SchedulerUtil = new SchedulerUtil();
+        const actDate = su.extractDateFromRownum();
 
         getEventHandler.result.match = videos
             .getDataRange()
@@ -152,19 +155,21 @@ export class LiffApi {
         getEventHandler.result.payNow = addy;
     }
 
-    private getMembers(getEventHandler: GetEventHandler): void {
-        const den: DensukeUtil = new DensukeUtil();
-        const members = den.extractMembers();
-        // getEventHandler.result = { result: members };
-        getEventHandler.result.members = members;
-    }
+    // private getMembers(getEventHandler: GetEventHandler): void {
+    //     const den: DensukeUtil = new DensukeUtil();
+    //     const members = den.extractMembers();
+    //     // getEventHandler.result = { result: members };
+    //     getEventHandler.result.members = members;
+    // }
 
     //Densukeではなくてスプシから取ってくる
     private getTeams(getEventHandler: GetEventHandler): void {
-        const den: DensukeUtil = new DensukeUtil();
+        // const den: DensukeUtil = new DensukeUtil();
+        const su: SchedulerUtil = new SchedulerUtil();
+
         const scoreBook: ScoreBook = new ScoreBook();
-        const chee = den.getDensukeCheerio();
-        const actDate = den.extractDateFromRownum(chee, ScriptProps.instance.ROWNUM);
+        // const chee = den.getDensukeCheerio();
+        const actDate = su.extractDateFromRownum();
         const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
 
         const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = scoreBook.getEventDetailSheet(eventSS, actDate);
@@ -219,11 +224,8 @@ export class LiffApi {
     }
 
     private getScores(getEventHandler: GetEventHandler): void {
-        const den: DensukeUtil = new DensukeUtil();
-
-        // const scoreBook: ScoreBook = new ScoreBook();
-        const chee = den.getDensukeCheerio();
-        const actDate = den.extractDateFromRownum(chee, ScriptProps.instance.ROWNUM);
+        const su: SchedulerUtil = new SchedulerUtil();
+        const actDate = su.extractDateFromRownum();
         const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
 
         let shootLog: GoogleAppsScript.Spreadsheet.Sheet | null = eventSS.getSheetByName(this.getLogSheetName(actDate));
@@ -404,63 +406,63 @@ export class LiffApi {
         getEventHandler.result.url = ScriptProps.instance.liffUrl + '/expense/input?title=' + title;
     }
 
-    private register(getEventHandler: GetEventHandler): void {
-        const userId = getEventHandler.e.parameters['userId'][0];
-        const lineUtil: LineUtil = new LineUtil();
-        const gasUtil: GasUtil = new GasUtil();
-        const densukeUtil: DensukeUtil = new DensukeUtil();
-        const lineName = lineUtil.getLineDisplayName(userId);
-        const lang = lineUtil.getLineLang(userId);
-        const $ = densukeUtil.getDensukeCheerio();
-        densukeUtil.generateSummaryBase($); //先に更新しておかないとエラーになる（伝助が更新されている場合）
-        const members = densukeUtil.extractMembers($);
-        const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
-        const densukeNameNew = getEventHandler.e.parameters['densukeName'][0];
-        if (members.includes(densukeNameNew)) {
-            if (densukeUtil.hasMultipleOccurrences(members, densukeNameNew)) {
-                if (lang === 'ja') {
-                    getEventHandler.result = {
-                        result: '伝助上で"' + densukeNameNew + '"という名前が複数存在しています。重複のない名前に更新して再度登録して下さい。',
-                    };
-                } else {
-                    getEventHandler.result = {
-                        result:
-                            "There are multiple entries with the name '" +
-                            densukeNameNew +
-                            "' on Densuke. Please update it to a unique name and register again.",
-                    };
-                }
-            } else {
-                gasUtil.registerMapping(lineName, densukeNameNew, userId);
-                gasUtil.updateLineNameOfLatestReport(lineName, densukeNameNew, actDate);
-                if (lang === 'ja') {
-                    getEventHandler.result = {
-                        result:
-                            '伝助名称登録が完了しました。\n伝助上の名前：' +
-                            densukeNameNew +
-                            '\n伝助のスケジュールを登録の上、ご参加ください。\n参加費の支払いは、参加後にPayNowでこちらにスクリーンショットを添付してください。',
-                    };
-                } else {
-                    getEventHandler.result = {
-                        result:
-                            'The initial registration is complete.\nYour name in Densuke: ' +
-                            densukeNameNew +
-                            "\nPlease register Densuke's schedule and attend.\nAfter attending, please make the payment via PayNow and attach a screenshot here.",
-                    };
-                }
-            }
-        } else {
-            if (lang === 'ja') {
-                getEventHandler.result = {
-                    result: '【エラー】伝助上に指定した名前が見つかりません。再度登録を完了させてください\n伝助上の名前：' + densukeNameNew,
-                };
-            } else {
-                getEventHandler.result = {
-                    result:
-                        '【Error】The specified name was not found in Densuke. Please complete the registration again.\nYour name in Densuke: ' +
-                        densukeNameNew,
-                };
-            }
-        }
-    }
+    // private register(getEventHandler: GetEventHandler): void {
+    //     const userId = getEventHandler.e.parameters['userId'][0];
+    //     const lineUtil: LineUtil = new LineUtil();
+    //     const gasUtil: GasUtil = new GasUtil();
+    //     const su:SchedulerUtil = new SchedulerUtil();
+    //     const lineName = lineUtil.getLineDisplayName(userId);
+    //     const lang = lineUtil.getLineLang(userId);
+    //     // const $ = densukeUtil.getDensukeCheerio();
+    //     su.generateSummaryBase(); //先に更新しておかないとエラーになる（伝助が更新されている場合）
+    //     // const members = densukeUtil.extractMembers($);
+    //     const actDate = su.extractDateFromRownum();
+    //     const densukeNameNew = getEventHandler.e.parameters['densukeName'][0];
+    //     if (members.includes(densukeNameNew)) {
+    //         if (densukeUtil.hasMultipleOccurrences(members, densukeNameNew)) {
+    //             if (lang === 'ja') {
+    //                 getEventHandler.result = {
+    //                     result: '伝助上で"' + densukeNameNew + '"という名前が複数存在しています。重複のない名前に更新して再度登録して下さい。',
+    //                 };
+    //             } else {
+    //                 getEventHandler.result = {
+    //                     result:
+    //                         "There are multiple entries with the name '" +
+    //                         densukeNameNew +
+    //                         "' on Densuke. Please update it to a unique name and register again.",
+    //                 };
+    //             }
+    //         } else {
+    //             gasUtil.registerMapping(lineName, densukeNameNew, userId);
+    //             gasUtil.updateLineNameOfLatestReport(lineName, densukeNameNew, actDate);
+    //             if (lang === 'ja') {
+    //                 getEventHandler.result = {
+    //                     result:
+    //                         '伝助名称登録が完了しました。\n伝助上の名前：' +
+    //                         densukeNameNew +
+    //                         '\n伝助のスケジュールを登録の上、ご参加ください。\n参加費の支払いは、参加後にPayNowでこちらにスクリーンショットを添付してください。',
+    //                 };
+    //             } else {
+    //                 getEventHandler.result = {
+    //                     result:
+    //                         'The initial registration is complete.\nYour name in Densuke: ' +
+    //                         densukeNameNew +
+    //                         "\nPlease register Densuke's schedule and attend.\nAfter attending, please make the payment via PayNow and attach a screenshot here.",
+    //                 };
+    //             }
+    //         }
+    //     } else {
+    //         if (lang === 'ja') {
+    //             getEventHandler.result = {
+    //                 result: '【エラー】伝助上に指定した名前が見つかりません。再度登録を完了させてください\n伝助上の名前：' + densukeNameNew,
+    //             };
+    //         } else {
+    //             getEventHandler.result = {
+    //                 result:
+    //                     '【Error】The specified name was not found in Densuke. Please complete the registration again.\nYour name in Densuke: ' +
+    //                     densukeNameNew,
+    //             };
+    //         }
+    //     }
+    // }
 }

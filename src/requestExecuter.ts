@@ -1,24 +1,21 @@
-import { DensukeUtil } from './densukeUtil';
+// import { DensukeUtil } from './densukeUtil';
 import { GasProps } from './gasProps';
 import { GasTestSuite } from './gasTestSuite';
 import { GasUtil } from './gasUtil';
 import { LineUtil } from './lineUtil';
 import { PostEventHandler } from './postEventHandler';
+import { SchedulerUtil } from './schedulerUtil';
 import { ScoreBook, Title } from './scoreBook';
 import { ScriptProps } from './scriptProps';
 
-const densukeUtil: DensukeUtil = new DensukeUtil();
+// const densukeUtil: DensukeUtil = new DensukeUtil();
 const lineUtil: LineUtil = new LineUtil();
 const gasUtil: GasUtil = new GasUtil();
 
 export class RequestExecuter {
     public createCalendar(postEventHander: PostEventHandler): void {
-        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
-        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('calendar');
-        if (!calendarSheet) {
-            console.error('シート "calendar" が見つかりません。');
-            throw new Error('シート "calendar" が見つかりません。');
-        }
+        const su: SchedulerUtil = new SchedulerUtil();
+        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet = su.calendarSheet;
         const id: string = Utilities.getUuid();
         const eventType: string = postEventHander.parameter['event_type'];
         const eventName: string = postEventHander.parameter['event_name'];
@@ -53,7 +50,7 @@ export class RequestExecuter {
                 case 'remark':
                     newRowData.push(remark);
                     break;
-                case 'recursive_type':
+                case 'event_status':
                     newRowData.push(recursiveType);
                     break;
                 // ID は自動で振られる想定 or スプレッドシート側で設定
@@ -64,13 +61,65 @@ export class RequestExecuter {
         calendarSheet.appendRow(newRowData);
     }
 
-    public updateCalendar(postEventHander: PostEventHandler): void {
-        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
-        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('calendar');
-        if (!calendarSheet) {
-            console.error('シート "calendar" が見つかりません。');
-            throw new Error('シート "calendar" が見つかりません。');
+    public registrationFromApp(postEventHander: PostEventHandler): void {
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const userId: string = postEventHander.parameter['userId'];
+        const nickname: string = postEventHander.parameter['nickname'];
+        const lineName: string = postEventHander.parameter['line_name'];
+        const picUrl: string = postEventHander.parameter['pic_url'];
+        const headerRow = mappingSheet.getDataRange().getValues()[0]; // ヘッダー行を取得
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const newRowData: any[] = [];
+        headerRow.forEach(header => {
+            switch (header) {
+                case 'LINE ID':
+                    newRowData.push(userId);
+                    break;
+                case '伝助上の名前':
+                    newRowData.push(nickname);
+                    break;
+                case 'ライン上の名前':
+                    newRowData.push(lineName);
+                    break;
+                case 'Picture':
+                    newRowData.push(picUrl);
+                    break;
+                case '幹事フラグ': // 幹事フラグはパラメータにないため空文字
+                    newRowData.push('');
+                    break;
+                default:
+                    newRowData.push(''); // その他のヘッダーの場合は空文字をセット
+            }
+        });
+        mappingSheet.appendRow(newRowData);
+    }
+
+    public updateEventStatus(postEventHander: PostEventHandler): void {
+        const su: SchedulerUtil = new SchedulerUtil();
+        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet = su.calendarSheet;
+        const values = calendarSheet.getDataRange().getValues();
+        const id: string = postEventHander.parameter['id'];
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const eventType: string = postEventHander.parameter['new_status'];
+        let rowNumberToUpdate: number | null = null;
+        // データの行をループして 'id' に一致する行を探す (1行目はヘッダー行と仮定)
+        for (let i = 1; i < values.length; i++) {
+            if (values[i][0].toString() === id.toString()) {
+                rowNumberToUpdate = i + 1; // スプレッドシートの行番号は1から始まるので +1
+                break; // 'id' が見つかったのでループを抜ける
+            }
         }
+        if (rowNumberToUpdate) {
+            calendarSheet.getRange(rowNumberToUpdate, 8).setValue(eventType);
+        } else {
+            console.error(`No row found with id: ${id}.`);
+            throw new Error(`No row found with id: ${id}.`); // ID が見つからない場合はエラーをthrow
+        }
+    }
+
+    public updateCalendar(postEventHander: PostEventHandler): void {
+        const su: SchedulerUtil = new SchedulerUtil();
+        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet = su.calendarSheet;
         // id パラメータから更新対象のIDを取得
         const id: string = postEventHander.parameter['id'];
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -86,7 +135,7 @@ export class RequestExecuter {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const remark: string = postEventHander.parameter['remark'];
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const recursiveType: number = 0; // default value
+        const recursiveType: number = postEventHander.parameter['event_status']; // default value
         const values = calendarSheet.getDataRange().getValues();
         const headerRow = values[0]; // ヘッダー行を取得
 
@@ -104,7 +153,7 @@ export class RequestExecuter {
             console.log(`id: ${id} の行を更新`);
             const row = rowNumberToUpdate;
             // 各パラメータを該当の列に更新 (列位置はheaderRowからcolumnIndexを検索して特定)
-            ['event_type', 'event_name', 'start_datetime', 'end_datetime', 'place', 'remark', 'recursive_type'].forEach(paramName => {
+            ['event_type', 'event_name', 'start_datetime', 'end_datetime', 'place', 'remark', 'event_status'].forEach(paramName => {
                 if (postEventHander.parameter[paramName]) {
                     const colIndex = headerRow.indexOf(paramName); // ヘッダー行から列番号を取得
                     if (colIndex > -1) {
@@ -119,12 +168,9 @@ export class RequestExecuter {
     }
 
     public deleteCalendar(postEventHander: PostEventHandler): void {
-        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
-        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('calendar');
-        if (!calendarSheet) {
-            console.error('シート "calendar" が見つかりません。');
-            throw new Error('シート "calendar" が見つかりません。');
-        }
+        const su: SchedulerUtil = new SchedulerUtil();
+        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet = su.calendarSheet;
+
         // id パラメータから削除対象のIDを取得
         const id: string = postEventHander.parameter['id'];
         const values = calendarSheet.getDataRange().getValues();
@@ -148,12 +194,8 @@ export class RequestExecuter {
     }
 
     public updateParticipation(postEventHander: PostEventHandler): void {
-        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
-        const attendanceSheet: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('attendance');
-        if (!attendanceSheet) {
-            console.error('シート "attendance" が見つかりません。');
-            return; // or throw an error
-        }
+        const su: SchedulerUtil = new SchedulerUtil();
+        const attendanceSheet = su.attendanceSheet;
         const attendanceValues = attendanceSheet.getDataRange().getValues(); // 出席シートのデータを取得
         const headerRow = attendanceValues[0]; // ヘッダー行を保持
         const param = postEventHander.parameter;
@@ -226,9 +268,8 @@ export class RequestExecuter {
     //毎回全部集計してアシストと得点を入れなおす
     public closeGame(postEventHander: PostEventHandler): void {
         const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
-        const den: DensukeUtil = new DensukeUtil();
-        const chee = den.getDensukeCheerio();
-        const actDate = den.extractDateFromRownum(chee, ScriptProps.instance.ROWNUM);
+        const su: SchedulerUtil = new SchedulerUtil();
+        const actDate = su.extractDateFromRownum();
         const shootLog: GoogleAppsScript.Spreadsheet.Sheet | null = eventSS.getSheetByName(this.getLogSheetName(actDate));
         if (!shootLog) {
             throw Error(this.getLogSheetName(actDate) + 'が存在しません！');
@@ -245,8 +286,8 @@ export class RequestExecuter {
         // shootLogVals をループして得点とアシストを集計
         for (let i = 1; i < shootLogVals.length; i++) {
             const row = shootLogVals[i];
-            const scorer = row[3]; // ゴール (D列)
-            const assister = row[4]; // アシスト (E列)
+            const scorer = row[4]; // ゴール (D列)
+            const assister = row[3]; // アシスト (E列)
 
             // 得点者の集計
             if (scorer) {
@@ -404,9 +445,8 @@ export class RequestExecuter {
 
     public recordGoal(postEventHander: PostEventHandler): void {
         const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
-        const den: DensukeUtil = new DensukeUtil();
-        const chee = den.getDensukeCheerio();
-        const actDate = den.extractDateFromRownum(chee, ScriptProps.instance.ROWNUM);
+        const su: SchedulerUtil = new SchedulerUtil();
+        const actDate = su.extractDateFromRownum();
         const shootLog: GoogleAppsScript.Spreadsheet.Sheet | null = eventSS.getSheetByName(this.getLogSheetName(actDate));
         if (!shootLog) {
             throw Error(this.getLogSheetName(actDate) + 'が存在しません！');
@@ -429,9 +469,9 @@ export class RequestExecuter {
 
     public updateGoal(postEventHander: PostEventHandler): void {
         const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
-        const den: DensukeUtil = new DensukeUtil();
-        const chee = den.getDensukeCheerio();
-        const actDate = den.extractDateFromRownum(chee, ScriptProps.instance.ROWNUM);
+        // const den: DensukeUtil = new DensukeUtil();
+        const su: SchedulerUtil = new SchedulerUtil();
+        const actDate = su.extractDateFromRownum();
         const shootLog: GoogleAppsScript.Spreadsheet.Sheet | null = eventSS.getSheetByName(this.getLogSheetName(actDate));
         if (!shootLog) {
             throw Error(this.getLogSheetName(actDate) + 'が存在しません！');
@@ -469,9 +509,8 @@ export class RequestExecuter {
         console.log('exec deleteGoal method');
         console.log(postEventHander.parameter);
         const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
-        const den: DensukeUtil = new DensukeUtil();
-        const chee = den.getDensukeCheerio();
-        const actDate = den.extractDateFromRownum(chee, ScriptProps.instance.ROWNUM);
+        const su: SchedulerUtil = new SchedulerUtil();
+        const actDate = su.extractDateFromRownum();
         const shootLog: GoogleAppsScript.Spreadsheet.Sheet | null = eventSS.getSheetByName(this.getLogSheetName(actDate));
         if (!shootLog) {
             throw Error(this.getLogSheetName(actDate) + 'が存在しません！');
@@ -498,10 +537,9 @@ export class RequestExecuter {
 
     public updateTeams(postEventHander: PostEventHandler): void {
         console.log(postEventHander.parameter);
-        const den: DensukeUtil = new DensukeUtil();
+        const su: SchedulerUtil = new SchedulerUtil();
         const scoreBook: ScoreBook = new ScoreBook();
-        const chee = den.getDensukeCheerio();
-        const actDate = den.extractDateFromRownum(chee, ScriptProps.instance.ROWNUM);
+        const actDate = su.extractDateFromRownum();
         const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
 
         const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = scoreBook.getEventDetailSheet(eventSS, actDate);
@@ -581,10 +619,9 @@ export class RequestExecuter {
 
     public createShootLog(postEventHander: PostEventHandler) {
         const teamCount: string = postEventHander.parameter['teamCount'];
-        const den: DensukeUtil = new DensukeUtil();
+        const su: SchedulerUtil = new SchedulerUtil();
         const scoreBook: ScoreBook = new ScoreBook();
-        const chee = den.getDensukeCheerio();
-        const actDate = den.extractDateFromRownum(chee, ScriptProps.instance.ROWNUM);
+        const actDate = su.extractDateFromRownum();
         console.log('ac', actDate);
         const activitySS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
         const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
@@ -1003,81 +1040,81 @@ export class RequestExecuter {
         postEventHander.resultImage = ScriptProps.instance.channelQr;
     }
 
-    public register(postEventHander: PostEventHandler): void {
-        const lineName = lineUtil.getLineDisplayName(postEventHander.userId);
-        const $ = densukeUtil.getDensukeCheerio();
-        const members = densukeUtil.extractMembers($);
-        const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
-        const densukeNameNew = postEventHander.messageText.split('@@register@@')[1];
-        if (members.includes(densukeNameNew)) {
-            if (densukeUtil.hasMultipleOccurrences(members, densukeNameNew)) {
-                if (postEventHander.lang === 'ja') {
-                    postEventHander.resultMessage =
-                        '伝助上で"' + densukeNameNew + '"という名前が複数存在しています。重複のない名前に更新して再度登録して下さい。';
-                } else {
-                    postEventHander.resultMessage =
-                        "There are multiple entries with the name '" +
-                        densukeNameNew +
-                        "' on Densuke. Please update it to a unique name and register again.";
-                }
-            } else {
-                gasUtil.registerMapping(lineName, densukeNameNew, postEventHander.userId);
-                gasUtil.updateLineNameOfLatestReport(lineName, densukeNameNew, actDate);
-                this.updateProfilePic();
-                if (postEventHander.lang === 'ja') {
-                    postEventHander.resultMessage =
-                        '伝助名称登録が完了しました。\n伝助上の名前：' +
-                        densukeNameNew +
-                        '\n伝助のスケジュールを登録の上、ご参加ください。\n参加費の支払いは、参加後にPayNowでこちらにスクリーンショットを添付してください。\n' +
-                        postEventHander.userId;
-                } else {
-                    postEventHander.resultMessage =
-                        'The initial registration is complete.\nYour name in Densuke: ' +
-                        densukeNameNew +
-                        "\nPlease register Densuke's schedule and attend.\nAfter attending, please make the payment via PayNow and attach a screenshot here.\n" +
-                        postEventHander.userId;
-                }
-            }
-        } else {
-            if (postEventHander.lang === 'ja') {
-                postEventHander.resultMessage =
-                    '【エラー】伝助上に指定した名前が見つかりません。再度登録を完了させてください\n伝助上の名前：' + densukeNameNew;
-            } else {
-                postEventHander.resultMessage =
-                    '【Error】The specified name was not found in Densuke. Please complete the registration again.\nYour name in Densuke: ' +
-                    densukeNameNew;
-            }
-        }
-    }
+    // public register(postEventHander: PostEventHandler): void {
+    //     const lineName = lineUtil.getLineDisplayName(postEventHander.userId);
+    //     const $ = densukeUtil.getDensukeCheerio();
+    //     const members = densukeUtil.extractMembers($);
+    //     const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
+    //     const densukeNameNew = postEventHander.messageText.split('@@register@@')[1];
+    //     if (members.includes(densukeNameNew)) {
+    //         if (densukeUtil.hasMultipleOccurrences(members, densukeNameNew)) {
+    //             if (postEventHander.lang === 'ja') {
+    //                 postEventHander.resultMessage =
+    //                     '伝助上で"' + densukeNameNew + '"という名前が複数存在しています。重複のない名前に更新して再度登録して下さい。';
+    //             } else {
+    //                 postEventHander.resultMessage =
+    //                     "There are multiple entries with the name '" +
+    //                     densukeNameNew +
+    //                     "' on Densuke. Please update it to a unique name and register again.";
+    //             }
+    //         } else {
+    //             gasUtil.registerMapping(lineName, densukeNameNew, postEventHander.userId);
+    //             gasUtil.updateLineNameOfLatestReport(lineName, densukeNameNew, actDate);
+    //             this.updateProfilePic();
+    //             if (postEventHander.lang === 'ja') {
+    //                 postEventHander.resultMessage =
+    //                     '伝助名称登録が完了しました。\n伝助上の名前：' +
+    //                     densukeNameNew +
+    //                     '\n伝助のスケジュールを登録の上、ご参加ください。\n参加費の支払いは、参加後にPayNowでこちらにスクリーンショットを添付してください。\n' +
+    //                     postEventHander.userId;
+    //             } else {
+    //                 postEventHander.resultMessage =
+    //                     'The initial registration is complete.\nYour name in Densuke: ' +
+    //                     densukeNameNew +
+    //                     "\nPlease register Densuke's schedule and attend.\nAfter attending, please make the payment via PayNow and attach a screenshot here.\n" +
+    //                     postEventHander.userId;
+    //             }
+    //         }
+    //     } else {
+    //         if (postEventHander.lang === 'ja') {
+    //             postEventHander.resultMessage =
+    //                 '【エラー】伝助上に指定した名前が見つかりません。再度登録を完了させてください\n伝助上の名前：' + densukeNameNew;
+    //         } else {
+    //             postEventHander.resultMessage =
+    //                 '【Error】The specified name was not found in Densuke. Please complete the registration again.\nYour name in Densuke: ' +
+    //                 densukeNameNew;
+    //         }
+    //     }
+    // }
 
-    private updateProfilePic() {
-        // const lineUtil: LineUtil = new LineUtil();
-        const densukeMappingVals = GasProps.instance.mappingSheet.getDataRange().getValues();
-        let index: number = 0;
-        for (const userRow of densukeMappingVals) {
-            if (userRow[0] !== 'ライン上の名前') {
-                const userId: string = userRow[2];
-                try {
-                    const prof = lineUtil.getLineUserProfile(userId);
-                    if (prof) {
-                        // console.log(userRow[0] + ': ' + prof.pictureUrl);
-                        GasProps.instance.mappingSheet.getRange(index + 1, 5).setValue(prof.pictureUrl);
-                    }
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                } catch (e) {
-                    console.log(userRow[0] + ': invalid UserId' + userId);
-                }
-            }
-            index++;
-        }
-        return;
-    }
+    // private updateProfilePic() {
+    //     // const lineUtil: LineUtil = new LineUtil();
+    //     const densukeMappingVals = GasProps.instance.mappingSheet.getDataRange().getValues();
+    //     let index: number = 0;
+    //     for (const userRow of densukeMappingVals) {
+    //         if (userRow[0] !== 'ライン上の名前') {
+    //             const userId: string = userRow[2];
+    //             try {
+    //                 const prof = lineUtil.getLineUserProfile(userId);
+    //                 if (prof) {
+    //                     // console.log(userRow[0] + ': ' + prof.pictureUrl);
+    //                     GasProps.instance.mappingSheet.getRange(index + 1, 5).setValue(prof.pictureUrl);
+    //                 }
+    //                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    //             } catch (e) {
+    //                 console.log(userRow[0] + ': invalid UserId' + userId);
+    //             }
+    //         }
+    //         index++;
+    //     }
+    //     return;
+    // }
 
     public payNow(postEventHander: PostEventHandler): void {
-        const $ = densukeUtil.getDensukeCheerio();
-        const members = densukeUtil.extractMembers($);
-        const attendees = densukeUtil.extractAttendees($, ScriptProps.instance.ROWNUM, '○', members);
-        const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
+        const su: SchedulerUtil = new SchedulerUtil();
+
+        const attendees = su.extractAttendees('〇');
+        const actDate = su.extractDateFromRownum();
         const messageId = postEventHander.messageId;
         const userId = postEventHander.userId;
         const lineName = lineUtil.getLineDisplayName(userId);
@@ -1099,24 +1136,24 @@ export class RequestExecuter {
                         '【エラー】' +
                         actDate +
                         'の伝助の出席が〇になっていませんでした。伝助を更新して、「伝助更新」と入力してください。\n' +
-                        densukeUtil.getDensukeUrl();
+                        su.schedulerUrl;
                 } else {
                     postEventHander.resultMessage =
                         '【Error】Your attendance on ' +
                         actDate +
                         " in Densuke has not been marked as 〇.\nPlease update Densuke and type 'update'.\n" +
-                        densukeUtil.getDensukeUrl();
+                        su.schedulerUrl;
                 }
             }
         } else {
             if (postEventHander.lang === 'ja') {
                 postEventHander.resultMessage =
                     '【エラー】伝助名称登録が完了していません。\n登録を完了させて、再度PayNow画像をアップロードして下さい。\n登録は「登録」と入力してください。\n' +
-                    densukeUtil.getDensukeUrl();
+                    su.schedulerUrl;
             } else {
                 postEventHander.resultMessage =
                     "【Error】The initial registration is not complete.\nPlease complete the initial registration and upload the PayNow photo again.\nFor the initial registration, please type 'how to register'.\n" +
-                    densukeUtil.getDensukeUrl();
+                    su.schedulerUrl;
             }
         }
     }
@@ -1293,61 +1330,62 @@ export class RequestExecuter {
     }
 
     public aggregate(postEventHander: PostEventHandler): void {
-        let $ = densukeUtil.getDensukeCheerio();
-        if (postEventHander.mockDensukeCheerio) {
-            $ = postEventHander.mockDensukeCheerio;
-        }
-        const members = densukeUtil.extractMembers($);
-        const attendees = densukeUtil.extractAttendees($, ScriptProps.instance.ROWNUM, '○', members);
-        const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
+        const su: SchedulerUtil = new SchedulerUtil();
+        const attendees = su.extractAttendees('〇');
+        const actDate = su.extractDateFromRownum();
         const settingSheet = GasProps.instance.settingSheet;
         const addy = settingSheet.getRange('B2').getValue();
-        densukeUtil.generateSummaryBase($);
-        postEventHander.resultMessage = densukeUtil.getSummaryStr(attendees, actDate, addy);
+        console.log('actDate' + actDate);
+        console.log('attendees' + attendees);
+        su.generateSummaryBase(attendees, actDate);
+        postEventHander.resultMessage = su.getSummaryStr(attendees, actDate, addy);
     }
 
-    public unpaid(postEventHander: PostEventHandler): void {
-        const $ = densukeUtil.getDensukeCheerio();
-        const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
-        const unpaid = gasUtil.getUnpaid(actDate);
-        postEventHander.resultMessage = '未払いの人 (' + unpaid.length + '名): ' + unpaid.join(', ');
-    }
+    // public unpaid(postEventHander: PostEventHandler): void {
+    //     const $ = densukeUtil.getDensukeCheerio();
+    //     const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
+    //     const unpaid = gasUtil.getUnpaid(actDate);
+    //     postEventHander.resultMessage = '未払いの人 (' + unpaid.length + '名): ' + unpaid.join(', ');
+    // }
 
     public remind(postEventHander: PostEventHandler): void {
-        postEventHander.resultMessage = densukeUtil.generateRemind();
+        const su: SchedulerUtil = new SchedulerUtil();
+        postEventHander.resultMessage = su.generateRemind();
     }
 
-    public densukeUpd(postEventHander: PostEventHandler): void {
-        const $ = densukeUtil.getDensukeCheerio();
-        const lineName = lineUtil.getLineDisplayName(postEventHander.userId);
-        const members = densukeUtil.extractMembers($);
-        const attendees = densukeUtil.extractAttendees($, ScriptProps.instance.ROWNUM, '○', members);
-        const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
-        const settingSheet = GasProps.instance.settingSheet;
-        const addy = settingSheet.getRange('B2').getValue();
-        densukeUtil.generateSummaryBase($);
-        postEventHander.paynowOwnerMsg = '【' + lineName + 'さんにより更新されました】\n' + densukeUtil.getSummaryStr(attendees, actDate, addy);
-        // this.sendMessageToPaynowOwner(ownerMessage);
-        if (postEventHander.lang === 'ja') {
-            postEventHander.resultMessage = '伝助の更新ありがとうございました！PayNowのスクリーンショットを再度こちらへ送って下さい。';
-        } else {
-            postEventHander.resultMessage = 'Thank you for updating Densuke! Please send PayNow screenshot here again.';
-        }
-    }
+    // public densukeUpd(postEventHander: PostEventHandler): void {
+    //     const $ = densukeUtil.getDensukeCheerio();
+    //     const lineName = lineUtil.getLineDisplayName(postEventHander.userId);
+    //     const members = densukeUtil.extractMembers($);
+    //     const attendees = densukeUtil.extractAttendees($, ScriptProps.instance.ROWNUM, '〇', members);
+    //     const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
+    //     const settingSheet = GasProps.instance.settingSheet;
+    //     const addy = settingSheet.getRange('B2').getValue();
+    //     densukeUtil.generateSummaryBase($);
+    //     postEventHander.paynowOwnerMsg = '【' + lineName + 'さんにより更新されました】\n' + densukeUtil.getSummaryStr(attendees, actDate, addy);
+    //     // this.sendMessageToPaynowOwner(ownerMessage);
+    //     if (postEventHander.lang === 'ja') {
+    //         postEventHander.resultMessage = '伝助の更新ありがとうございました！PayNowのスクリーンショットを再度こちらへ送って下さい。';
+    //     } else {
+    //         postEventHander.resultMessage = 'Thank you for updating Densuke! Please send PayNow screenshot here again.';
+    //     }
+    // }
 
     public regInfo(postEventHander: PostEventHandler): void {
+        const su: SchedulerUtil = new SchedulerUtil();
         if (postEventHander.lang === 'ja') {
             postEventHander.resultMessage =
                 '伝助名称の登録を行います。\n伝助のアカウント名を以下のフォーマットで入力してください。\n@@register@@伝助名前\n例）@@register@@やまだじょ\n' +
-                densukeUtil.getDensukeUrl();
+                su.schedulerUrl;
         } else {
             postEventHander.resultMessage =
                 'We will perform the densuke name registration.\nPlease enter your Densuke account name in the following format:\n@@register@@XXXXX\nExample)@@register@@Sahim\n' +
-                densukeUtil.getDensukeUrl();
+                su.schedulerUrl;
         }
     }
 
     public managerInfo(postEventHander: PostEventHandler): void {
+        const su: SchedulerUtil = new SchedulerUtil();
         if (gasUtil.isKanji(postEventHander.userId)) {
             postEventHander.resultMessage =
                 '設定：' +
@@ -1359,7 +1397,7 @@ export class RequestExecuter {
                 '\nEvent Result URL:' +
                 GasProps.instance.eventResultUrl +
                 '\n伝助：' +
-                densukeUtil.getDensukeUrl() +
+                su.schedulerUrl +
                 '\nチャット状況：' +
                 ScriptProps.instance.chat +
                 '\nメッセージ利用状況：' +
@@ -1375,29 +1413,26 @@ export class RequestExecuter {
         }
     }
 
-    public unRegister(postEventHander: PostEventHandler) {
-        this.aggregate(postEventHander);
-        const $ = densukeUtil.getDensukeCheerio();
-        const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
-        const unRegister = gasUtil.getUnRegister(actDate);
-        postEventHander.resultMessage = '現在未登録の参加者 (' + unRegister.length + '名): ' + unRegister.join(', ');
-    }
+    // public unRegister(postEventHander: PostEventHandler) {
+    //     this.aggregate(postEventHander);
+    //     const $ = densukeUtil.getDensukeCheerio();
+    //     const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
+    //     const unRegister = gasUtil.getUnRegister(actDate);
+    //     postEventHander.resultMessage = '現在未登録の参加者 (' + unRegister.length + '名): ' + unRegister.join(', ');
+    // }
 
     public ranking(postEventHander: PostEventHandler): void {
         const scoreBook: ScoreBook = new ScoreBook();
-        const $ = densukeUtil.getDensukeCheerio();
-        const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
-        const members = densukeUtil.extractMembers($);
-        const attendees = densukeUtil.extractAttendees($, ScriptProps.instance.ROWNUM, '○', members);
+        const su: SchedulerUtil = new SchedulerUtil();
 
-        scoreBook.makeEventFormat();
-
+        // const $ = densukeUtil.getDensukeCheerio();
+        const actDate = su.extractDateFromRownum();
+        const attendees = su.extractAttendees('〇');
+        scoreBook.makeEventFormat(actDate, attendees);
         scoreBook.generateScoreBook(actDate, attendees, Title.ASSIST);
         scoreBook.generateScoreBook(actDate, attendees, Title.TOKUTEN);
         scoreBook.generateOkamotoBook(actDate, attendees);
-
         scoreBook.aggregateScore();
-
         postEventHander.resultMessage = 'ランキングが更新されました\n' + GasProps.instance.eventResultUrl;
     }
 

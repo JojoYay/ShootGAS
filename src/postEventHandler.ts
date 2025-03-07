@@ -15,6 +15,18 @@ export const COMMAND_MAP: Command[] = [
         condition: (postEventHander: PostEventHandler) => postEventHander.type === 'message' && postEventHander.messageType === 'image',
     },
     {
+        func: 'registrationFromApp',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'registrationFromApp',
+    },
+    {
+        func: 'updateEventStatus',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'updateEventStatus',
+    },
+    {
         func: 'updateCalendar',
         lineCmd: '',
         display: false,
@@ -120,33 +132,33 @@ export const COMMAND_MAP: Command[] = [
             postEventHander.messageType === 'text' &&
             (postEventHander.messageText === 'リマインド' || postEventHander.messageText.toLowerCase() === 'remind'),
     },
-    {
-        func: 'unpaid',
-        lineCmd: '未払い, unpaid',
-        display: true,
-        condition: (postEventHander: PostEventHandler) =>
-            postEventHander.type === 'message' &&
-            postEventHander.messageType === 'text' &&
-            (postEventHander.messageText === '未払い' || postEventHander.messageText.toLowerCase() === 'unpaid'),
-    },
-    {
-        func: 'unRegister',
-        lineCmd: '未登録参加者, unregister',
-        display: true,
-        condition: (postEventHander: PostEventHandler) =>
-            postEventHander.type === 'message' &&
-            postEventHander.messageType === 'text' &&
-            (postEventHander.messageText === '未登録参加者' || postEventHander.messageText.toLowerCase() === 'unregister'),
-    },
-    {
-        func: 'densukeUpd',
-        lineCmd: '伝助更新, update',
-        display: true,
-        condition: (postEventHander: PostEventHandler) =>
-            postEventHander.type === 'message' &&
-            postEventHander.messageType === 'text' &&
-            (postEventHander.messageText === '伝助更新' || postEventHander.messageText.toLowerCase() === 'update'),
-    },
+    // {
+    //     func: 'unpaid',
+    //     lineCmd: '未払い, unpaid',
+    //     display: true,
+    //     condition: (postEventHander: PostEventHandler) =>
+    //         postEventHander.type === 'message' &&
+    //         postEventHander.messageType === 'text' &&
+    //         (postEventHander.messageText === '未払い' || postEventHander.messageText.toLowerCase() === 'unpaid'),
+    // },
+    // {
+    //     func: 'unRegister',
+    //     lineCmd: '未登録参加者, unregister',
+    //     display: true,
+    //     condition: (postEventHander: PostEventHandler) =>
+    //         postEventHander.type === 'message' &&
+    //         postEventHander.messageType === 'text' &&
+    //         (postEventHander.messageText === '未登録参加者' || postEventHander.messageText.toLowerCase() === 'unregister'),
+    // },
+    // {
+    //     func: 'densukeUpd',
+    //     lineCmd: '伝助更新, update',
+    //     display: true,
+    //     condition: (postEventHander: PostEventHandler) =>
+    //         postEventHander.type === 'message' &&
+    //         postEventHander.messageType === 'text' &&
+    //         (postEventHander.messageText === '伝助更新' || postEventHander.messageText.toLowerCase() === 'update'),
+    // },
     {
         func: 'intro',
         lineCmd: '紹介, introduce',
@@ -194,15 +206,15 @@ export const COMMAND_MAP: Command[] = [
             postEventHander.messageType === 'text' &&
             (postEventHander.messageText === '管理' || postEventHander.messageText.toLowerCase() === 'manage'),
     },
-    {
-        func: 'register',
-        lineCmd: '@@register@@',
-        display: true,
-        condition: (postEventHander: PostEventHandler) =>
-            postEventHander.type === 'message' &&
-            postEventHander.messageType === 'text' &&
-            postEventHander.messageText.toLowerCase().startsWith('@@register@@'),
-    },
+    // {
+    //     func: 'register',
+    //     lineCmd: '@@register@@',
+    //     display: true,
+    //     condition: (postEventHander: PostEventHandler) =>
+    //         postEventHander.type === 'message' &&
+    //         postEventHander.messageType === 'text' &&
+    //         postEventHander.messageText.toLowerCase().startsWith('@@register@@'),
+    // },
     {
         func: 'systemTest',
         lineCmd: 'システムテスト',

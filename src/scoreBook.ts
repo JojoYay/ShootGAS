@@ -1,4 +1,4 @@
-import { DensukeUtil } from './densukeUtil';
+// import { DensukeUtil } from './densukeUtil';
 import { TotalScore } from './totalScore';
 import { GasProps } from './gasProps';
 import { ScriptProps } from './scriptProps';
@@ -12,8 +12,9 @@ export enum Title {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function testaaaa() {
-    const scoreBook: ScoreBook = new ScoreBook();
-    scoreBook.makeEventFormat();
+    console.log('test');
+    // const scoreBook: ScoreBook = new ScoreBook();
+    // scoreBook.makeEventFormat();
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -58,13 +59,7 @@ export class ScoreBook {
         this.writeTotalRecord(totalResult, dataList);
     }
 
-    public makeEventFormat(): void {
-        const densukeUtil: DensukeUtil = new DensukeUtil();
-        const $ = densukeUtil.getDensukeCheerio();
-        const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
-        const members = densukeUtil.extractMembers($);
-        const attendees = densukeUtil.extractAttendees($, ScriptProps.instance.ROWNUM, '○', members);
-
+    public makeEventFormat(actDate: string, attendees: string[]): void {
         const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
         this.updateEventSheet(actDate, attendees);
 
@@ -454,7 +449,7 @@ export class ScoreBook {
         const eventRow = eventSummary
             .getDataRange()
             .getValues()
-            .find(item => item[1] === actDate);
+            .find(item => item[1].toString() === actDate);
         if (!eventRow) {
             throw new Error(actDate + ' event is not found in EventData Sheet');
         }

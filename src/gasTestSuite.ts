@@ -3,7 +3,6 @@ import { GasUtil } from './gasUtil';
 import { PostEventHandler } from './postEventHandler';
 import { RequestExecuter } from './requestExecuter';
 import { ScriptProps } from './scriptProps';
-import { yagiHtml } from './yagiAddedDensuke';
 
 const gasUtil: GasUtil = new GasUtil();
 
@@ -73,100 +72,100 @@ export class GasTestSuite {
         }
     }
 
-    public testRegister1(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
-        this.initializeSheet();
-        postEventHander.messageText = '@@register@@やまだじょ';
-        const jojoId = 'U398bbcb257b5bfdae2a86c928543ab22';
-        postEventHander.userId = jojoId;
-        requestExecuter.register(postEventHander);
-        const expectMsg1 =
-            '伝助名称登録が完了しました。\n伝助上の名前：やまだじょ\n伝助のスケジュールを登録の上、ご参加ください。\n参加費の支払いは、参加後にPayNowでこちらにスクリーンショットを添付してください。\n' +
-            postEventHander.userId;
-        const result1 = !gasUtil.isKanji(jojoId); //幹事の文字が消えたら合格
-        const result2 = expectMsg1 === postEventHander.resultMessage;
-        if (result1 && result2) {
-            postEventHander.testResult.push('testRegister1:passed');
-        } else {
-            postEventHander.testResult.push('testRegister1:failed\n' + postEventHander.resultMessage);
-        }
-    }
+    // public testRegister1(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
+    //     this.initializeSheet();
+    //     postEventHander.messageText = '@@register@@やまだじょ';
+    //     const jojoId = 'U398bbcb257b5bfdae2a86c928543ab22';
+    //     postEventHander.userId = jojoId;
+    //     requestExecuter.register(postEventHander);
+    //     const expectMsg1 =
+    //         '伝助名称登録が完了しました。\n伝助上の名前：やまだじょ\n伝助のスケジュールを登録の上、ご参加ください。\n参加費の支払いは、参加後にPayNowでこちらにスクリーンショットを添付してください。\n' +
+    //         postEventHander.userId;
+    //     const result1 = !gasUtil.isKanji(jojoId); //幹事の文字が消えたら合格
+    //     const result2 = expectMsg1 === postEventHander.resultMessage;
+    //     if (result1 && result2) {
+    //         postEventHander.testResult.push('testRegister1:passed');
+    //     } else {
+    //         postEventHander.testResult.push('testRegister1:failed\n' + postEventHander.resultMessage);
+    //     }
+    // }
 
-    public testRegister2(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
-        this.initializeSheet();
-        const jojoId = 'U398bbcb257b5bfdae2a86c928543ab22';
-        postEventHander.userId = jojoId;
+    // public testRegister2(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
+    //     this.initializeSheet();
+    //     const jojoId = 'U398bbcb257b5bfdae2a86c928543ab22';
+    //     postEventHander.userId = jojoId;
 
-        postEventHander.messageText = '@@register@@ほげ田鼻毛太郎';
-        requestExecuter.register(postEventHander);
-        const expectMsg2 = '【エラー】伝助上に指定した名前が見つかりません。再度登録を完了させてください\n伝助上の名前：ほげ田鼻毛太郎';
-        const result3 = expectMsg2 === postEventHander.resultMessage;
+    //     postEventHander.messageText = '@@register@@ほげ田鼻毛太郎';
+    //     requestExecuter.register(postEventHander);
+    //     const expectMsg2 = '【エラー】伝助上に指定した名前が見つかりません。再度登録を完了させてください\n伝助上の名前：ほげ田鼻毛太郎';
+    //     const result3 = expectMsg2 === postEventHander.resultMessage;
 
-        if (result3) {
-            postEventHander.testResult.push('testRegister2:passed');
-        } else {
-            postEventHander.testResult.push('testRegister2:failed\n' + postEventHander.resultMessage);
-        }
-    }
+    //     if (result3) {
+    //         postEventHander.testResult.push('testRegister2:passed');
+    //     } else {
+    //         postEventHander.testResult.push('testRegister2:failed\n' + postEventHander.resultMessage);
+    //     }
+    // }
 
-    public testRegister3(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
-        this.initializeSheet();
-        const jojoId = 'U398bbcb257b5bfdae2a86c928543ab22';
-        postEventHander.userId = jojoId;
-        postEventHander.messageText = '@@register@@安田';
-        requestExecuter.register(postEventHander);
-        const expectMsg3 = '伝助上で"安田"という名前が複数存在しています。重複のない名前に更新して再度登録して下さい。';
-        const result4 = expectMsg3 === postEventHander.resultMessage;
+    // public testRegister3(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
+    //     this.initializeSheet();
+    //     const jojoId = 'U398bbcb257b5bfdae2a86c928543ab22';
+    //     postEventHander.userId = jojoId;
+    //     postEventHander.messageText = '@@register@@安田';
+    //     requestExecuter.register(postEventHander);
+    //     const expectMsg3 = '伝助上で"安田"という名前が複数存在しています。重複のない名前に更新して再度登録して下さい。';
+    //     const result4 = expectMsg3 === postEventHander.resultMessage;
 
-        if (result4) {
-            postEventHander.testResult.push('testRegister3:passed');
-        } else {
-            postEventHander.testResult.push('testRegister3:failed\n' + postEventHander.resultMessage);
-        }
-    }
+    //     if (result4) {
+    //         postEventHander.testResult.push('testRegister3:passed');
+    //     } else {
+    //         postEventHander.testResult.push('testRegister3:failed\n' + postEventHander.resultMessage);
+    //     }
+    // }
 
-    public testPayNow1(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
-        this.initializeSheet();
-        //Soma(Ucb9beba3011ec9cf85c5482efa132e9b)さんで実行
-        const somaId = 'Ucb9beba3011ec9cf85c5482efa132e9b';
-        postEventHander.userId = somaId;
-        requestExecuter.payNow(postEventHander);
-        const expectation1: string = '6/2(日)の支払いを登録しました。ありがとうございます！\n' + GasProps.instance.reportSheetUrl;
-        const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
-        const resultfiles = folder.getFilesByName('6/2(日)_Soma');
-        if (postEventHander.resultMessage === expectation1 && resultfiles.hasNext()) {
-            postEventHander.testResult.push('testPayNow1:passed');
-        } else {
-            postEventHander.testResult.push('testPayNow1:failed\n' + postEventHander.resultMessage);
-        }
-    }
+    // public testPayNow1(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
+    //     this.initializeSheet();
+    //     //Soma(Ucb9beba3011ec9cf85c5482efa132e9b)さんで実行
+    //     const somaId = 'Ucb9beba3011ec9cf85c5482efa132e9b';
+    //     postEventHander.userId = somaId;
+    //     requestExecuter.payNow(postEventHander);
+    //     const expectation1: string = '6/2(日)の支払いを登録しました。ありがとうございます！\n' + GasProps.instance.reportSheetUrl;
+    //     const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
+    //     const resultfiles = folder.getFilesByName('6/2(日)_Soma');
+    //     if (postEventHander.resultMessage === expectation1 && resultfiles.hasNext()) {
+    //         postEventHander.testResult.push('testPayNow1:passed');
+    //     } else {
+    //         postEventHander.testResult.push('testPayNow1:failed\n' + postEventHander.resultMessage);
+    //     }
+    // }
 
-    public testPayNow2(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
-        //千葉（Uf395b2a8c82788dc3331b62f0cf96578）がメッセージ送った事を再現
-        const chibaId = 'Uf395b2a8c82788dc3331b62f0cf96578';
-        postEventHander.userId = chibaId;
-        requestExecuter.payNow(postEventHander);
-        const expectation: string =
-            '【エラー】6/2(日)の伝助の出席が〇になっていませんでした。伝助を更新して、「伝助更新」と入力してください。\nhttps://densuke.biz/list?cd=DTDR7Cu7rmkZy9YA';
-        if (postEventHander.resultMessage === expectation) {
-            postEventHander.testResult.push('testPayNow2:passed');
-        } else {
-            postEventHander.testResult.push('testPayNow2:failed\n' + postEventHander.resultMessage);
-        }
-    }
+    // public testPayNow2(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
+    //     //千葉（Uf395b2a8c82788dc3331b62f0cf96578）がメッセージ送った事を再現
+    //     const chibaId = 'Uf395b2a8c82788dc3331b62f0cf96578';
+    //     postEventHander.userId = chibaId;
+    //     requestExecuter.payNow(postEventHander);
+    //     const expectation: string =
+    //         '【エラー】6/2(日)の伝助の出席が〇になっていませんでした。伝助を更新して、「伝助更新」と入力してください。\nhttps://densuke.biz/list?cd=DTDR7Cu7rmkZy9YA';
+    //     if (postEventHander.resultMessage === expectation) {
+    //         postEventHander.testResult.push('testPayNow2:passed');
+    //     } else {
+    //         postEventHander.testResult.push('testPayNow2:failed\n' + postEventHander.resultMessage);
+    //     }
+    // }
 
-    public testPayNow3(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
-        //なべ（tekitouID）がメッセージ送った事を再現(つか誰か実際わからん)
-        const nabeId = 'tekitoutekitoutekitou';
-        postEventHander.userId = nabeId;
-        requestExecuter.payNow(postEventHander);
-        const expectation: string =
-            '【エラー】伝助名称登録が完了していません。\n登録を完了させて、再度PayNow画像をアップロードして下さい。\n登録は「登録」と入力してください。\nhttps://densuke.biz/list?cd=DTDR7Cu7rmkZy9YA';
-        if (postEventHander.resultMessage === expectation) {
-            postEventHander.testResult.push('testPayNow3:passed');
-        } else {
-            postEventHander.testResult.push('testPayNow3:failed\n' + postEventHander.resultMessage);
-        }
-    }
+    // public testPayNow3(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
+    //     //なべ（tekitouID）がメッセージ送った事を再現(つか誰か実際わからん)
+    //     const nabeId = 'tekitoutekitoutekitou';
+    //     postEventHander.userId = nabeId;
+    //     requestExecuter.payNow(postEventHander);
+    //     const expectation: string =
+    //         '【エラー】伝助名称登録が完了していません。\n登録を完了させて、再度PayNow画像をアップロードして下さい。\n登録は「登録」と入力してください。\nhttps://densuke.biz/list?cd=DTDR7Cu7rmkZy9YA';
+    //     if (postEventHander.resultMessage === expectation) {
+    //         postEventHander.testResult.push('testPayNow3:passed');
+    //     } else {
+    //         postEventHander.testResult.push('testPayNow3:failed\n' + postEventHander.resultMessage);
+    //     }
+    // }
 
     //Driveのデータを見て集計をきちんと計算しているか？
     public testAggregate1(postEventHander: PostEventHandler, requestExecuter: RequestExecuter): void {
