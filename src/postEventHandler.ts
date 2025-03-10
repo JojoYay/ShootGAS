@@ -168,17 +168,17 @@ export const COMMAND_MAP: Command[] = [
             postEventHander.messageType === 'text' &&
             (postEventHander.messageText === '紹介' || postEventHander.messageText.toLowerCase() === 'introduce'),
     },
-    {
-        func: 'regInfo',
-        lineCmd: '登録, how to register',
-        display: true,
-        condition: (postEventHander: PostEventHandler) =>
-            postEventHander.type === 'message' &&
-            postEventHander.messageType === 'text' &&
-            (postEventHander.messageText === '登録' ||
-                postEventHander.messageText.toLowerCase() === '@@register@@' ||
-                postEventHander.messageText.toLowerCase() === 'how to register'),
-    },
+    // {
+    //     func: 'regInfo',
+    //     lineCmd: '登録, how to register',
+    //     display: true,
+    //     condition: (postEventHander: PostEventHandler) =>
+    //         postEventHander.type === 'message' &&
+    //         postEventHander.messageType === 'text' &&
+    //         (postEventHander.messageText === '登録' ||
+    //             postEventHander.messageText.toLowerCase() === '@@register@@' ||
+    //             postEventHander.messageText.toLowerCase() === 'how to register'),
+    // },
     {
         func: 'ranking',
         lineCmd: 'ランキング, ranking',

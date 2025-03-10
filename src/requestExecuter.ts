@@ -1135,7 +1135,7 @@ export class RequestExecuter {
                     postEventHander.resultMessage =
                         '【エラー】' +
                         actDate +
-                        'の伝助の出席が〇になっていませんでした。伝助を更新して、「伝助更新」と入力してください。\n' +
+                        'のスケジューラーの出席が〇になっていませんでした。スケジューラーを更新して、「伝助更新」と入力してください。\n' +
                         su.schedulerUrl;
                 } else {
                     postEventHander.resultMessage =
@@ -1148,7 +1148,7 @@ export class RequestExecuter {
         } else {
             if (postEventHander.lang === 'ja') {
                 postEventHander.resultMessage =
-                    '【エラー】伝助名称登録が完了していません。\n登録を完了させて、再度PayNow画像をアップロードして下さい。\n登録は「登録」と入力してください。\n' +
+                    '【エラー】スケジューラー名称登録が完了していません。\n登録を完了させて、再度PayNow画像をアップロードして下さい。\n登録は「登録」と入力してください。\n' +
                     su.schedulerUrl;
             } else {
                 postEventHander.resultMessage =
@@ -1371,18 +1371,18 @@ export class RequestExecuter {
     //     }
     // }
 
-    public regInfo(postEventHander: PostEventHandler): void {
-        const su: SchedulerUtil = new SchedulerUtil();
-        if (postEventHander.lang === 'ja') {
-            postEventHander.resultMessage =
-                '伝助名称の登録を行います。\n伝助のアカウント名を以下のフォーマットで入力してください。\n@@register@@伝助名前\n例）@@register@@やまだじょ\n' +
-                su.schedulerUrl;
-        } else {
-            postEventHander.resultMessage =
-                'We will perform the densuke name registration.\nPlease enter your Densuke account name in the following format:\n@@register@@XXXXX\nExample)@@register@@Sahim\n' +
-                su.schedulerUrl;
-        }
-    }
+    // public regInfo(postEventHander: PostEventHandler): void {
+    //     const su: SchedulerUtil = new SchedulerUtil();
+    //     if (postEventHander.lang === 'ja') {
+    //         postEventHander.resultMessage =
+    //             '伝助名称の登録を行います。\n伝助のアカウント名を以下のフォーマットで入力してください。\n@@register@@伝助名前\n例）@@register@@やまだじょ\n' +
+    //             su.schedulerUrl;
+    //     } else {
+    //         postEventHander.resultMessage =
+    //             'We will perform the densuke name registration.\nPlease enter your Densuke account name in the following format:\n@@register@@XXXXX\nExample)@@register@@Sahim\n' +
+    //             su.schedulerUrl;
+    //     }
+    // }
 
     public managerInfo(postEventHander: PostEventHandler): void {
         const su: SchedulerUtil = new SchedulerUtil();
@@ -1396,7 +1396,7 @@ export class RequestExecuter {
                 GasProps.instance.reportSheetUrl +
                 '\nEvent Result URL:' +
                 GasProps.instance.eventResultUrl +
-                '\n伝助：' +
+                '\nスケジューラー：' +
                 su.schedulerUrl +
                 '\nチャット状況：' +
                 ScriptProps.instance.chat +

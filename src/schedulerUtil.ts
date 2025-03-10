@@ -5,7 +5,7 @@ const gasUtil: GasUtil = new GasUtil();
 
 export class SchedulerUtil {
     public get schedulerUrl(): string {
-        return 'https://test-8120f.web.app/calendar';
+        return 'https://shootsundayfront.web.app/calendar';
     }
 
     public get calendarSheet(): GoogleAppsScript.Spreadsheet.Sheet {
