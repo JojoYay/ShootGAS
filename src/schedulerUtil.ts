@@ -110,7 +110,7 @@ export class SchedulerUtil {
             actDate +
             'リマインドです！\nスケジューラーの更新お忘れなく！\nThis is gentle reminder of ' +
             actDate +
-            '.\nPlease update your Densuke schedule.\n';
+            '.\nPlease update your schedule.\n';
         if (attendees.length < 10) {
             remindStr =
                 '次回予定' +

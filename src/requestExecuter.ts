@@ -122,20 +122,19 @@ export class RequestExecuter {
         const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet = su.calendarSheet;
         // id パラメータから更新対象のIDを取得
         const id: string = postEventHander.parameter['id'];
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const eventType: string = postEventHander.parameter['event_type'];
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const eventName: string = postEventHander.parameter['event_name'];
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const sDate: string = postEventHander.parameter['start_datetime'];
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const eDate: string = postEventHander.parameter['end_datetime'];
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const place: string = postEventHander.parameter['place'];
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const remark: string = postEventHander.parameter['remark'];
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const recursiveType: number = postEventHander.parameter['event_status']; // default value
+        // // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // const eventType: string = postEventHander.parameter['event_type'];
+        // // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // const eventName: string = postEventHander.parameter['event_name'];
+        // // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // const sDate: string = postEventHander.parameter['start_datetime'];
+        // // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // const place: string = postEventHander.parameter['place'];
+        // // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // const remark: string = postEventHander.parameter['remark'];
+        // // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // const recursiveType: number = postEventHander.parameter['event_status']; // default value
         const values = calendarSheet.getDataRange().getValues();
         const headerRow = values[0]; // ヘッダー行を取得
 
@@ -187,6 +186,75 @@ export class RequestExecuter {
             // 'id' に一致する行が見つかった場合、行を削除
             console.log(`id: ${id} の行を削除`);
             calendarSheet.deleteRow(rowNumberToDelete);
+        } else {
+            console.error(`No row found with id: ${id}.`);
+            throw new Error(`No row found with id: ${id}.`); // ID が見つからない場合はエラーをthrow
+        }
+    }
+
+    private insertComments(postEventHander: PostEventHandler): void {
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        const comments: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('comments');
+        if (!comments) {
+            throw new Error('comments Sheet was not found.');
+        }
+        const componentId: string = postEventHander.parameter['component_id'];
+        const category: string = postEventHander.parameter['category'];
+        const content: string = postEventHander.parameter['content'];
+        const createUser: string = postEventHander.parameter['create_user'];
+        const headerRow = comments.getDataRange().getValues()[0]; // ヘッダー行を取得
+        console.log(componentId);
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const newRowData: any[] = [];
+        headerRow.forEach(header => {
+            switch (header) {
+                case 'id':
+                    newRowData.push(Utilities.getUuid());
+                    break;
+                case 'component_id':
+                    newRowData.push(componentId);
+                    break;
+                case 'category':
+                    newRowData.push(category);
+                    break;
+                case 'user_id':
+                    newRowData.push(createUser);
+                    break;
+                case 'content':
+                    newRowData.push(content);
+                    break;
+                case 'created': // 幹事フラグはパラメータにないため空文字
+                    newRowData.push(new Date());
+                    break;
+                default:
+                    newRowData.push(''); // その他のヘッダーの場合は空文字をセット
+            }
+        });
+        comments.appendRow(newRowData);
+    }
+
+    private deleteComments(postEventHander: PostEventHandler): void {
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        const comments: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('comments');
+        if (!comments) {
+            throw new Error('comments Sheet was not found.');
+        }
+        const id: string = postEventHander.parameter['id'];
+        const values = comments.getDataRange().getValues();
+
+        let rowNumberToDelete: number | null = null;
+        // データの行をループして 'id' に一致する行を探す (1行目はヘッダー行と仮定)
+        for (let i = 1; i < values.length; i++) {
+            if (values[i][0].toString() === id.toString()) {
+                rowNumberToDelete = i + 1; // スプレッドシートの行番号は1から始まるので +1
+                break; // 'id' が見つかったのでループを抜ける
+            }
+        }
+        if (rowNumberToDelete) {
+            // 'id' に一致する行が見つかった場合、行を削除
+            console.log(`id: ${id} の行を削除`);
+            comments.deleteRow(rowNumberToDelete);
         } else {
             console.error(`No row found with id: ${id}.`);
             throw new Error(`No row found with id: ${id}.`); // ID が見つからない場合はエラーをthrow
@@ -1341,12 +1409,12 @@ export class RequestExecuter {
         postEventHander.resultMessage = su.getSummaryStr(attendees, actDate, addy);
     }
 
-    // public unpaid(postEventHander: PostEventHandler): void {
-    //     const $ = densukeUtil.getDensukeCheerio();
-    //     const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
-    //     const unpaid = gasUtil.getUnpaid(actDate);
-    //     postEventHander.resultMessage = '未払いの人 (' + unpaid.length + '名): ' + unpaid.join(', ');
-    // }
+    public unpaid(postEventHander: PostEventHandler): void {
+        const su: SchedulerUtil = new SchedulerUtil();
+        const actDate = su.extractDateFromRownum();
+        const unpaid = gasUtil.getUnpaid(actDate);
+        postEventHander.resultMessage = '未払いの人 (' + unpaid.length + '名): ' + unpaid.join(', ');
+    }
 
     public remind(postEventHander: PostEventHandler): void {
         const su: SchedulerUtil = new SchedulerUtil();

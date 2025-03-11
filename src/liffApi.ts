@@ -89,6 +89,16 @@ export class LiffApi {
         getEventHandler.result = { result: videos.getDataRange().getValues() };
     }
 
+    private getVideos(getEventHandler: GetEventHandler): void {
+        const videos: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
+        getEventHandler.result.videos = videos.getDataRange().getValues();
+    }
+
+    private getEventData(getEventHandler: GetEventHandler): void {
+        const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.eventResultSheet;
+        getEventHandler.result.events = eventDetail.getDataRange().getValues();
+    }
+
     private getInfoOfTheDay(getEventHandler: GetEventHandler): void {
         const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
         const videos: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
@@ -325,6 +335,22 @@ export class LiffApi {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const resultValues: any[][] = mappingSheet.getDataRange().getValues();
         getEventHandler.result.users = resultValues;
+    }
+
+    private getComments(getEventHandler: GetEventHandler): void {
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        const comments: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('comments');
+        if (!comments) {
+            throw new Error('comments Sheet was not found.');
+        }
+        const componentId: string = getEventHandler.e.parameters['component_id'][0];
+        const category: string = getEventHandler.e.parameters['category'][0];
+        getEventHandler.result.comments = comments
+            .getDataRange()
+            .getValues()
+            .filter(data => data[1] === componentId && data[2] === category)
+            .reverse()
+            .slice(0, 100);
     }
 
     private generateExReport(getEventHandler: GetEventHandler): void {
