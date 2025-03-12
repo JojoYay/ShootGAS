@@ -1031,14 +1031,15 @@ export class RequestExecuter {
     }
 
     public loadExList(postEventHander: PostEventHandler): void {
-        console.log('execute loadExList');
+        // console.log('execute loadExList');
         const rootFolder = DriveApp.getFolderById(ScriptProps.instance.expenseFolder);
         const titleFolderIt: GoogleAppsScript.Drive.FolderIterator = rootFolder.getFolders();
         const results = [];
         while (titleFolderIt.hasNext()) {
             const expenseFolder: GoogleAppsScript.Drive.Folder = titleFolderIt.next();
             const title = expenseFolder.getName();
-            const url = expenseFolder.getFilesByName(title).next().getUrl();
+            // const url = expenseFolder.getFilesByName(title).next().getUrl();
+            const url = expenseFolder.getUrl(); // フォルダのURLを取得
             results.push({ title: title, url: url });
         }
         postEventHander.reponseObj = { resultList: results };
@@ -1227,13 +1228,13 @@ export class RequestExecuter {
                     postEventHander.resultMessage =
                         '【エラー】' +
                         actDate +
-                        'のスケジューラーの出席が〇になっていませんでした。スケジューラーを更新して、「伝助更新」と入力してください。\n' +
+                        'のスケジューラーの出席が〇になっていませんでした。スケジューラーを更新してください。\n' +
                         su.schedulerUrl;
                 } else {
                     postEventHander.resultMessage =
                         '【Error】Your attendance on ' +
                         actDate +
-                        " in Densuke has not been marked as 〇.\nPlease update Densuke and type 'update'.\n" +
+                        ' in the scheduler has not been marked as 〇.\nPlease update scheduler.\n' +
                         su.schedulerUrl;
                 }
             }
@@ -1252,7 +1253,7 @@ export class RequestExecuter {
 
     public myResult(postEventHander: PostEventHandler): void {
         if (!postEventHander.userId && !gasUtil.getDensukeName(lineUtil.getLineDisplayName(postEventHander.userId))) {
-            postEventHander.resultMessage = '初回登録が終わっていません。"登録"と入力し、初回登録を完了させてください。';
+            postEventHander.resultMessage = '初回登録が終わっていません。スケジューラーへアクセスし、初回登録を完了させてください。';
         }
         postEventHander.isFlex = true;
         const ss: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);

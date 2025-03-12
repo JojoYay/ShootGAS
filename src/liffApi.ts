@@ -13,6 +13,19 @@ export class LiffApi {
         getEventHandler.result = { result: value };
     }
 
+    private getCalendar(getEventHandler: GetEventHandler): void {
+        const calId: string = getEventHandler.e.parameter['calendarId'];
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('calendar');
+        if (!calendarSheet) {
+            throw new Error('calendar sheet was not found.');
+        }
+        const calendarValues = calendarSheet.getDataRange().getValues();
+        const filteredCalendar = calendarValues.filter(row => row[0] === calId); // 1列目が calendarId
+
+        getEventHandler.result.event = filteredCalendar[0];
+    }
+
     private getAttendance(getEventHandler: GetEventHandler): void {
         const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
         const attendance: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('attendance');
@@ -20,6 +33,37 @@ export class LiffApi {
             throw new Error('attendance sheet was not found.');
         }
         getEventHandler.result.attendance = attendance.getDataRange().getValues();
+    }
+
+    private getAttendees(getEventHandler: GetEventHandler): void {
+        const calendarId: string = getEventHandler.e.parameter['calendarId'];
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        const attendance: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('attendance');
+        if (!attendance) {
+            throw new Error('attendance sheet was not found.');
+        }
+        const attendanceValues = attendance.getDataRange().getValues();
+        const filteredAttendees = attendanceValues.filter(row => row[6] === calendarId); // 7列目が calendar_id
+        // フィルターしたデータのuserIdを抽出
+        const attendeeUserIds = filteredAttendees.map(row => row[1]); // 2列目が user_id
+
+        // mappingSheetからデータを取得
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const mappingValues = mappingSheet.getDataRange().getValues();
+
+        const matchedMappingData = [];
+
+        // mappingSheetの3列目とattendeeUserIdsをマッチング
+        for (let i = 1; i < mappingValues.length; i++) {
+            // 1行目はヘッダー行と仮定
+            const mappingRow = mappingValues[i];
+            const mappingUserId = mappingRow[2]; // 3列目が user_id (LINE ID) と仮定
+
+            if (attendeeUserIds.includes(mappingUserId)) {
+                matchedMappingData.push(mappingRow);
+            }
+        }
+        getEventHandler.result.attendees = matchedMappingData;
     }
 
     private loadCalendar(getEventHandler: GetEventHandler): void {
@@ -158,12 +202,12 @@ export class LiffApi {
             .filter(val => val[0] === actDate && !val[10].endsWith('_g') && val[3] && val[4]);
     }
 
-    // private getPayNow(getEventHandler: GetEventHandler): void {
-    //     const settingSheet = GasProps.instance.settingSheet;
-    //     const addy = settingSheet.getRange('B2').getValue();
-    //     // getEventHandler.result = { result: members };
-    //     getEventHandler.result.payNow = addy;
-    // }
+    private getPayNow(getEventHandler: GetEventHandler): void {
+        const settingSheet = GasProps.instance.settingSheet;
+        const addy = settingSheet.getRange('B2').getValue();
+        // getEventHandler.result = { result: members };
+        getEventHandler.result.payNow = addy;
+    }
 
     // private getMembers(getEventHandler: GetEventHandler): void {
     //     const den: DensukeUtil = new DensukeUtil();
