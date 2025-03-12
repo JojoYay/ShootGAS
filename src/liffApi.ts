@@ -158,12 +158,12 @@ export class LiffApi {
             .filter(val => val[0] === actDate && !val[10].endsWith('_g') && val[3] && val[4]);
     }
 
-    private getPayNow(getEventHandler: GetEventHandler): void {
-        const settingSheet = GasProps.instance.settingSheet;
-        const addy = settingSheet.getRange('B2').getValue();
-        // getEventHandler.result = { result: members };
-        getEventHandler.result.payNow = addy;
-    }
+    // private getPayNow(getEventHandler: GetEventHandler): void {
+    //     const settingSheet = GasProps.instance.settingSheet;
+    //     const addy = settingSheet.getRange('B2').getValue();
+    //     // getEventHandler.result = { result: members };
+    //     getEventHandler.result.payNow = addy;
+    // }
 
     // private getMembers(getEventHandler: GetEventHandler): void {
     //     const den: DensukeUtil = new DensukeUtil();

@@ -136,12 +136,10 @@ export class SchedulerUtil {
         return summary;
     }
 
-    public generateSummaryBase(attendees: string[], actDate: string): void {
-        // スプレッドシートとシートを取得
-        const settingSheet = GasProps.instance.settingSheet;
+    public generateSummaryBase(): void {
         const cashBook = GasProps.instance.cashBookSheet;
-        // const attendees: string[] = this.extractAttendees('〇');
-        // const actDate: string = this.extractDateFromRownum();
+        const attendees: string[] = this.extractAttendees('〇');
+        const actDate: string = this.extractDateFromRownum();
         // データの範囲を取得
         const cRangeValues = cashBook.getDataRange().getValues();
         // 2カラム目（B列）に指定した値がある行を逆順に削除
@@ -153,8 +151,8 @@ export class SchedulerUtil {
         }
         const lastRow: number = cashBook.getLastRow();
         const orgPrice: number = cashBook.getRange(lastRow, 5).getValue();
-        const rentalFee: number = settingSheet.getRange('B3').getValue();
-        const attendFee: number = settingSheet.getRange('B4').getValue();
+        const rentalFee: number = this.getPitchFee();
+        const attendFee: number = this.getPaticipationFee();
         gasUtil.archiveFiles(actDate);
         const attendFeeTotal: number = attendFee * attendees.length;
         const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet(actDate, true); //ない場合作る
@@ -174,7 +172,7 @@ export class SchedulerUtil {
         report.getRange('A7').setValue('余剰金残高(SGD)');
         report.getRange('B7').setValue('' + (orgPrice - rentalFee + attendFeeTotal));
 
-        report.getRange('A9').setValue('参加者（伝助名称）');
+        report.getRange('A9').setValue('参加者（スケジューラ名称）');
         report.getRange('B9').setValue('参加者（Line名称）');
         report.getRange('C9').setValue('支払い状況');
 
@@ -220,7 +218,10 @@ export class SchedulerUtil {
         }
     }
 
-    public getSummaryStr(attendees: string[], actDate: string, payNowAddy: string): string {
+    public getSummaryStr(): string {
+        const attendees: string[] = this.extractAttendees('〇');
+        const actDate: string = this.extractDateFromRownum();
+        const payNowAddy: string = this.getPayNowAddress();
         let paynowStr = '';
         if (gasUtil.getUnpaid(actDate).length === 0) {
             paynowStr =
@@ -257,5 +258,68 @@ export class SchedulerUtil {
             }
         }
         return false;
+    }
+
+    public getPitchFee() {
+        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet = this.calendarSheet;
+        const calendarVals: string[][] = calendarSheet.getDataRange().getValues();
+        for (let i = 1; i < calendarVals.length; i++) {
+            const event = calendarVals[i];
+            // if (!event || event.length < 8) continue; // データが不足している場合はスキップ
+            if (event[7].toString() === '20') {
+                // event_status が 20 の場合
+                const pitchFee = event[8]; // pitch_fee (9列目)
+                if (pitchFee) {
+                    return String(pitchFee); // pitch_fee を文字列に変換して返す
+                } else {
+                    //データがない場合デフォルト
+                    const settingSheet = GasProps.instance.settingSheet;
+                    return settingSheet.getRange('B3').getValue();
+                }
+            }
+        }
+        throw new Error('event_status=20 のイベントが見つかりません');
+    }
+
+    public getPaticipationFee() {
+        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet = this.calendarSheet;
+        const calendarVals: string[][] = calendarSheet.getDataRange().getValues();
+        for (let i = 1; i < calendarVals.length; i++) {
+            const event = calendarVals[i];
+            // if (!event || event.length < 8) continue; // データが不足している場合はスキップ
+            if (event[7].toString() === '20') {
+                // event_status が 20 の場合
+                const paticipationFee = event[10]; // pitch_fee (9列目)
+                if (paticipationFee) {
+                    return String(paticipationFee); // pitch_fee を文字列に変換して返す
+                } else {
+                    //データがない場合デフォルト
+                    const settingSheet = GasProps.instance.settingSheet;
+                    return settingSheet.getRange('B4').getValue();
+                }
+            }
+        }
+        throw new Error('event_status=20 のイベントが見つかりません');
+    }
+
+    public getPayNowAddress() {
+        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet = this.calendarSheet;
+        const calendarVals: string[][] = calendarSheet.getDataRange().getValues();
+        for (let i = 1; i < calendarVals.length; i++) {
+            const event = calendarVals[i];
+            // if (!event || event.length < 8) continue; // データが不足している場合はスキップ
+            if (event[7].toString() === '20') {
+                // event_status が 20 の場合
+                const payNow = event[9]; // pitch_fee (9列目)
+                if (payNow) {
+                    return String(payNow); // pitch_fee を文字列に変換して返す
+                } else {
+                    //データがない場合デフォルト
+                    const settingSheet = GasProps.instance.settingSheet;
+                    return settingSheet.getRange('B2').getValue();
+                }
+            }
+        }
+        throw new Error('event_status=20 のイベントが見つかりません');
     }
 }

@@ -23,6 +23,9 @@ export class RequestExecuter {
         const eDate: string = postEventHander.parameter['end_datetime'];
         const place: string = postEventHander.parameter['place'];
         const remark: string = postEventHander.parameter['remark'];
+        const payNow: string = postEventHander.parameter['paynow_link'];
+        const pitch: string = postEventHander.parameter['pitch_fee'];
+        const paticipation: string = postEventHander.parameter['paticipation_fee'];
         const recursiveType: number = 0;
         const headerRow = calendarSheet.getDataRange().getValues()[0]; // ヘッダー行を取得
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,11 +56,20 @@ export class RequestExecuter {
                 case 'event_status':
                     newRowData.push(recursiveType);
                     break;
-                // ID は自動で振られる想定 or スプレッドシート側で設定
+                case 'pitch_fee':
+                    newRowData.push(pitch);
+                    break;
+                case 'paynow_link':
+                    newRowData.push(payNow);
+                    break;
+                case 'paticipation_fee':
+                    newRowData.push(paticipation);
+                    break;
                 default:
                     newRowData.push(''); // その他のヘッダーの場合は空文字をセット
             }
         });
+        console.log(payNow);
         calendarSheet.appendRow(newRowData);
     }
 
@@ -152,7 +164,18 @@ export class RequestExecuter {
             console.log(`id: ${id} の行を更新`);
             const row = rowNumberToUpdate;
             // 各パラメータを該当の列に更新 (列位置はheaderRowからcolumnIndexを検索して特定)
-            ['event_type', 'event_name', 'start_datetime', 'end_datetime', 'place', 'remark', 'event_status'].forEach(paramName => {
+            [
+                'event_type',
+                'event_name',
+                'start_datetime',
+                'end_datetime',
+                'place',
+                'remark',
+                'event_status',
+                'pitch_fee',
+                'paynow_link',
+                'paticipation_fee',
+            ].forEach(paramName => {
                 if (postEventHander.parameter[paramName]) {
                     const colIndex = headerRow.indexOf(paramName); // ヘッダー行から列番号を取得
                     if (colIndex > -1) {
@@ -1133,7 +1156,8 @@ export class RequestExecuter {
     //                 postEventHander.resultMessage =
     //                     '伝助名称登録が完了しました。\n伝助上の名前：' +
     //                     densukeNameNew +
-    //                     '\n伝助のスケジュールを登録の上、ご参加ください。\n参加費の支払いは、参加後にPayNowでこちらにスクリーンショットを添付してください。\n' +
+    //                     '\n伝助のスケジュールを登録の上、ご参加ください。\n参加費の支払いは、参加後に
+    // ooでこちらにスクリーンショットを添付してください。\n' +
     //                     postEventHander.userId;
     //             } else {
     //                 postEventHander.resultMessage =
@@ -1399,14 +1423,8 @@ export class RequestExecuter {
 
     public aggregate(postEventHander: PostEventHandler): void {
         const su: SchedulerUtil = new SchedulerUtil();
-        const attendees = su.extractAttendees('〇');
-        const actDate = su.extractDateFromRownum();
-        const settingSheet = GasProps.instance.settingSheet;
-        const addy = settingSheet.getRange('B2').getValue();
-        console.log('actDate' + actDate);
-        console.log('attendees' + attendees);
-        su.generateSummaryBase(attendees, actDate);
-        postEventHander.resultMessage = su.getSummaryStr(attendees, actDate, addy);
+        su.generateSummaryBase();
+        postEventHander.resultMessage = su.getSummaryStr();
     }
 
     public unpaid(postEventHander: PostEventHandler): void {
