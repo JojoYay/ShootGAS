@@ -43,7 +43,7 @@ export class LiffApi {
             throw new Error('attendance sheet was not found.');
         }
         const attendanceValues = attendance.getDataRange().getValues();
-        const filteredAttendees = attendanceValues.filter(row => row[6] === calendarId); // 7列目が calendar_id
+        const filteredAttendees = attendanceValues.filter(row => row[6] === calendarId && row[5] === '〇'); // 7列目が calendar_id
         // フィルターしたデータのuserIdを抽出
         const attendeeUserIds = filteredAttendees.map(row => row[1]); // 2列目が user_id
 
