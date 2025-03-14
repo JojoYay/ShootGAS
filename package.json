@@ -13,7 +13,9 @@
     "license": "license-check-and-add add -f license-config.json",
     "test": "jest test/ --passWithNoTests --detectOpenHandles",
     "deploy":      "npm run lint && npm run test && npm run build && ncp .clasp-dev.json .clasp.json && clasp push -f && clasp deploy -i AKfycbw7wL2okZJ8z9Vv7G4nQS3asz-pEmoRSJrNMKmI50p2ZsegfcyxWAUwxoVcAHiiYIQWZA",
-    "deploy:prod": "npm run lint && npm run test && npm run build && ncp .clasp-prod.json .clasp.json && clasp push && clasp deploy -i AKfycbysS9XmULaZ9HtsLjWDYKrEuNZ7ws9xtK-Qmy3jbNfrCKYXU3upWYybefshFlX2ypfG"
+    "deploy:prod": "npm run lint && npm run test && npm run build && ncp .clasp-prod.json .clasp.json && clasp push && clasp deploy -i AKfycbysS9XmULaZ9HtsLjWDYKrEuNZ7ws9xtK-Qmy3jbNfrCKYXU3upWYybefshFlX2ypfG",
+    "deploy:bvs": "clasp login && npm run lint && npm run test && npm run build && ncp .clasp-bvs.json .clasp.json && clasp push && clasp deploy -i AKfycbyNWSZa57KCoMxkBaf0ie4BykQOlp77wIkS_np_f8QskVrmD8jju95MiQxXwclA77p9ug"
+
   },
   "engines": {
     "node": ">=12"
