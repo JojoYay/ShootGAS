@@ -698,16 +698,6 @@ export class RequestExecuter {
         return actDate + '_s';
     }
 
-    // private getTeamCount(memberCount: number) {
-    //     if (memberCount < 18) {
-    //         return 3;
-    //     } else if (memberCount < 19) {
-    //         return 4;
-    //     } else {
-    //         return 5;
-    //     }
-    // }
-
     public createShootLog(postEventHander: PostEventHandler) {
         const teamCount: string = postEventHander.parameter['teamCount'];
         const su: SchedulerUtil = new SchedulerUtil();
@@ -1210,8 +1200,8 @@ export class RequestExecuter {
         const actDate = su.extractDateFromRownum();
         const messageId = postEventHander.messageId;
         const userId = postEventHander.userId;
-        const lineName = lineUtil.getLineDisplayName(userId);
-        const densukeName = gasUtil.getDensukeName(lineName);
+        // const lineName = lineUtil.getLineDisplayName(userId);
+        const densukeName = gasUtil.getNickname(userId);
         console.log(densukeName);
         if (densukeName) {
             if (attendees.includes(densukeName)) {
@@ -1252,7 +1242,7 @@ export class RequestExecuter {
     }
 
     public myResult(postEventHander: PostEventHandler): void {
-        if (!postEventHander.userId && !gasUtil.getDensukeName(lineUtil.getLineDisplayName(postEventHander.userId))) {
+        if (!postEventHander.userId && !gasUtil.getNickname(postEventHander.userId)) {
             postEventHander.resultMessage = '初回登録が終わっていません。スケジューラーへアクセスし、初回登録を完了させてください。';
         }
         postEventHander.isFlex = true;

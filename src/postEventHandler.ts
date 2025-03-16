@@ -248,7 +248,7 @@ export class PostEventHandler {
 
     private _resultMessage: string = '';
     private _resultImage: string | null = null;
-    private _paynowOwnerMsg: string | null = null;
+    // private _paynowOwnerMsg: string | null = null;
     private _testResult: string[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private _mockDensukeCheerio: any | null;
@@ -292,7 +292,7 @@ export class PostEventHandler {
                 this._resultMessage = "【Error】I'm sorry, I didn't understand. Please enter the correct input again.";
             }
             this._resultImage = null;
-            this._paynowOwnerMsg = null;
+            // this._paynowOwnerMsg = null;
             this._testResult = [];
         } else {
             this.parameter = e.parameter;
@@ -350,12 +350,12 @@ export class PostEventHandler {
     public set resultImage(value: string) {
         this._resultImage = value;
     }
-    public get paynowOwnerMsg(): string | null {
-        return this._paynowOwnerMsg;
-    }
-    public set paynowOwnerMsg(value: string) {
-        this._paynowOwnerMsg = value;
-    }
+    // public get paynowOwnerMsg(): string | null {
+    //     return this._paynowOwnerMsg;
+    // }
+    // public set paynowOwnerMsg(value: string) {
+    //     this._paynowOwnerMsg = value;
+    // }
 
     public get lang(): string {
         return this._lang;

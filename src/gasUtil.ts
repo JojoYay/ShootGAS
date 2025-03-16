@@ -114,10 +114,24 @@ export class GasUtil {
         return lineName;
     }
 
-    public isRegistered(userId: string): boolean {
-        return !!this.getDensukeName(lineUtil.getLineDisplayName(userId));
+    // public isRegistered(userId: string): boolean {
+    //     return !!this.getDensukeName(lineUtil.getLineDisplayName(userId));
+    // }
+
+    public getNickname(userId: string): string {
+        let nickName = null;
+        const mappingSheet = GasProps.instance.mappingSheet;
+        const values = mappingSheet.getDataRange().getValues();
+        for (let i = values.length - 1; i >= 0; i--) {
+            if (values[i][2] === userId) {
+                nickName = values[i][1];
+                break;
+            }
+        }
+        return nickName;
     }
 
+    //depliciated
     public getDensukeName(lineName: string): string {
         let densukeName = null;
         const mappingSheet = GasProps.instance.mappingSheet;

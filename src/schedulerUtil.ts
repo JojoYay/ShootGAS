@@ -28,8 +28,7 @@ export class SchedulerUtil {
         return attendanceSheet;
     }
 
-    //集計対象イベントのAttendeesを取っている
-    public extractAttendees(symbol: string): string[] {
+    public extractAttendeeUserIds(symbol: string): string[] {
         const attendanceSheet: GoogleAppsScript.Spreadsheet.Sheet = this.attendanceSheet;
         const aValues = attendanceSheet.getDataRange().getValues();
         const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet = this.calendarSheet;
@@ -61,6 +60,12 @@ export class SchedulerUtil {
             // event_status=20 のイベントは複数存在しない前提なので、最初に見つかった時点でループを抜ける
             break;
         }
+        return attend;
+    }
+
+    //集計対象イベントのAttendeesを取っている
+    public extractAttendees(symbol: string): string[] {
+        const attend: string[] = this.extractAttendeeUserIds(symbol);
         // mappingSheetを利用してuserIdの配列を伝助上の名称の配列に変換
         const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
         const mappingValues = mappingSheet.getDataRange().getValues();
@@ -138,7 +143,8 @@ export class SchedulerUtil {
 
     public generateSummaryBase(): void {
         const cashBook = GasProps.instance.cashBookSheet;
-        const attendees: string[] = this.extractAttendees('〇');
+        // const attendees: string[] = this.extractAttendees('〇');
+        const attendeeUserIds: string[] = this.extractAttendeeUserIds('〇');
         const actDate: string = this.extractDateFromRownum();
         // データの範囲を取得
         const cRangeValues = cashBook.getDataRange().getValues();
@@ -154,7 +160,7 @@ export class SchedulerUtil {
         const rentalFee: number = this.getPitchFee();
         const attendFee: number = this.getPaticipationFee();
         gasUtil.archiveFiles(actDate);
-        const attendFeeTotal: number = attendFee * attendees.length;
+        const attendFeeTotal: number = attendFee * attendeeUserIds.length;
         const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet(actDate, true); //ない場合作る
         const dd: string = new Date().toLocaleString();
         report.getRange('A1').setValue('日付');
@@ -164,7 +170,7 @@ export class SchedulerUtil {
         report.getRange('A3').setValue('繰り越し残高(SGD)');
         report.getRange('B3').setValue('' + orgPrice);
         report.getRange('A4').setValue('参加人数(人)');
-        report.getRange('B4').setValue('' + attendees.length);
+        report.getRange('B4').setValue('' + attendeeUserIds.length);
         report.getRange('A5').setValue('参加費合計(SGD))');
         report.getRange('B5').setValue('' + attendFeeTotal);
         report.getRange('A6').setValue('ピッチ使用料金(SGD)');
@@ -181,10 +187,25 @@ export class SchedulerUtil {
             report.deleteRow(i);
         }
         this.reCalcTotalVal(cashBook);
-        for (let i = 0; i < attendees.length; i++) {
-            const lineName = gasUtil.getLineName(attendees[i]);
-            report.appendRow([attendees[i], lineName]);
-            const paymentUrl: GoogleAppsScript.Spreadsheet.RichTextValue | null = gasUtil.getPaymentUrl(attendees[i], actDate);
+        const mappingSheet = GasProps.instance.mappingSheet;
+        const mapValues = mappingSheet.getDataRange().getValues();
+        const userIdToDensukeNameMap: { [key: string]: [string, string] } = {};
+
+        for (let i = 1; i < mapValues.length; i++) {
+            const row = mapValues[i];
+            const userId = row[2]; // LINE ID (3列目)
+            const densukeName = row[1]; // 伝助上の名前 (2列目)
+            const lineName = row[0]; // 伝助上の名前 (2列目)
+            if (userId && densukeName) {
+                userIdToDensukeNameMap[userId] = [densukeName, lineName];
+            }
+        }
+        const reportNames = attendeeUserIds.map(userId => userIdToDensukeNameMap[userId]);
+
+        for (let i = 0; i < reportNames.length; i++) {
+            const reportName: [string, string] = reportNames[i];
+            report.appendRow(reportName);
+            const paymentUrl: GoogleAppsScript.Spreadsheet.RichTextValue | null = gasUtil.getPaymentUrl(reportName[0], actDate);
             const lastRow = report.getLastRow();
             if (paymentUrl) {
                 report.getRange(lastRow, 3).setRichTextValue(paymentUrl);
@@ -199,7 +220,13 @@ export class SchedulerUtil {
         report.getRange(9, 1, rlastRow - 8, 3).setBorder(true, true, true, true, true, true);
         report.getRange(9, 1, 1, 3).setBackground('#fff2cc');
 
-        cashBook.appendRow([dd, actDate, '参加費(' + attendees.length + '名)', '' + attendFeeTotal, '=' + 'E' + lastRow + '+D' + (lastRow + 1)]);
+        cashBook.appendRow([
+            dd,
+            actDate,
+            '参加費(' + attendeeUserIds.length + '名)',
+            '' + attendFeeTotal,
+            '=' + 'E' + lastRow + '+D' + (lastRow + 1),
+        ]);
         cashBook.appendRow([dd, actDate, 'ピッチ使用料金', '-' + rentalFee, '=' + 'E' + (lastRow + 1) + '+D' + (lastRow + 2)]);
         const clastRow = cashBook.getLastRow();
         cashBook.getRange(1, 1, clastRow, 5).setBorder(true, true, true, true, true, true);
@@ -222,13 +249,16 @@ export class SchedulerUtil {
         const attendees: string[] = this.extractAttendees('〇');
         const actDate: string = this.extractDateFromRownum();
         const payNowAddy: string = this.getPayNowAddress();
+        const paticipationFee: string = this.getPaticipationFee();
         let paynowStr = '';
         if (gasUtil.getUnpaid(actDate).length === 0) {
             paynowStr =
                 '入金ありがとうございました。今回のレポートになります。詳細はリンクをご確認下さい。\nThank you for your payment.\nPlease find the report for this transaction below.\nFor more details, please check the provided link.\n';
         } else {
             paynowStr =
-                'みなさま、ご参加ありがとうございました。\n入金後PayNowのスクリーンショットをSundayShootちゃんねるに送信して下さい。\nThank you all for your paticipation! After making the payment, please send the PayNow screenshot to Sunday Shoot Line Channel.\n';
+                'みなさま、ご参加ありがとうございました。\n$' +
+                paticipationFee +
+                '入金後PayNowのスクリーンショットをSundayShootちゃんねるに送信して下さい。\nThank you all for your paticipation! After making the payment, please send the PayNow screenshot to Sunday Shoot Line Channel.\n';
         }
         const summary =
             paynowStr +
@@ -243,7 +273,9 @@ export class SchedulerUtil {
             'Report URL:' +
             GasProps.instance.reportSheetUrl +
             '\nPayNow先: ' +
-            payNowAddy;
+            payNowAddy +
+            '\n参加費: $' +
+            paticipationFee;
         return summary;
     }
 

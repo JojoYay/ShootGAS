@@ -305,10 +305,10 @@ export class LiffApi {
 
     private getDensukeName(getEventHandler: GetEventHandler): void {
         const gasUtil: GasUtil = new GasUtil();
-        const lineUtil: LineUtil = new LineUtil();
+        // const lineUtil: LineUtil = new LineUtil();
         const userId = getEventHandler.e.parameters['userId'][0];
         // getEventHandler.result = { result: gasUtil.getDensukeName(lineUtil.getLineDisplayName(userId)) };
-        getEventHandler.result.densukeName = gasUtil.getDensukeName(lineUtil.getLineDisplayName(userId));
+        getEventHandler.result.densukeName = gasUtil.getNickname(userId);
     }
 
     private getRanking(getEventHandler: GetEventHandler): void {
@@ -352,7 +352,8 @@ export class LiffApi {
             const sheet: GoogleAppsScript.Spreadsheet.Sheet = spreadSheet.getActiveSheet();
             const sheetVal = sheet.getDataRange().getValues();
             const gasUtil: GasUtil = new GasUtil();
-            const densukeName = gasUtil.getDensukeName(lineName);
+            // const densukeName = gasUtil.getDensukeName(lineName);
+            const densukeName = gasUtil.getNickname(userId);
             const userRow = sheetVal.find(item => item[0] === densukeName);
             // const settingSheet = GasProps.instance.settingSheet;
             // const addy = settingSheet.getRange('B2').getValue();
