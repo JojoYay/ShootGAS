@@ -136,7 +136,7 @@ export class SchedulerUtil {
             '名): ' +
             unknown.join(', ') +
             '\n' +
-            '伝助URL：' +
+            'スケジューラーURL：' +
             this.schedulerUrl;
         return summary;
     }

@@ -13,6 +13,75 @@ const lineUtil: LineUtil = new LineUtil();
 const gasUtil: GasUtil = new GasUtil();
 
 export class RequestExecuter {
+    public updateEventData(postEventHander: PostEventHandler): void {
+        const title: string = postEventHander.parameter['title']; //こいつで一意
+        const weather: string = postEventHander.parameter['weather'];
+        const mip1: string = postEventHander.parameter['mip1'];
+        const reason: string = postEventHander.parameter['reason'];
+        const team1: string = postEventHander.parameter['team1'];
+        const team2: string = postEventHander.parameter['team2'];
+        const team3: string = postEventHander.parameter['team3'];
+        const team4: string = postEventHander.parameter['team4'];
+        const team5: string = postEventHander.parameter['team5'];
+        const team6: string = postEventHander.parameter['team6'];
+        const team7: string = postEventHander.parameter['team7'];
+        const team8: string = postEventHander.parameter['team8'];
+        const team9: string = postEventHander.parameter['team9'];
+        const team10: string = postEventHander.parameter['team10'];
+        const mip2: string = postEventHander.parameter['mip2'];
+        const mip3: string = postEventHander.parameter['mip3'];
+        const mip4: string = postEventHander.parameter['mip4'];
+        const mip5: string = postEventHander.parameter['mip5'];
+
+        const eventDetailSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.eventResultSheet;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const eventDetailValues: any[][] = eventDetailSheet.getDataRange().getValues();
+
+        let targetRowIndex = -1;
+        // 2列目のタイトルをキーにデータを検索
+        for (let i = 1; i < eventDetailValues.length; i++) {
+            // 1行目はヘッダー行と仮定
+            if (eventDetailValues[i][1] === title) {
+                // 2列目（インデックス1）がタイトル
+                targetRowIndex = i;
+                break; // タイトルが一致する行が見つかったらループを抜ける
+            }
+        }
+
+        if (targetRowIndex !== -1) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const updateValues: any[] = eventDetailValues[targetRowIndex]; // 更新前の行データをコピー
+
+            // 現在の更新日時をmm/dd/yyyy hh24:mi:ss形式で入力
+            const now = new Date();
+            const formattedDate = Utilities.formatDate(now, Session.getScriptTimeZone(), 'MM/dd/yyyy HH:mm:ss');
+            updateValues[0] = formattedDate; // 1列目に更新日時を設定
+
+            updateValues[4] = weather !== undefined ? weather : updateValues[4]; // 天気 (5列目)
+            updateValues[5] = mip1 !== undefined ? mip1 : updateValues[5]; // MIP1 (6列目)
+            updateValues[6] = reason !== undefined ? reason : updateValues[6]; // 選出理由 (7列目)
+            updateValues[7] = team1 !== undefined ? team1 : updateValues[7]; // team1 (8列目)
+            updateValues[8] = team2 !== undefined ? team2 : updateValues[8]; // team2 (9列目)
+            updateValues[9] = team3 !== undefined ? team3 : updateValues[9]; // team3 (10列目)
+            updateValues[10] = team4 !== undefined ? team4 : updateValues[10]; // team4 (11列目)
+            updateValues[11] = team5 !== undefined ? team5 : updateValues[11]; // team5 (12列目)
+            updateValues[12] = team6 !== undefined ? team6 : updateValues[12]; // team6 (13列目)
+            updateValues[13] = team7 !== undefined ? team7 : updateValues[13]; // team7 (14列目)
+            updateValues[14] = team8 !== undefined ? team8 : updateValues[14]; // team8 (15列目)
+            updateValues[15] = team9 !== undefined ? team9 : updateValues[15]; // team9 (16列目)
+            updateValues[16] = team10 !== undefined ? team10 : updateValues[16]; // team10 (17列目)
+            updateValues[17] = mip2 !== undefined ? mip2 : updateValues[17]; // MIP2 (18列目)
+            updateValues[18] = mip3 !== undefined ? mip3 : updateValues[18]; // MIP3 (19列目)
+            updateValues[19] = mip4 !== undefined ? mip4 : updateValues[19]; // MIP4 (20列目)
+            updateValues[20] = mip5 !== undefined ? mip5 : updateValues[20]; // MIP5 (21列目)
+
+            // シートに書き戻し
+            eventDetailSheet.getRange(targetRowIndex + 1, 1, 1, updateValues.length).setValues([updateValues]);
+        } else {
+            Logger.log(`No event found with title: ${title}`);
+        }
+    }
+
     public createCalendar(postEventHander: PostEventHandler): void {
         const su: SchedulerUtil = new SchedulerUtil();
         const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet = su.calendarSheet;

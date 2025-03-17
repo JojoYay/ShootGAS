@@ -8,6 +8,7 @@ export enum Title {
     TOKUTEN = '得点王ランキング',
     ASSIST = 'アシスト王ランキング',
     OKAMOTO = '岡本カップランキング',
+    ATTEND = '出席ランキング',
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

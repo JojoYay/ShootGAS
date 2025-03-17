@@ -199,7 +199,7 @@ export class LiffApi {
         getEventHandler.result.match = videos
             .getDataRange()
             .getValues()
-            .filter(val => val[0] === actDate && !val[10].endsWith('_g') && val[3] && val[4]);
+            .filter(val => val[0] === actDate && (!val[10].endsWith('_g') || !val[10].endsWith('d')) && val[3] && val[4]);
     }
 
     private getPayNow(getEventHandler: GetEventHandler): void {
@@ -244,7 +244,7 @@ export class LiffApi {
             const val = videoVals[i];
             if (val[0] === actDate) {
                 // Check if the first column matches actDate
-                if (typeof val[10] !== 'string' || !val[10].endsWith('_g')) {
+                if (typeof val[10] !== 'string' || !val[10].endsWith('_g') || !val[10].endsWith('d')) {
                     // Check the second condition
                     count++;
                 }
