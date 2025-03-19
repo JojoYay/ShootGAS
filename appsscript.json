@@ -6,6 +6,18 @@
         "userSymbol": "Cheerio",
         "version": "14",
         "libraryId": "1ReeQ6WO8kKNxoaA_O0XEQ589cIrRvEBA9qcWpNqdOP17i47u6N9M5Xh0"
+      },
+      {
+        "userSymbol": "OAuth2",
+        "version": "43",
+        "libraryId": "1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF"
+      }
+    ],
+    "enabledAdvancedServices": [
+      {
+        "userSymbol": "YouTube",
+        "version": "v3",
+        "serviceId": "youtube"
       }
     ]
   },
@@ -30,6 +42,11 @@
     "https://www.googleapis.com/auth/drive.readonly",
     "https://mail.google.com/",
     "https://www.googleapis.com/auth/userinfo.email",
-    "https://www.googleapis.com/auth/userinfo.profile"
+    "https://www.googleapis.com/auth/userinfo.profile",
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube",
+    "https://www.googleapis.com/auth/youtube.force-ssl",
+    "https://www.googleapis.com/auth/youtube.readonly",
+    "https://www.googleapis.com/auth/youtubepartner"
   ]
 }

@@ -13,6 +13,87 @@ const lineUtil: LineUtil = new LineUtil();
 const gasUtil: GasUtil = new GasUtil();
 
 export class RequestExecuter {
+
+    public uploadToYoutube(postEventHander: PostEventHandler): void {
+        console.log('uploadToYoutube');
+        const fileName: string = postEventHander.parameter['fileName'];
+        const fileType: string = postEventHander.parameter['fileType'];
+        const fileSize: string = postEventHander.parameter['fileSize'];
+        const actDate: string = postEventHander.parameter['actDate'];
+        const title: string = actDate + ' ' + fileName;
+        console.log('fileName', fileName);
+        console.log('title', title);
+        console.log('fileSize', fileSize);
+        const accessToken = ScriptApp.getOAuthToken();
+        // YouTube API の Resumable Upload URL を取得
+        const options = {
+            method: 'post',
+            headers: {
+                'Authorization': 'Bearer ' + accessToken,
+                'X-Upload-Content-Type': fileType,
+                'X-Upload-Content-Length': fileSize,
+                'Content-Type': 'application/json; charset=UTF-8',
+            },
+            // muteHttpExceptions: true,
+            payload: JSON.stringify({
+                snippet: {
+                    // title: fileName,
+                    title: title,
+                    description: 'YouTube API Upload via GAS',
+                    tags: ['ShootSunday', 'YouTube API'],
+                    // categoryId: '21',
+                },
+                status: {
+                    privacyStatus: 'unlisted',
+                    madeForKids: false, // 子供向けではない設定を追加
+                },
+            }),
+        };
+        // console.log('payload:', options.payload); // payload をログ出力
+        const response = UrlFetchApp.fetch(
+            'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
+            // @ts-ignore
+            options
+        );
+
+        const headers = response.getAllHeaders();
+        // @ts-ignore
+        const uploadUrl = headers.Location;
+        console.log(uploadUrl);
+        postEventHander.reponseObj.uploadUrl = uploadUrl;
+        const videoId = this.getVideoIdByTitle(title);
+        // const videoId = 'hogehoge';
+        // 動画URLを生成
+        const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+        console.log('YouTube Video URL:', videoUrl);
+        postEventHander.reponseObj.videoUrl = videoUrl;
+        const accessToken2 = ScriptApp.getOAuthToken();
+        console.log(accessToken2);
+        postEventHander.reponseObj.token = accessToken2;
+    }
+
+    private getVideoIdByTitle(videoTitle: string): string | null {
+        try {
+            const response = YouTube.Search?.list('id,snippet', {
+                forMine: true,
+                type: 'video',
+                q: videoTitle, // 検索クエリに動画タイトルを指定
+            });
+            if (response && response.items && response.items.length > 0) {
+                // 検索結果が複数件の場合、最初の動画をvideoIdとする (より厳密な絞り込みが必要な場合あり)
+                const video: GoogleAppsScript.YouTube.Schema.SearchResult = response.items[0];
+                if (video.id?.videoId) {
+                    return video.id.videoId;
+                }
+            }
+            console.log('動画が見つかりませんでした。タイトル:', videoTitle);
+            return null;
+        } catch (error) {
+            console.error('Videos: get API エラー:', error);
+            return null;
+        }
+    }
+
     public updateEventData(postEventHander: PostEventHandler): void {
         const title: string = postEventHander.parameter['title']; //こいつで一意
         const weather: string = postEventHander.parameter['weather'];
@@ -295,8 +376,7 @@ export class RequestExecuter {
         const content: string = postEventHander.parameter['content'];
         const createUser: string = postEventHander.parameter['create_user'];
         const headerRow = comments.getDataRange().getValues()[0]; // ヘッダー行を取得
-        console.log(componentId);
-
+        // console.log(componentId);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const newRowData: any[] = [];
         headerRow.forEach(header => {
@@ -1499,35 +1579,9 @@ export class RequestExecuter {
         postEventHander.resultMessage = su.generateRemind();
     }
 
-    // public densukeUpd(postEventHander: PostEventHandler): void {
-    //     const $ = densukeUtil.getDensukeCheerio();
-    //     const lineName = lineUtil.getLineDisplayName(postEventHander.userId);
-    //     const members = densukeUtil.extractMembers($);
-    //     const attendees = densukeUtil.extractAttendees($, ScriptProps.instance.ROWNUM, '〇', members);
-    //     const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
-    //     const settingSheet = GasProps.instance.settingSheet;
-    //     const addy = settingSheet.getRange('B2').getValue();
-    //     densukeUtil.generateSummaryBase($);
-    //     postEventHander.paynowOwnerMsg = '【' + lineName + 'さんにより更新されました】\n' + densukeUtil.getSummaryStr(attendees, actDate, addy);
-    //     // this.sendMessageToPaynowOwner(ownerMessage);
-    //     if (postEventHander.lang === 'ja') {
-    //         postEventHander.resultMessage = '伝助の更新ありがとうございました！PayNowのスクリーンショットを再度こちらへ送って下さい。';
-    //     } else {
-    //         postEventHander.resultMessage = 'Thank you for updating Densuke! Please send PayNow screenshot here again.';
-    //     }
-    // }
-
-    // public regInfo(postEventHander: PostEventHandler): void {
-    //     const su: SchedulerUtil = new SchedulerUtil();
-    //     if (postEventHander.lang === 'ja') {
-    //         postEventHander.resultMessage =
-    //             '伝助名称の登録を行います。\n伝助のアカウント名を以下のフォーマットで入力してください。\n@@register@@伝助名前\n例）@@register@@やまだじょ\n' +
-    //             su.schedulerUrl;
-    //     } else {
-    //         postEventHander.resultMessage =
-    //             'We will perform the densuke name registration.\nPlease enter your Densuke account name in the following format:\n@@register@@XXXXX\nExample)@@register@@Sahim\n' +
-    //             su.schedulerUrl;
-    //     }
+    // public youtubeAuth(postEventHander: PostEventHandler): void {
+    //     const service = this.getYouTubeService();
+    //     postEventHander.resultMessage = service.getAuthorizationUrl();
     // }
 
     public managerInfo(postEventHander: PostEventHandler): void {

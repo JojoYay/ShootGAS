@@ -37,12 +37,17 @@ function updateProfilePic() {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.Content.TextOutput {
-    // console.log(e);
-    const getEventHandler: GetEventHandler = new GetEventHandler(e);
-    for (const methodName of getEventHandler.funcs) {
-        executeMethod(new LiffApi(), methodName, getEventHandler);
+    let getEventHandler: GetEventHandler;
+    try {
+        getEventHandler = new GetEventHandler(e);
+        for (const methodName of getEventHandler.funcs) {
+            executeMethod(new LiffApi(), methodName, getEventHandler);
+        }
+        return ContentService.createTextOutput(JSON.stringify(getEventHandler.result));
+    } catch (err) {
+        console.log(err);
+        return ContentService.createTextOutput(JSON.stringify({ err: (err as Error).message }));
     }
-    return ContentService.createTextOutput(JSON.stringify(getEventHandler.result));
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -64,16 +69,20 @@ function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Content.Tex
             }
         }
     } catch (err) {
+        console.log(err);
         postEventHander.resultMessage = '[Error] ' + (err as Error).message + '\n' + (err as Error).stack;
-        lineUtil.sendLineReply(postEventHander.replyToken, postEventHander.resultMessage, null);
-        throw err;
+        postEventHander.reponseObj.err = '[Error] ' + (err as Error).message + '\n' + (err as Error).stack;
+        if (postEventHander.replyToken) {
+            lineUtil.sendLineReply(postEventHander.replyToken, postEventHander.resultMessage, null);
+        }
+        return ContentService.createTextOutput(JSON.stringify(postEventHander.reponseObj)).setMimeType(ContentService.MimeType.JSON);
     }
     return ContentService.createTextOutput(JSON.stringify(postEventHander.reponseObj)).setMimeType(ContentService.MimeType.JSON);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function executeMethod(obj: any, methodName: string, args: any) {
-    console.log('Execute ' + methodName);
+    // console.log('Execute ' + methodName);
     if (typeof obj[methodName] === 'function') {
         return obj[methodName](args);
     } else {
@@ -81,18 +90,3 @@ function executeMethod(obj: any, methodName: string, args: any) {
         throw new Error(`Method ${methodName} does not exist on the object ${obj}.`);
     }
 }
-
-// function errorMessage(postEventHander: PostEventHandler): void {
-//   const userId: string = postEventHander.userId;
-//   const lang: string = lineUtil.getLineLang(userId);
-//   const replyToken: string = postEventHander.replyToken;
-//   let reply: string = '';
-//   if (lang === 'ja') {
-//     reply =
-//       '【エラー】申し訳ありません、理解できませんでした。再度正しく入力してください。';
-//   } else {
-//     reply =
-//       "【Error】I'm sorry, I didn't understand. Please enter the correct input again.";
-//   }
-//   lineUtil.sendLineReply(replyToken, reply, '');
-// }

@@ -13,6 +13,72 @@ export class LiffApi {
         getEventHandler.result = { result: value };
     }
 
+    private updateYTVideo(getEventHandler: GetEventHandler): void {
+        try {
+            const videoTitle: string = getEventHandler.e.parameter['videoTitle'];
+            const actDate: string = getEventHandler.e.parameter['actDate'];
+            const fileName: string = getEventHandler.e.parameter['fileName'];
+            const response = YouTube.Search?.list('id,snippet', {
+                forMine: true,
+                type: 'video',
+                q: videoTitle, // 検索クエリに動画タイトルを指定
+            });
+            if (response && response.items && response.items.length > 0) {
+                // 検索結果が複数件の場合、最初の動画をvideoIdとする (より厳密な絞り込みが必要な場合あり)
+                const video: GoogleAppsScript.YouTube.Schema.SearchResult = response.items[0];
+                if (video.id?.videoId) {
+                    const videoUrl: string = `https://www.youtube.com/watch?v=${video.id.videoId}`;
+
+                    const videoSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
+                    const videoSheetVals = videoSheet.getDataRange().getValues();
+                    let matchedRowIndex = -1;
+                    // ２行目からデータ行を検索 (１行目、２行目は検索条件として使用するためスキップ)
+                    for (let i = 2; i < videoSheetVals.length; i++) {
+                        const row = videoSheetVals[i];
+                        if (row[0] === actDate && row[1] === fileName) {
+                            matchedRowIndex = i;
+                            break; // 最初に見つかった行で処理を終える
+                        }
+                    }
+
+                    if (matchedRowIndex !== -1) {
+                        // マッチする行が見つかった場合、３列目（C列）にvideoUrlを書き込む
+                        videoSheet.getRange(matchedRowIndex + 1, 3).setValue(videoUrl);
+                        console.log(`Matched row found at index ${matchedRowIndex + 1}. videoUrl updated.`);
+                    } else {
+                        console.log(`No matching row found for actDate: ${actDate} and Title: ${fileName}`);
+                    }
+                }
+            }
+            console.log('動画が見つかりませんでした。タイトル:', videoTitle);
+        } catch (error) {
+            console.error('Videos: get API エラー:', error);
+        }
+    }
+
+    private getYTVideoIdByTitle(getEventHandler: GetEventHandler): void {
+        try {
+            const videoTitle: string = getEventHandler.e.parameter['videoTitle'];
+            const response = YouTube.Search?.list('id,snippet', {
+                forMine: true,
+                type: 'video',
+                q: videoTitle, // 検索クエリに動画タイトルを指定
+            });
+            if (response && response.items && response.items.length > 0) {
+                // 検索結果が複数件の場合、最初の動画をvideoIdとする (より厳密な絞り込みが必要な場合あり)
+                const video: GoogleAppsScript.YouTube.Schema.SearchResult = response.items[0];
+                if (video.id?.videoId) {
+                    getEventHandler.result.videoId = `https://www.youtube.com/watch?v=${video.id.videoId}`;
+                }
+            }
+            console.log('動画が見つかりませんでした。タイトル:', videoTitle);
+            // return '';
+        } catch (error) {
+            console.error('Videos: get API エラー:', error);
+            // return '';
+        }
+    }
+
     private getCalendar(getEventHandler: GetEventHandler): void {
         const calId: string = getEventHandler.e.parameter['calendarId'];
         const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);

@@ -15,6 +15,12 @@ export const COMMAND_MAP: Command[] = [
         condition: (postEventHander: PostEventHandler) => postEventHander.type === 'message' && postEventHander.messageType === 'image',
     },
     {
+        func: 'uploadToYoutube',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'uploadToYoutube',
+    },
+    {
         func: 'updateEventData',
         lineCmd: '',
         display: false,
@@ -140,7 +146,6 @@ export const COMMAND_MAP: Command[] = [
             postEventHander.messageType === 'text' &&
             (postEventHander.messageText === 'ビデオ' || postEventHander.messageText.toLowerCase() === 'video`'),
     },
-
     {
         func: 'remind',
         lineCmd: 'リマインド, remind',
@@ -150,6 +155,13 @@ export const COMMAND_MAP: Command[] = [
             postEventHander.messageType === 'text' &&
             (postEventHander.messageText === 'リマインド' || postEventHander.messageText.toLowerCase() === 'remind'),
     },
+    // {
+    //     func: 'youtubeAuth',
+    //     lineCmd: 'youtube',
+    //     display: true,
+    //     condition: (postEventHander: PostEventHandler) =>
+    //         postEventHander.type === 'message' && postEventHander.messageType === 'text' && postEventHander.messageText.toLowerCase() === 'youtube',
+    // },
     // {
     //     func: 'unpaid',
     //     lineCmd: '未払い, unpaid',
