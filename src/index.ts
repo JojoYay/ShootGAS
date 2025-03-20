@@ -46,7 +46,7 @@ function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.Content.TextO
         return ContentService.createTextOutput(JSON.stringify(getEventHandler.result));
     } catch (err) {
         console.log(err);
-        return ContentService.createTextOutput(JSON.stringify({ err: (err as Error).message }));
+        return ContentService.createTextOutput(JSON.stringify({ err: (err as Error).message, stacktrace: (err as Error).stack }));
     }
 }
 

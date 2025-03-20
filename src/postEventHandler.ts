@@ -75,6 +75,12 @@ export const COMMAND_MAP: Command[] = [
         condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'updateParticipation',
     },
     {
+        func: 'uploadPaticipationPayNow',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'uploadPaticipationPayNow',
+    },
+    {
         func: 'upload',
         lineCmd: '',
         display: false,

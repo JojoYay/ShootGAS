@@ -58,13 +58,7 @@ export class GasUtil {
 
     public uploadPayNowPic(densukeName: string, messageId: string, actDate: string): void {
         const fileNm = actDate + '_' + densukeName;
-        // const folder = GasProps.instance.payNowFolder;
-        // const files = folder.getFilesByName(fileNm);
-        // if (files.hasNext()) {
-        //   const file = files.next();
-        //   file.setTrashed(true);
-        // }
-        lineUtil.getLineImage(messageId, fileNm);
+        lineUtil.getLineImage(messageId, fileNm, actDate);
     }
 
     public getReportSheet(actDate: string, isGenerate: boolean = false): GoogleAppsScript.Spreadsheet.Sheet {
@@ -185,7 +179,10 @@ export class GasUtil {
     }
 
     private getFileUrlInFolder(actDate: string, densukeName: string): GoogleAppsScript.Spreadsheet.RichTextValue | null {
-        const folder = GasProps.instance.payNowFolder;
+        // const folder = GasProps.instance.payNowFolder;
+        const lineUtil: LineUtil = new LineUtil();
+        const folder = lineUtil.createPayNowFolder(actDate);
+
         const fileName = actDate + '_' + densukeName;
         const files = folder.getFilesByName(fileName);
         const urls: string[] = [];

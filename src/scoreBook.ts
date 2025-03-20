@@ -66,7 +66,6 @@ export class ScoreBook {
 
         const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = this.getEventDetailSheet(eventSS, actDate);
         this.updateAttendeeName(eventDetail, attendees);
-        this.updateEventDetails(eventDetail);
     }
 
     public getEventDetailSheet(eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet, actDate: string): GoogleAppsScript.Spreadsheet.Sheet {
@@ -315,39 +314,37 @@ export class ScoreBook {
     private updateAttendeeName(eventDetail: GoogleAppsScript.Spreadsheet.Sheet, attendees: string[]): void {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const allDetails: any[][] = eventDetail.getDataRange().getValues();
+        const attendeesArray = Array.isArray(attendees) ? attendees : [attendees]; // attendees が配列でない場合の安全策
+
         for (let i = allDetails.length - 1; i >= 1; i--) {
             const name = allDetails[i][0];
-            if (!name.includes(attendees) && !allDetails[i][1] && !allDetails[i][2] && !allDetails[i][3] && !allDetails[i][4]) {
+            const isEmptyRow = allDetails[i].slice(1, 5).every(cell => !cell); // B列からE列がすべて空かチェック
+            if (!attendeesArray.includes(name) && isEmptyRow) {
+                // attendeesArray.includes(name) でチェック
                 eventDetail.deleteRow(i + 1);
             }
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const allLoggedAttendees: any[][] = eventDetail.getDataRange().getValues();
-        for (let i = 0; i < attendees.length; i++) {
-            let find = false;
-            for (let j = 1; j < allLoggedAttendees.length; j++) {
-                if (allLoggedAttendees[j][0] === attendees[i]) {
-                    find = true;
-                    break;
-                }
-            }
-            if (!find) {
-                eventDetail.appendRow([attendees[i]]);
-            }
-        }
-    }
-
-    private updateEventDetails(eventDetail: GoogleAppsScript.Spreadsheet.Sheet): void {
         const teamName: string[] = ['チーム1', 'チーム2', 'チーム3', 'チーム4', 'チーム5', 'チーム6', 'チーム7', 'チーム8', 'チーム9', 'チーム10'];
         const teamNameVal = SpreadsheetApp.newDataValidation().requireValueInList(teamName).build();
-        // const teamPoint: string[] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-        // const teamPointVal = SpreadsheetApp.newDataValidation().requireValueInList(teamPoint).build();
         const goalCount: string[] = ['', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
         const goalCountVal = SpreadsheetApp.newDataValidation().requireValueInList(goalCount).build();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const allNewAttendees: any[][] = eventDetail.getDataRange().getValues();
-        for (let i = 1; i < allNewAttendees.length; i++) {
+        const allAttendees: any[][] = eventDetail.getDataRange().getValues(); // 1回だけ取得
+        // 既存参加者名を Set に格納して高速化
+        const loggedAttendeesSet = new Set<string>();
+        for (let j = 1; j < allAttendees.length; j++) {
+            loggedAttendeesSet.add(allAttendees[j][0]);
+        }
+
+        for (let i = 0; i < attendees.length; i++) {
+            if (!loggedAttendeesSet.has(attendees[i])) {
+                // Set.has() で高速チェック
+                eventDetail.appendRow([attendees[i]]);
+            }
+        }
+
+        for (let i = 1; i < allAttendees.length; i++) {
             eventDetail.getRange(i + 1, 2).setDataValidation(teamNameVal);
             eventDetail.getRange(i + 1, 3).setDataValidation(goalCountVal);
             eventDetail.getRange(i + 1, 4).setDataValidation(goalCountVal);
@@ -530,8 +527,6 @@ export class ScoreBook {
 
     public generateScoreBook(actDate: string, attendees: string[], title: Title): void {
         const reportSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
-        // const goalCount: string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-        // const goalCountVal = SpreadsheetApp.newDataValidation().requireValueInList(goalCount).build();
         let scoreSheet: GoogleAppsScript.Spreadsheet.Sheet | null = reportSS.getSheetByName(title);
         if (!scoreSheet) {
             scoreSheet = reportSS.insertSheet(title);
@@ -539,6 +534,7 @@ export class ScoreBook {
             scoreSheet.appendRow(['伝助名称', '順位', '前回順位', '合計得点']);
             scoreSheet.insertRowBefore(1);
         }
+
         if (!this.isActDateExists(actDate, scoreSheet)) {
             scoreSheet.insertColumnBefore(5);
             scoreSheet.getRange('E2').setValue(actDate);

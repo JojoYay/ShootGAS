@@ -399,7 +399,12 @@ export class LiffApi {
         const lineUtil: LineUtil = new LineUtil();
         // console.log('userId ' + userId);
         const lineName: string = lineUtil.getLineDisplayName(userId);
-        const fileIt = expenseFolder.getFilesByName(title + '_' + lineName);
+        // const fileIt = expenseFolder.getFilesByName(title + '_' + lineName);
+
+        const fileNameToSearch = title + '_' + lineName;
+        const searchQuery = `title = '${fileNameToSearch}' and '${expenseFolder.getId()}' in parents`; // より正確なファイル名検索クエリ
+        const fileIt = expenseFolder.searchFiles(searchQuery); // searchFiles を使用
+
         if (fileIt.hasNext()) {
             const file = fileIt.next();
             getEventHandler.result.statusMsg = '支払い済み';
@@ -407,7 +412,10 @@ export class LiffApi {
             getEventHandler.result.picUrl = picUrl;
         } else {
             let spreadSheet: GoogleAppsScript.Spreadsheet.Spreadsheet | null = null;
-            const fileIt2 = expenseFolder.getFilesByName(title);
+            // const fileIt2 = expenseFolder.getFilesByName(title);
+            const searchQuery = `title = '${title}' and '${expenseFolder.getId()}' in parents`; // より正確なファイル名検索クエリ
+            const fileIt2 = expenseFolder.searchFiles(searchQuery); // searchFiles を使用
+
             if (fileIt2.hasNext()) {
                 const sheetFile = fileIt2.next();
                 spreadSheet = SpreadsheetApp.openById(sheetFile.getId());
@@ -431,6 +439,67 @@ export class LiffApi {
             } else {
                 getEventHandler.result.statusMsg = '支払い人として登録されていません。管理者にご確認下さい。';
             }
+        }
+    }
+
+    private getPaticipationFeeWithStatus(getEventHandler: GetEventHandler): void {
+        const userId: string = getEventHandler.e.parameter['userId'];
+        const lang: string = getEventHandler.e.parameter['lang'];
+        this.getCalendar(getEventHandler);
+        const calendarVals = getEventHandler.result.event;
+        const mappingSheet = GasProps.instance.mappingSheet;
+        const mapVals = mappingSheet.getDataRange().getValues();
+        const userVal = mapVals.filter(row => row[2] === userId)[0];
+        const densukeName: string = userVal[1].toString();
+        const date = new Date(calendarVals[3]);
+        const actDate: string = calendarVals[2] + '(' + Utilities.formatDate(date, Session.getScriptTimeZone(), 'dd MMM') + ')'; // calendar_id (1列目)
+        // const actDate: string = calendarVals[2].toString();
+        const lineUtil: LineUtil = new LineUtil();
+        const payNowFolder = lineUtil.createPayNowFolder(actDate);
+        console.log(payNowFolder.getId());
+        getEventHandler.result.actDate = actDate;
+
+        const fileNameToSearch = actDate + '_' + densukeName;
+        const searchQuery = `title = '${fileNameToSearch}' and '${payNowFolder.getId()}' in parents`; // より正確なファイル名検索クエリ
+        const fileIt = payNowFolder.searchFiles(searchQuery); // searchFiles を使用
+        // const fileIt = payNowFolder.getFilesByName(actDate + '_' + densukeName);
+        console.log('fileIt.hasNext', fileIt.hasNext());
+        if (fileIt.hasNext()) {
+            const file = fileIt.next();
+            getEventHandler.result.statusMsg = lang === 'ja-JP' ? '支払い済み' : 'Payment Received';
+            getEventHandler.result.statusMsg2 = '';
+            getEventHandler.result.statusMst3 =
+                lang === 'ja-JP' ? '写真を変更する場合は再度写真を選択して下さい。' : 'Please re-select the photo if you want to change it';
+            const picUrl: string = 'https://lh3.googleusercontent.com/d/' + file.getId();
+            getEventHandler.result.picUrl = picUrl;
+        } else {
+            let paticipationFee = calendarVals[10];
+            if (!paticipationFee) {
+                if (paticipationFee.toString() === '0') {
+                    getEventHandler.result.statusMsg =
+                        lang === 'ja-JP' ? '参加費無料。お支払いの必要はありません。' : 'Participation fee is free. No payment is required.';
+                    getEventHandler.result.statusMsg2 = '';
+                    getEventHandler.result.statusMst3 = '';
+                    getEventHandler.result.picUrl = '';
+                    return;
+                } else {
+                    const settingSheet = GasProps.instance.settingSheet;
+                    paticipationFee = settingSheet.getRange('B4').getValue();
+                }
+            }
+            let addy = calendarVals[9];
+            if (!addy) {
+                const settingSheet = GasProps.instance.settingSheet;
+                addy = settingSheet.getRange('B2').getValue();
+            }
+            getEventHandler.result.statusMsg = lang === 'ja-JP' ? '支払額：$' + paticipationFee : 'Payment amount: $' + paticipationFee;
+            getEventHandler.result.statusMsg2 = lang === 'ja-JP' ? 'PayNow先:' + addy : 'PayNow to:' + addy;
+            getEventHandler.result.statusMst3 =
+                lang === 'ja-JP'
+                    ? '支払い済みのスクリーンショットをこちらにアップロードして下さい'
+                    : 'Please upload a screenshot of your payment here';
+
+            getEventHandler.result.picUrl = '';
         }
     }
 
@@ -480,7 +549,10 @@ export class LiffApi {
         } else {
             expenseFolder = folder.createFolder(title);
         }
-        const fileIt = expenseFolder.getFilesByName(title);
+        // const fileIt = expenseFolder.getFilesByName(title);
+        const searchQuery = `title = '${title}' and '${expenseFolder.getId()}' in parents`; // より正確なファイル名検索クエリ
+        const fileIt = expenseFolder.searchFiles(searchQuery); // searchFiles を使用
+
         if (fileIt.hasNext()) {
             const file = fileIt.next();
             newSpreadsheet = SpreadsheetApp.openById(file.getId());
@@ -516,7 +588,10 @@ export class LiffApi {
             sheet.getRange(index, 2).setValue(mapRow?.[0]);
             sheet.getRange(index, 3).setValue(price);
             // console.log('user ' + user + ' maprow1 ' + mapRow?.[1]);
-            const fileIt = expenseFolder.getFilesByName(title + '_' + mapRow?.[0]);
+            // const fileIt = expenseFolder.getFilesByName(title + '_' + mapRow?.[0]);
+            const search = title + '_' + mapRow?.[0];
+            const searchQuery = `title = '${search}' and '${expenseFolder.getId()}' in parents`; // より正確なファイル名検索クエリ
+            const fileIt = expenseFolder.searchFiles(searchQuery); // searchFiles を使用
             if (fileIt.hasNext()) {
                 const file = fileIt.next();
                 const picUrl: string = 'https://lh3.googleusercontent.com/d/' + file.getId();

@@ -128,26 +128,38 @@ export class LineUtil {
         return this.getLineUserProfile(userId).language;
     }
 
-    public getLineImage(messageId: string, fileName: string): void {
+    public getLineImage(messageId: string, fileName: string, actDate: string): void {
+        //まずフォルダが無ければ作る
+        const folder: GoogleAppsScript.Drive.Folder | GoogleAppsScript.Drive.FolderIterator = this.createPayNowFolder(actDate);
         if (ScriptProps.isTesting()) {
             //テストの場合はコピーする
             const orgFolder: GoogleAppsScript.Drive.Folder = DriveApp.getFolderById('14FCKvswWbQTgkfHVmiHviYDNqDurAFXc');
             const files = orgFolder.getFilesByName('payNowSample.jpg');
             const file = files.next();
-            const folder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder;
             file.makeCopy(fileName, folder);
             return;
         }
-        const folder = GasProps.instance.payNowFolder;
         const url = `https://api-data.line.me/v2/bot/message/${messageId}/content`;
         const headers = {
             Authorization: 'Bearer ' + ScriptProps.instance.lineAccessToken,
         };
         const response = UrlFetchApp.fetch(url, { headers: headers });
         const blob = response.getBlob().setName(fileName);
-        console.log('filename:' + fileName);
+        // console.log('filename:' + fileName);
         folder.createFile(blob);
-        // return file.getUrl();
+    }
+
+    public createPayNowFolder(actDate: string): GoogleAppsScript.Drive.Folder {
+        const parentFolder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder; // 親フォルダを取得
+        let folder: GoogleAppsScript.Drive.Folder | GoogleAppsScript.Drive.FolderIterator = parentFolder.getFoldersByName(actDate); // actDate フォルダを検索
+        if (!folder.hasNext()) {
+            // actDate フォルダが存在しない場合
+            folder = parentFolder.createFolder(actDate); // actDate フォルダを作成
+        } else {
+            // actDate フォルダが存在する場合
+            folder = folder.next(); // 最初のフォルダを取得
+        }
+        return folder;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

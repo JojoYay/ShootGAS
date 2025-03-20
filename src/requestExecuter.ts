@@ -13,7 +13,6 @@ const lineUtil: LineUtil = new LineUtil();
 const gasUtil: GasUtil = new GasUtil();
 
 export class RequestExecuter {
-
     public uploadToYoutube(postEventHander: PostEventHandler): void {
         console.log('uploadToYoutube');
         const fileName: string = postEventHander.parameter['fileName'];
@@ -61,15 +60,15 @@ export class RequestExecuter {
         const uploadUrl = headers.Location;
         console.log(uploadUrl);
         postEventHander.reponseObj.uploadUrl = uploadUrl;
-        const videoId = this.getVideoIdByTitle(title);
-        // const videoId = 'hogehoge';
-        // 動画URLを生成
-        const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-        console.log('YouTube Video URL:', videoUrl);
-        postEventHander.reponseObj.videoUrl = videoUrl;
-        const accessToken2 = ScriptApp.getOAuthToken();
-        console.log(accessToken2);
-        postEventHander.reponseObj.token = accessToken2;
+        // const videoId = this.getVideoIdByTitle(title);
+        // // const videoId = 'hogehoge';
+        // // 動画URLを生成
+        // const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+        // console.log('YouTube Video URL:', videoUrl);
+        // postEventHander.reponseObj.videoUrl = videoUrl;
+        // const accessToken2 = ScriptApp.getOAuthToken();
+        // console.log(accessToken2);
+        // postEventHander.reponseObj.token = accessToken2;
     }
 
     private getVideoIdByTitle(videoTitle: string): string | null {
@@ -885,10 +884,7 @@ export class RequestExecuter {
         const lastRow = videoSheet.getLastRow();
         console.log('last Row Value' + videoSheet.getRange(lastRow, 1).getValue());
         console.log('team count', teamCount);
-        // if (videoSheet.getRange(lastRow + 1, 1).getValue() === actDate) {
-        //     return;
-        // }
-        // const teamCount: number = this.getTeamCount(eventDetails.length - 1);
+
         //アップのひな形を作る（ついでにここを見る）
         switch (teamCount) {
             case '3': //3チームの場合
@@ -1184,6 +1180,36 @@ export class RequestExecuter {
         postEventHander.reponseObj = { resultList: results };
     }
 
+    public uploadPaticipationPayNow(postEventHander: PostEventHandler): void {
+        console.log('execute uploadPaticipationPayNow');
+        const decodedFile = Utilities.base64Decode(postEventHander.parameter.file);
+        const userId: string = postEventHander.parameter.userId;
+        const mappingSheet = GasProps.instance.mappingSheet;
+        const mapVals = mappingSheet.getDataRange().getValues();
+        const userVal = mapVals.filter(row => row[2] === userId)[0]; // 1列目が calendarId
+
+        const densukeName: string = userVal[1].toString();
+        // const lineName: string = userVal[0].toString();
+        const actDate: string = postEventHander.parameter.actDate;
+        // const title: string = postEventHander.parameter.title;
+        const blob = Utilities.newBlob(decodedFile, 'application/octet-stream', actDate + '_' + densukeName);
+        const lineUtil: LineUtil = new LineUtil();
+        const payNowFolder = lineUtil.createPayNowFolder(actDate);
+        // const oldFileIt = payNowFolder.getFilesByName(actDate + '_' + densukeName);
+        const fileNameToSearch = actDate + '_' + densukeName;
+        const searchQuery = `title = '${fileNameToSearch}' and '${payNowFolder.getId()}' in parents`; // より正確なファイル名検索クエリ
+        const oldFileIt = payNowFolder.searchFiles(searchQuery); // searchFiles を使用
+
+        while (oldFileIt.hasNext()) {
+            oldFileIt.next().setTrashed(true);
+        }
+        const file = payNowFolder.createFile(blob);
+        console.log(densukeName + ' uploaded ' + file.getName() + ' in ' + actDate);
+        gasUtil.updatePaymentStatus(densukeName, actDate);
+        const picUrl: string = 'https://lh3.googleusercontent.com/d/' + file.getId();
+        postEventHander.reponseObj = { picUrl: picUrl };
+    }
+
     public upload(postEventHander: PostEventHandler): void {
         console.log('execute upload');
         const decodedFile = Utilities.base64Decode(postEventHander.parameter.file);
@@ -1271,77 +1297,6 @@ export class RequestExecuter {
         postEventHander.resultImage = ScriptProps.instance.channelQr;
     }
 
-    // public register(postEventHander: PostEventHandler): void {
-    //     const lineName = lineUtil.getLineDisplayName(postEventHander.userId);
-    //     const $ = densukeUtil.getDensukeCheerio();
-    //     const members = densukeUtil.extractMembers($);
-    //     const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
-    //     const densukeNameNew = postEventHander.messageText.split('@@register@@')[1];
-    //     if (members.includes(densukeNameNew)) {
-    //         if (densukeUtil.hasMultipleOccurrences(members, densukeNameNew)) {
-    //             if (postEventHander.lang === 'ja') {
-    //                 postEventHander.resultMessage =
-    //                     '伝助上で"' + densukeNameNew + '"という名前が複数存在しています。重複のない名前に更新して再度登録して下さい。';
-    //             } else {
-    //                 postEventHander.resultMessage =
-    //                     "There are multiple entries with the name '" +
-    //                     densukeNameNew +
-    //                     "' on Densuke. Please update it to a unique name and register again.";
-    //             }
-    //         } else {
-    //             gasUtil.registerMapping(lineName, densukeNameNew, postEventHander.userId);
-    //             gasUtil.updateLineNameOfLatestReport(lineName, densukeNameNew, actDate);
-    //             this.updateProfilePic();
-    //             if (postEventHander.lang === 'ja') {
-    //                 postEventHander.resultMessage =
-    //                     '伝助名称登録が完了しました。\n伝助上の名前：' +
-    //                     densukeNameNew +
-    //                     '\n伝助のスケジュールを登録の上、ご参加ください。\n参加費の支払いは、参加後に
-    // ooでこちらにスクリーンショットを添付してください。\n' +
-    //                     postEventHander.userId;
-    //             } else {
-    //                 postEventHander.resultMessage =
-    //                     'The initial registration is complete.\nYour name in Densuke: ' +
-    //                     densukeNameNew +
-    //                     "\nPlease register Densuke's schedule and attend.\nAfter attending, please make the payment via PayNow and attach a screenshot here.\n" +
-    //                     postEventHander.userId;
-    //             }
-    //         }
-    //     } else {
-    //         if (postEventHander.lang === 'ja') {
-    //             postEventHander.resultMessage =
-    //                 '【エラー】伝助上に指定した名前が見つかりません。再度登録を完了させてください\n伝助上の名前：' + densukeNameNew;
-    //         } else {
-    //             postEventHander.resultMessage =
-    //                 '【Error】The specified name was not found in Densuke. Please complete the registration again.\nYour name in Densuke: ' +
-    //                 densukeNameNew;
-    //         }
-    //     }
-    // }
-
-    // private updateProfilePic() {
-    //     // const lineUtil: LineUtil = new LineUtil();
-    //     const densukeMappingVals = GasProps.instance.mappingSheet.getDataRange().getValues();
-    //     let index: number = 0;
-    //     for (const userRow of densukeMappingVals) {
-    //         if (userRow[0] !== 'ライン上の名前') {
-    //             const userId: string = userRow[2];
-    //             try {
-    //                 const prof = lineUtil.getLineUserProfile(userId);
-    //                 if (prof) {
-    //                     // console.log(userRow[0] + ': ' + prof.pictureUrl);
-    //                     GasProps.instance.mappingSheet.getRange(index + 1, 5).setValue(prof.pictureUrl);
-    //                 }
-    //                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    //             } catch (e) {
-    //                 console.log(userRow[0] + ': invalid UserId' + userId);
-    //             }
-    //         }
-    //         index++;
-    //     }
-    //     return;
-    // }
-
     public payNow(postEventHander: PostEventHandler): void {
         const su: SchedulerUtil = new SchedulerUtil();
 
@@ -1349,9 +1304,8 @@ export class RequestExecuter {
         const actDate = su.extractDateFromRownum();
         const messageId = postEventHander.messageId;
         const userId = postEventHander.userId;
-        // const lineName = lineUtil.getLineDisplayName(userId);
         const densukeName = gasUtil.getNickname(userId);
-        console.log(densukeName);
+        // console.log(densukeName);
         if (densukeName) {
             if (attendees.includes(densukeName)) {
                 gasUtil.uploadPayNowPic(densukeName, messageId, actDate);
@@ -1509,12 +1463,6 @@ export class RequestExecuter {
 
                             flex: 1,
                         },
-                        // {
-                        //     aspectMode: 'cover',
-                        //     size: '20px',
-                        //     type: 'image',
-                        //     url: this.rankingPic(ranking[0], densukeVals),
-                        // },
                         {
                             type: 'text',
                             text: ranking[0],
@@ -1536,17 +1484,6 @@ export class RequestExecuter {
             }
         }
     }
-
-    // // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    // private rankingPic(densukeNm: string, densukeVals: any[][]): string {
-    //     const userId = gasUtil.getLineUserId(densukeNm);
-    //     const row = densukeVals.find(item => item[2] === userId);
-    //     let url = 'https://lh3.googleusercontent.com/d/1wMh5Ofoxq89EBIuijDhM-CG52kzUwP1g';
-    //     if (row && row[4]) {
-    //         url = row[4];
-    //     }
-    //     return url;
-    // }
 
     private rankingArrow(place: number, past: number): string {
         if (!past) {
@@ -1579,11 +1516,6 @@ export class RequestExecuter {
         postEventHander.resultMessage = su.generateRemind();
     }
 
-    // public youtubeAuth(postEventHander: PostEventHandler): void {
-    //     const service = this.getYouTubeService();
-    //     postEventHander.resultMessage = service.getAuthorizationUrl();
-    // }
-
     public managerInfo(postEventHander: PostEventHandler): void {
         const su: SchedulerUtil = new SchedulerUtil();
         if (gasUtil.isKanji(postEventHander.userId)) {
@@ -1612,14 +1544,6 @@ export class RequestExecuter {
             postEventHander.resultMessage = 'えっ！？このコマンドは平民のキミには内緒だよ！';
         }
     }
-
-    // public unRegister(postEventHander: PostEventHandler) {
-    //     this.aggregate(postEventHander);
-    //     const $ = densukeUtil.getDensukeCheerio();
-    //     const actDate = densukeUtil.extractDateFromRownum($, ScriptProps.instance.ROWNUM);
-    //     const unRegister = gasUtil.getUnRegister(actDate);
-    //     postEventHander.resultMessage = '現在未登録の参加者 (' + unRegister.length + '名): ' + unRegister.join(', ');
-    // }
 
     public ranking(postEventHander: PostEventHandler): void {
         const scoreBook: ScoreBook = new ScoreBook();
