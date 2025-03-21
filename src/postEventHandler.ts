@@ -168,15 +168,15 @@ export const COMMAND_MAP: Command[] = [
     //     condition: (postEventHander: PostEventHandler) =>
     //         postEventHander.type === 'message' && postEventHander.messageType === 'text' && postEventHander.messageText.toLowerCase() === 'youtube',
     // },
-    // {
-    //     func: 'unpaid',
-    //     lineCmd: '未払い, unpaid',
-    //     display: true,
-    //     condition: (postEventHander: PostEventHandler) =>
-    //         postEventHander.type === 'message' &&
-    //         postEventHander.messageType === 'text' &&
-    //         (postEventHander.messageText === '未払い' || postEventHander.messageText.toLowerCase() === 'unpaid'),
-    // },
+    {
+        func: 'unpaid',
+        lineCmd: '未払い, unpaid',
+        display: true,
+        condition: (postEventHander: PostEventHandler) =>
+            postEventHander.type === 'message' &&
+            postEventHander.messageType === 'text' &&
+            (postEventHander.messageText === '未払い' || postEventHander.messageText.toLowerCase() === 'unpaid'),
+    },
     // {
     //     func: 'unRegister',
     //     lineCmd: '未登録参加者, unregister',
