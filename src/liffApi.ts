@@ -517,6 +517,93 @@ export class LiffApi {
         getEventHandler.result.users = resultValues;
     }
 
+    private getYTComments(getEventHandler: GetEventHandler): void {
+        const videoId: string = this.getYouTubeVideoId(getEventHandler.e.parameters['url'][0]);
+
+        try {
+            if (YouTube.CommentThreads && videoId) {
+                const response = YouTube.CommentThreads.list('snippet,replies', {
+                    videoId: videoId,
+                    maxResults: 20, // 取得するコメントの最大数 (調整可能)
+                    order: 'time', // コメントの並び順 (time: 新しい順, relevance: 関連性の高い順)
+                });
+                if (response.items) {
+                    const comments = response.items.map(item => {
+                        const snippet = item.snippet?.topLevelComment?.snippet;
+                        return {
+                            author: snippet?.authorDisplayName || '',
+                            // comment: snippet?.textDisplay || '',
+                            comment: snippet?.textDisplay ? this.convertYouTubeLink(snippet?.textDisplay) : '',
+                            publishedAt: snippet?.publishedAt || '',
+                        };
+                    });
+                    getEventHandler.result.comments = comments; // 結果を getEventHandler.result に格納
+                }
+            } else {
+                getEventHandler.result.comments = []; // コメントがない場合は空の配列を格納
+            }
+        } catch (error) {
+            console.error('Error fetching YouTube comments:', error);
+            getEventHandler.result.comments = []; // エラーが発生した場合は空の配列を格納
+            getEventHandler.result.error = 'Failed to fetch comments.'; // エラーメッセージを格納
+        }
+    }
+
+    private convertYouTubeLink(inputString: string): string {
+        // 1. URLとt=XXXXの部分を抽出
+        const urlRegex = /href="([^"]*watch\?v=([a-zA-Z0-9_-]+)[^"]*)"/;
+        const timeRegex = /&amp;t=(\d+)/;
+
+        const urlMatch = inputString.match(urlRegex);
+        const timeMatch = inputString.match(timeRegex);
+
+        if (!urlMatch || !timeMatch) {
+            return inputString; // URLまたは時間が抽出できなかった場合は元の文字列を返す
+        }
+
+        // const fullUrl = urlMatch[1]; // URL全体
+        const videoId = urlMatch[2]; // ビデオID
+        const time = timeMatch[1]; // 時間
+
+        // 2. 新しいURLを作成
+        const newUrl = `https://youtu.be/${videoId}?t=${time}`;
+        // const newUrl = `youtube://watch?v=${videoId}&t=${time}`;
+        // 3. 元のURLを新しいURLで置き換える
+        // const replacedString = inputString.replace(fullUrl, newUrl);
+        const replacedString = inputString.replace(/<a href="([^"]*)"/, `<a href="${newUrl}" target="_blank"`);
+
+        return replacedString;
+    }
+
+    private getYouTubeVideoId(url: string): string {
+        if (url) {
+            // 短縮URL (youtu.be/xxxx)
+            let match = url.match(/^https:\/\/youtu\.be\/([a-zA-Z0-9_-]+)/);
+            if (match) {
+                return match[1];
+            }
+
+            // 埋め込みURL (youtube.com/embed/xxxx)
+            match = url.match(/^https:\/\/www\.youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
+            if (match) {
+                return match[1];
+            }
+
+            // 通常のURL (youtube.com/watch?v=xxxx&...)
+            match = url.match(/^https:\/\/www\.youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
+            if (match) {
+                return match[1];
+            }
+
+            // Shorts URL (youtube.com/shorts/xxxx)
+            match = url.match(/^https:\/\/www\.youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/);
+            if (match) {
+                return match[1];
+            }
+        }
+        return ''; // ビデオIDが見つからない場合
+    }
+
     private getComments(getEventHandler: GetEventHandler): void {
         const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
         const comments: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('comments');
