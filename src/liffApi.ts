@@ -550,28 +550,17 @@ export class LiffApi {
     }
 
     private convertYouTubeLink(inputString: string): string {
-        // 1. URLとt=XXXXの部分を抽出
         const urlRegex = /href="([^"]*watch\?v=([a-zA-Z0-9_-]+)[^"]*)"/;
         const timeRegex = /&amp;t=(\d+)/;
-
         const urlMatch = inputString.match(urlRegex);
         const timeMatch = inputString.match(timeRegex);
-
         if (!urlMatch || !timeMatch) {
-            return inputString; // URLまたは時間が抽出できなかった場合は元の文字列を返す
+            return inputString;
         }
-
-        // const fullUrl = urlMatch[1]; // URL全体
         const videoId = urlMatch[2]; // ビデオID
         const time = timeMatch[1]; // 時間
-
-        // 2. 新しいURLを作成
         const newUrl = `https://youtu.be/${videoId}?t=${time}`;
-        // const newUrl = `youtube://watch?v=${videoId}&t=${time}`;
-        // 3. 元のURLを新しいURLで置き換える
-        // const replacedString = inputString.replace(fullUrl, newUrl);
         const replacedString = inputString.replace(/<a href="([^"]*)"/, `<a href="${newUrl}" target="_blank"`);
-
         return replacedString;
     }
 
