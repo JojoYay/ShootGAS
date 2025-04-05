@@ -88,6 +88,12 @@ export class LineUtil {
         Logger.log(response.getContentText());
     }
 
+    public getLineProileLite(userId: string) {
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const values = mappingSheet.getDataRange().getValues();
+        return values.find(row => row[2] === userId);
+    }
+
     public getLineUserProfile(userId: string) {
         const url = `https://api.line.me/v2/bot/profile/${userId}`;
         const headers = {
@@ -130,7 +136,10 @@ export class LineUtil {
 
     public getLineImage(messageId: string, fileName: string, actDate: string): void {
         //まずフォルダが無ければ作る
-        const folder: GoogleAppsScript.Drive.Folder | GoogleAppsScript.Drive.FolderIterator = this.createPayNowFolder(actDate);
+        const folder: GoogleAppsScript.Drive.Folder | null = this.createPayNowFolder(actDate);
+        if (!folder) {
+            return; //フォルダは必ず作られる（trueなので）
+        }
         if (ScriptProps.isTesting()) {
             //テストの場合はコピーする
             const orgFolder: GoogleAppsScript.Drive.Folder = DriveApp.getFolderById('14FCKvswWbQTgkfHVmiHviYDNqDurAFXc');
@@ -149,12 +158,16 @@ export class LineUtil {
         folder.createFile(blob);
     }
 
-    public createPayNowFolder(actDate: string): GoogleAppsScript.Drive.Folder {
+    public createPayNowFolder(actDate: string, create: boolean = true): GoogleAppsScript.Drive.Folder | null {
         const parentFolder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder; // 親フォルダを取得
         let folder: GoogleAppsScript.Drive.Folder | GoogleAppsScript.Drive.FolderIterator = parentFolder.getFoldersByName(actDate); // actDate フォルダを検索
         if (!folder.hasNext()) {
             // actDate フォルダが存在しない場合
-            folder = parentFolder.createFolder(actDate); // actDate フォルダを作成
+            if (create) {
+                folder = parentFolder.createFolder(actDate); // actDate フォルダを作成
+            } else {
+                return null;
+            }
         } else {
             // actDate フォルダが存在する場合
             folder = folder.next(); // 最初のフォルダを取得

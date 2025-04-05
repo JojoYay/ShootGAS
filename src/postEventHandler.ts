@@ -9,6 +9,31 @@ type Command = {
 
 export const COMMAND_MAP: Command[] = [
     {
+        func: 'uploadInvoice',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'uploadInvoice',
+    },
+    {
+        func: 'deleteInvoice',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'deleteInvoice',
+    },
+    {
+        func: 'insertCashBook',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'insertCashBook',
+    },
+    {
+        func: 'deleteCashBook',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'deleteCashBook',
+    },
+
+    {
         func: 'payNow',
         lineCmd: '',
         display: false,

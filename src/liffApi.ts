@@ -3,6 +3,7 @@ import { GasProps } from './gasProps';
 import { GasUtil } from './gasUtil';
 import { GetEventHandler } from './getEventHandler';
 import { LineUtil } from './lineUtil';
+import { RequestExecuter } from './requestExecuter';
 import { SchedulerUtil } from './schedulerUtil';
 import { ScoreBook } from './scoreBook';
 import { ScriptProps } from './scriptProps';
@@ -130,6 +131,15 @@ export class LiffApi {
             }
         }
         getEventHandler.result.attendees = matchedMappingData;
+    }
+
+    private loadCashBook(getEventHandler: GetEventHandler): void {
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        const cashBook: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('cashBook2');
+        if (!cashBook) {
+            throw new Error('cashBook sheet was not found.');
+        }
+        getEventHandler.result.cashBook = cashBook.getDataRange().getValues();
     }
 
     private loadCalendar(getEventHandler: GetEventHandler): void {
@@ -274,13 +284,6 @@ export class LiffApi {
         // getEventHandler.result = { result: members };
         getEventHandler.result.payNow = addy;
     }
-
-    // private getMembers(getEventHandler: GetEventHandler): void {
-    //     const den: DensukeUtil = new DensukeUtil();
-    //     const members = den.extractMembers();
-    //     // getEventHandler.result = { result: members };
-    //     getEventHandler.result.members = members;
-    // }
 
     //Densukeではなくてスプシから取ってくる
     private getTeams(getEventHandler: GetEventHandler): void {
@@ -442,6 +445,137 @@ export class LiffApi {
         }
     }
 
+    private updateOpenPaymentStatus(getEventHandler: GetEventHandler): void {
+        const id: string = getEventHandler.e.parameters['id'][0];
+        const folderName: string = getEventHandler.e.parameters['folderName'][0];
+        const userId: string = getEventHandler.e.parameters['userId'][0];
+
+        const parentFolder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder; // 親フォルダを取得
+        const folders = parentFolder.getFolders();
+        const mappingSheetVal = GasProps.instance.mappingSheet.getDataRange().getValues();
+        const su: SchedulerUtil = new SchedulerUtil();
+        const calVal = su.calendarSheet.getDataRange().getValues();
+
+        while (folders.hasNext()) {
+            const folder = folders.next();
+            const searchQuery = `title = '${folderName}' and '${folder.getId()}' in parents`;
+            const files = folder.searchFiles(searchQuery);
+
+            if (files.hasNext()) {
+                const file = files.next();
+                const spreadsheet = SpreadsheetApp.openById(file.getId()); // スプレッドシートを開く
+                const sheet = spreadsheet.getActiveSheet(); // アクティブなシートを取得
+                const data = sheet.getDataRange().getValues(); // シートのデータを取得
+
+                for (let i = 1; i < data.length; i++) {
+                    if (data[i][0] === id) {
+                        data[i][6] = '清算済';
+                        sheet.getRange(i + 1, 1, 1, data[i].length).setValues([data[i]]); // Update the specific row
+
+                        const re: RequestExecuter = new RequestExecuter();
+                        const user: string[] | undefined = mappingSheetVal.find(user => user[1] === data[i][2]);
+                        const payeeId = user ? user[2] : '';
+                        const lastUnderscoreIndex = folderName.lastIndexOf('(');
+                        const calendarTitle = lastUnderscoreIndex !== -1 ? folderName.substring(0, lastUnderscoreIndex) : folderName;
+                        console.log(calendarTitle);
+                        const calendar: string[] | undefined = calVal.find(cal => cal[2] === calendarTitle);
+                        const calendarId = calendar ? calendar[0] : '';
+                        console.log(calendarId);
+                        re.insertCashBookData(folderName, data[i][4], payeeId, data[i][3], data[i][0], calendarId, userId, userId);
+                        break;
+                    }
+                }
+            }
+        }
+
+        this.loadOpenPayment(getEventHandler);
+        // getEventHandler.result.openPayment = allData;
+    }
+
+    //現在終了していない、かつ、フォルダが存在している支払いを取得する
+    private loadOpenPayment(getEventHandler: GetEventHandler): void {
+        const parentFolder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder; // 親フォルダを取得
+        const folders = parentFolder.getFolders();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const allData: any[] = []; // データを格納する配列
+
+        while (folders.hasNext()) {
+            const folder = folders.next();
+            const folderName = folder.getName(); // フォルダ名を取得
+
+            // スプレッドシートを検索
+            const searchQuery = `title = '${folderName}' and '${folder.getId()}' in parents`;
+            const files = folder.searchFiles(searchQuery);
+
+            if (files.hasNext()) {
+                const file = files.next();
+                const spreadsheet = SpreadsheetApp.openById(file.getId()); // スプレッドシートを開く
+                const sheet = spreadsheet.getActiveSheet(); // アクティブなシートを取得
+                const data = sheet.getDataRange().getValues(); // シートのデータを取得
+
+                // データを連想配列に追加（ヘッダーを除く）
+                for (let i = 1; i < data.length; i++) {
+                    // 1行目はヘッダーなのでスキップ
+                    const rowData = data[i];
+                    // フォルダ名を追加して連想配列に格納
+                    allData.push({
+                        id: rowData[0], // Assuming 'id' is in the first column
+                        uploadDate: rowData[1], // Assuming 'upload日付' is in the second column
+                        userName: rowData[2], // Assuming 'ユーザー名' is in the third column
+                        amount: rowData[3], // Assuming '金額' is in the fourth column
+                        memo: rowData[4], // Assuming 'メモ' is in the fifth column
+                        image: rowData[5], // Assuming '画像' is in the sixth column
+                        status: rowData[6], // Assuming '状態' is in the seventh column
+                        folderName: folderName,
+                    });
+                }
+            }
+        }
+
+        // 取得したデータを結果に格納
+        getEventHandler.result.openPayment = allData;
+    }
+
+    //そのユーザーのInvoiceを取得
+    private getInvoices(getEventHandler: GetEventHandler): void {
+        const gasUtil: GasUtil = new GasUtil();
+        const userId: string = getEventHandler.e.parameter['userId'];
+        // const lang: string = getEventHandler.e.parameter['lang'];
+        this.getCalendar(getEventHandler);
+        const calendarVals = getEventHandler.result.event;
+        const mappingSheet = GasProps.instance.mappingSheet;
+        const mapVals = mappingSheet.getDataRange().getValues();
+        const userVal = mapVals.filter(row => row[2] === userId)[0];
+        const densukeName: string = userVal[1].toString();
+        const date = new Date(calendarVals[3]);
+        const actDate: string = calendarVals[2] + '(' + Utilities.formatDate(date, Session.getScriptTimeZone(), 'dd MMM') + ')'; // calendar_id (1列目)
+        const lineUtil: LineUtil = new LineUtil();
+        const payNowFolder = lineUtil.createPayNowFolder(actDate, false); //ない場合は作らない
+        if (payNowFolder) {
+            const paymentSummary: GoogleAppsScript.Spreadsheet.Spreadsheet = gasUtil.createSpreadSheet(actDate, payNowFolder, [
+                'id',
+                'upload日付',
+                'ユーザー名',
+                '金額',
+                'メモ',
+                '画像',
+                '状態',
+            ]);
+            const sheet: GoogleAppsScript.Spreadsheet.Sheet = paymentSummary.getActiveSheet();
+
+            const allData = sheet.getDataRange().getValues(); // シートの全データを取得
+            // const header = allData[0]; // ヘッダー行
+            const filteredData = allData.filter((row, index) => index === 0 || row[2] === densukeName); // ヘッダー行を除外してフィルタリング
+            getEventHandler.result.invoices = filteredData;
+        } else {
+            getEventHandler.result.invoices = [];
+        }
+        getEventHandler.result.actDate = actDate;
+        getEventHandler.result.statusMsg = '立て替えを行ったレシートをアップロードして下さい。';
+        getEventHandler.result.statusMsg2 = '金額はSGDで入力して下さい（日本円不可）';
+        getEventHandler.result.statusMsg3 = '日本円のレートは $1 = 110円 です';
+    }
+
     private getPaticipationFeeWithStatus(getEventHandler: GetEventHandler): void {
         const userId: string = getEventHandler.e.parameter['userId'];
         const lang: string = getEventHandler.e.parameter['lang'];
@@ -456,50 +590,52 @@ export class LiffApi {
         // const actDate: string = calendarVals[2].toString();
         const lineUtil: LineUtil = new LineUtil();
         const payNowFolder = lineUtil.createPayNowFolder(actDate);
-        console.log(payNowFolder.getId());
-        getEventHandler.result.actDate = actDate;
+        if (payNowFolder) {
+            console.log(payNowFolder.getId());
+            getEventHandler.result.actDate = actDate;
 
-        const fileNameToSearch = actDate + '_' + densukeName;
-        const searchQuery = `title = '${fileNameToSearch}' and '${payNowFolder.getId()}' in parents`; // より正確なファイル名検索クエリ
-        const fileIt = payNowFolder.searchFiles(searchQuery); // searchFiles を使用
-        // const fileIt = payNowFolder.getFilesByName(actDate + '_' + densukeName);
-        console.log('fileIt.hasNext', fileIt.hasNext());
-        if (fileIt.hasNext()) {
-            const file = fileIt.next();
-            getEventHandler.result.statusMsg = lang === 'ja-JP' ? '支払い済み' : 'Payment Received';
-            getEventHandler.result.statusMsg2 = '';
-            getEventHandler.result.statusMst3 =
-                lang === 'ja-JP' ? '写真を変更する場合は再度写真を選択して下さい。' : 'Please re-select the photo if you want to change it';
-            const picUrl: string = 'https://lh3.googleusercontent.com/d/' + file.getId();
-            getEventHandler.result.picUrl = picUrl;
-        } else {
-            let paticipationFee = calendarVals[10];
-            if (!paticipationFee) {
-                if (paticipationFee.toString() === '0') {
-                    getEventHandler.result.statusMsg =
-                        lang === 'ja-JP' ? '参加費無料。お支払いの必要はありません。' : 'Participation fee is free. No payment is required.';
-                    getEventHandler.result.statusMsg2 = '';
-                    getEventHandler.result.statusMst3 = '';
-                    getEventHandler.result.picUrl = '';
-                    return;
-                } else {
-                    const settingSheet = GasProps.instance.settingSheet;
-                    paticipationFee = settingSheet.getRange('B4').getValue();
+            const fileNameToSearch = actDate + '_' + densukeName;
+            const searchQuery = `title = '${fileNameToSearch}' and '${payNowFolder.getId()}' in parents`; // より正確なファイル名検索クエリ
+            const fileIt = payNowFolder.searchFiles(searchQuery); // searchFiles を使用
+            // const fileIt = payNowFolder.getFilesByName(actDate + '_' + densukeName);
+            console.log('fileIt.hasNext', fileIt.hasNext());
+            if (fileIt.hasNext()) {
+                const file = fileIt.next();
+                getEventHandler.result.statusMsg = lang === 'ja-JP' ? '支払い済み' : 'Payment Received';
+                getEventHandler.result.statusMsg2 = '';
+                getEventHandler.result.statusMsg3 =
+                    lang === 'ja-JP' ? '写真を変更する場合は再度写真を選択して下さい。' : 'Please re-select the photo if you want to change it';
+                const picUrl: string = 'https://lh3.googleusercontent.com/d/' + file.getId();
+                getEventHandler.result.picUrl = picUrl;
+            } else {
+                let paticipationFee = calendarVals[10];
+                if (!paticipationFee) {
+                    if (paticipationFee.toString() === '0') {
+                        getEventHandler.result.statusMsg =
+                            lang === 'ja-JP' ? '参加費無料。お支払いの必要はありません。' : 'Participation fee is free. No payment is required.';
+                        getEventHandler.result.statusMsg2 = '';
+                        getEventHandler.result.statusMsg3 = '';
+                        getEventHandler.result.picUrl = '';
+                        return;
+                    } else {
+                        const settingSheet = GasProps.instance.settingSheet;
+                        paticipationFee = settingSheet.getRange('B4').getValue();
+                    }
                 }
-            }
-            let addy = calendarVals[9];
-            if (!addy) {
-                const settingSheet = GasProps.instance.settingSheet;
-                addy = settingSheet.getRange('B2').getValue();
-            }
-            getEventHandler.result.statusMsg = lang === 'ja-JP' ? '支払額：$' + paticipationFee : 'Payment amount: $' + paticipationFee;
-            getEventHandler.result.statusMsg2 = lang === 'ja-JP' ? 'PayNow先:' + addy : 'PayNow to:' + addy;
-            getEventHandler.result.statusMst3 =
-                lang === 'ja-JP'
-                    ? '支払い済みのスクリーンショットをこちらにアップロードして下さい'
-                    : 'Please upload a screenshot of your payment here';
+                let addy = calendarVals[9];
+                if (!addy) {
+                    const settingSheet = GasProps.instance.settingSheet;
+                    addy = settingSheet.getRange('B2').getValue();
+                }
+                getEventHandler.result.statusMsg = lang === 'ja-JP' ? '支払額：$' + paticipationFee : 'Payment amount: $' + paticipationFee;
+                getEventHandler.result.statusMsg2 = lang === 'ja-JP' ? 'PayNow先:' + addy : 'PayNow to:' + addy;
+                getEventHandler.result.statusMsg3 =
+                    lang === 'ja-JP'
+                        ? '支払い済みのスクリーンショットをこちらにアップロードして下さい'
+                        : 'Please upload a screenshot of your payment here';
 
-            getEventHandler.result.picUrl = '';
+                getEventHandler.result.picUrl = '';
+            }
         }
     }
 
@@ -693,64 +829,4 @@ export class LiffApi {
         getEventHandler.result.sheet = GasProps.instance.generateSheetUrl(fileId);
         getEventHandler.result.url = ScriptProps.instance.liffUrl + '/expense/input?title=' + title;
     }
-
-    // private register(getEventHandler: GetEventHandler): void {
-    //     const userId = getEventHandler.e.parameters['userId'][0];
-    //     const lineUtil: LineUtil = new LineUtil();
-    //     const gasUtil: GasUtil = new GasUtil();
-    //     const su:SchedulerUtil = new SchedulerUtil();
-    //     const lineName = lineUtil.getLineDisplayName(userId);
-    //     const lang = lineUtil.getLineLang(userId);
-    //     // const $ = densukeUtil.getDensukeCheerio();
-    //     su.generateSummaryBase(); //先に更新しておかないとエラーになる（伝助が更新されている場合）
-    //     // const members = densukeUtil.extractMembers($);
-    //     const actDate = su.extractDateFromRownum();
-    //     const densukeNameNew = getEventHandler.e.parameters['densukeName'][0];
-    //     if (members.includes(densukeNameNew)) {
-    //         if (densukeUtil.hasMultipleOccurrences(members, densukeNameNew)) {
-    //             if (lang === 'ja') {
-    //                 getEventHandler.result = {
-    //                     result: '伝助上で"' + densukeNameNew + '"という名前が複数存在しています。重複のない名前に更新して再度登録して下さい。',
-    //                 };
-    //             } else {
-    //                 getEventHandler.result = {
-    //                     result:
-    //                         "There are multiple entries with the name '" +
-    //                         densukeNameNew +
-    //                         "' on Densuke. Please update it to a unique name and register again.",
-    //                 };
-    //             }
-    //         } else {
-    //             gasUtil.registerMapping(lineName, densukeNameNew, userId);
-    //             gasUtil.updateLineNameOfLatestReport(lineName, densukeNameNew, actDate);
-    //             if (lang === 'ja') {
-    //                 getEventHandler.result = {
-    //                     result:
-    //                         '伝助名称登録が完了しました。\n伝助上の名前：' +
-    //                         densukeNameNew +
-    //                         '\n伝助のスケジュールを登録の上、ご参加ください。\n参加費の支払いは、参加後にPayNowでこちらにスクリーンショットを添付してください。',
-    //                 };
-    //             } else {
-    //                 getEventHandler.result = {
-    //                     result:
-    //                         'The initial registration is complete.\nYour name in Densuke: ' +
-    //                         densukeNameNew +
-    //                         "\nPlease register Densuke's schedule and attend.\nAfter attending, please make the payment via PayNow and attach a screenshot here.",
-    //                 };
-    //             }
-    //         }
-    //     } else {
-    //         if (lang === 'ja') {
-    //             getEventHandler.result = {
-    //                 result: '【エラー】伝助上に指定した名前が見つかりません。再度登録を完了させてください\n伝助上の名前：' + densukeNameNew,
-    //             };
-    //         } else {
-    //             getEventHandler.result = {
-    //                 result:
-    //                     '【Error】The specified name was not found in Densuke. Please complete the registration again.\nYour name in Densuke: ' +
-    //                     densukeNameNew,
-    //             };
-    //         }
-    //     }
-    // }
 }

@@ -13,6 +13,102 @@ const lineUtil: LineUtil = new LineUtil();
 const gasUtil: GasUtil = new GasUtil();
 
 export class RequestExecuter {
+    public insertCashBook(postEventHandler: PostEventHandler): void {
+        const memo: string = postEventHandler.parameter['memo'];
+        const title: string = postEventHandler.parameter['title'];
+        const updateUser: string = postEventHandler.parameter['updateUser'] || ''; // Assuming you have this parameter
+        const createUser: string = postEventHandler.parameter['createUser'] || ''; // Assuming you have this parameter
+        const payee: string = postEventHandler.parameter['payee'] || ''; // Assuming you have this parameter, default to empty if not provided
+        const amount: string = postEventHandler.parameter['amount'];
+        const invoiceId: string = ''; //隊費直接入力なのでInvoiceは無い
+        const calendarId: string = postEventHandler.parameter['calendarId'];
+
+        const cashBook: GoogleAppsScript.Spreadsheet.Sheet | null = this.insertCashBookData(
+            title,
+            memo,
+            payee,
+            amount,
+            invoiceId,
+            calendarId,
+            updateUser,
+            createUser
+        ); // 6 is the index for the Balance column
+        // Optionally, you can return the updated cashBook data
+        postEventHandler.reponseObj.cashBook = cashBook.getDataRange().getValues();
+    }
+
+    public deleteCashBook(postEventHandler: PostEventHandler): void {
+        const bookId: string = postEventHandler.parameter['bookId'];
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        const cashBook: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('cashBook2');
+
+        if (cashBook) {
+            const values = cashBook.getDataRange().getValues();
+            let rowToDelete: number | null = null;
+            for (let i = 1; i < values.length; i++) {
+                // Assuming the first row is a header
+                if (values[i][0] === bookId) {
+                    // Assuming bookId is in the first column
+                    rowToDelete = i + 1; // Spreadsheet rows are 1-indexed
+                    break;
+                }
+            }
+            if (rowToDelete) {
+                cashBook.deleteRow(rowToDelete);
+            } else {
+                postEventHandler.reponseObj.err = '削除するデータが見つかりませんでした BookId:' + bookId;
+            }
+            postEventHandler.reponseObj.cashBook = cashBook.getDataRange().getValues();
+        }
+    }
+
+    public insertCashBookData(
+        title: string,
+        memo: string,
+        payee: string,
+        amount: string,
+        invoiceId: string,
+        calendarId: string,
+        updateUser: string,
+        createUser: string
+    ) {
+        const bookId: string = Utilities.getUuid();
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        const cashBook: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName('cashBook2');
+        if (!cashBook) {
+            throw new Error('cashBook sheet was not found.');
+        }
+
+        const now: Date = new Date();
+        const create: Date = now;
+        const lastUpdate: Date = now;
+
+        // Prepare the row data to be added
+        const newRow = [
+            bookId, // BookId
+            title, // Title
+            memo, // Memo
+            payee, // Payee
+            amount, // Amount
+            '', // Balance
+            invoiceId, // InvoiceId (assuming this is empty for now)
+            calendarId, // CalendarId
+            lastUpdate, // LastUpdate
+            updateUser, // UpdateUser
+            create, // Create
+            createUser, // CreateUser
+        ];
+        // Append the new row to the cashBook sheet
+        cashBook.appendRow(newRow);
+        // Get the last row number to set the formula for balance
+        const lastRow = cashBook.getLastRow();
+
+        // Set the formula for the balance column (assuming it's the 6th column)
+        const balanceFormula = `=IF(ROW()=2, INDEX(E:E, ROW()), INDEX(F:F, ROW()-1) + INDEX(E:E, ROW()))`;
+        cashBook.getRange(lastRow, 6).setFormula(balanceFormula); // 6 is the index for the Balance column
+        return cashBook;
+    }
+
     public uploadToYoutube(postEventHander: PostEventHandler): void {
         console.log('uploadToYoutube');
         const fileName: string = postEventHander.parameter['fileName'];
@@ -1195,7 +1291,9 @@ export class RequestExecuter {
         const blob = Utilities.newBlob(decodedFile, 'application/octet-stream', actDate + '_' + densukeName);
         const lineUtil: LineUtil = new LineUtil();
         const payNowFolder = lineUtil.createPayNowFolder(actDate);
-        // const oldFileIt = payNowFolder.getFilesByName(actDate + '_' + densukeName);
+        if (!payNowFolder) {
+            return; //folderは必ず作られる
+        }
         const fileNameToSearch = actDate + '_' + densukeName;
         const searchQuery = `title = '${fileNameToSearch}' and '${payNowFolder.getId()}' in parents`; // より正確なファイル名検索クエリ
         const oldFileIt = payNowFolder.searchFiles(searchQuery); // searchFiles を使用
@@ -1254,6 +1352,93 @@ export class RequestExecuter {
             index++;
         }
         postEventHander.reponseObj = { picUrl: picUrl, sheetUrl: GasProps.instance.generateSheetUrl(spreadSheet.getId()) };
+    }
+
+    public uploadInvoice(postEventHander: PostEventHandler): void {
+        console.log('execute uploadinvoice');
+        const decodedFile = Utilities.base64Decode(postEventHander.parameter.file);
+        const userId: string = postEventHander.parameter.userId;
+        // const calendarId: string = postEventHander.parameter.calendarId;
+        const actDate: string = postEventHander.parameter.actDate;
+        const amount: string = postEventHander.parameter.amount;
+        const remarks: string = postEventHander.parameter.remarks;
+
+        const mappingSheet = GasProps.instance.mappingSheet;
+        const mapVals = mappingSheet.getDataRange().getValues();
+        const userVal = mapVals.filter(row => row[2] === userId)[0]; // 1列目が calendarId
+
+        const densukeName: string = userVal[1].toString();
+        const blob = Utilities.newBlob(decodedFile, 'application/octet-stream', actDate + '_' + densukeName);
+        const lineUtil: LineUtil = new LineUtil();
+        const payNowFolder = lineUtil.createPayNowFolder(actDate);
+        if (!payNowFolder) {
+            return; //folderは必ず作られる
+        }
+        const file = payNowFolder.createFile(blob);
+        console.log(densukeName + ' uploaded ' + file.getName() + ' in ' + actDate);
+        // gasUtil.updatePaymentStatus(densukeName, actDate);
+        const picUrl: string = 'https://lh3.googleusercontent.com/d/' + file.getId();
+
+        const paymentSummary: GoogleAppsScript.Spreadsheet.Spreadsheet = gasUtil.createSpreadSheet(actDate, payNowFolder, [
+            'id',
+            'upload日付',
+            'ユーザー名',
+            '金額',
+            'メモ',
+            '画像',
+            '状態',
+        ]);
+        console.log('spreadSheet' + paymentSummary.getUrl());
+        const sheet: GoogleAppsScript.Spreadsheet.Sheet = paymentSummary.getActiveSheet();
+
+        const newId = Utilities.getUuid(); // 例: ID
+        const newUploadDate = new Date().toLocaleDateString(); // 現在の日付を取得
+        const newUserName = densukeName; // 例: ユーザー名
+        const newAmount = amount; // 例: 金額
+        const newMemo = remarks; // 例: メモ
+        const newImageUrl = picUrl; // 例: 画像URL
+        sheet.appendRow([newId, newUploadDate, newUserName, newAmount, newMemo, newImageUrl, '未清算']);
+        postEventHander.reponseObj = { picUrl: picUrl, sheetUrl: GasProps.instance.generateSheetUrl(paymentSummary.getId()) };
+    }
+
+    public deleteInvoice(postEventHander: PostEventHandler): void {
+        console.log('execute deleteInvoice');
+        const actDate: string = postEventHander.parameter.actDate;
+        const invoiceId: string = postEventHander.parameter.invoiceId;
+
+        const payNowFolder = lineUtil.createPayNowFolder(actDate);
+        if (!payNowFolder) {
+            return; //folderは必ず作られる
+        }
+        const paymentSummary: GoogleAppsScript.Spreadsheet.Spreadsheet = gasUtil.createSpreadSheet(actDate, payNowFolder, [
+            'id',
+            'upload日付',
+            'ユーザー名',
+            '金額',
+            'メモ',
+            '画像',
+            '状態',
+        ]);
+        const sheet: GoogleAppsScript.Spreadsheet.Sheet = paymentSummary.getActiveSheet();
+        const data = sheet.getDataRange().getValues(); // Get all data from the sheet
+
+        // Find the row with the matching invoiceId
+        for (let i = 1; i < data.length; i++) {
+            // Start from 1 to skip header
+            if (data[i][0] === invoiceId) {
+                // Assuming 'id' is in the first column (index 0)
+                const picUrl = data[i][5]; // Assuming '画像' is in the sixth column (index 5)
+                const fileId = picUrl.split('/d/')[1].split('/')[0]; // Extract the file ID from the URL
+
+                // Move the file to trash
+                const file = DriveApp.getFileById(fileId);
+                file.setTrashed(true); // Move the file to trash
+
+                // Delete the row
+                sheet.deleteRow(i + 1); // +1 because sheet.deleteRow is 1-based index
+                break; // Exit the loop after deleting the row
+            }
+        }
     }
 
     public video(postEventHander: PostEventHandler): void {

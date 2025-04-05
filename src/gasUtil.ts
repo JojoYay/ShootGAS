@@ -182,7 +182,9 @@ export class GasUtil {
         // const folder = GasProps.instance.payNowFolder;
         const lineUtil: LineUtil = new LineUtil();
         const folder = lineUtil.createPayNowFolder(actDate);
-
+        if (!folder) {
+            return null; //folderは必ず作られる
+        }
         const fileName = actDate + '_' + densukeName;
         const files = folder.getFilesByName(fileName);
         const urls: string[] = [];
@@ -219,5 +221,25 @@ export class GasUtil {
                 file.moveTo(destinationFolder);
             }
         }
+    }
+
+    public createSpreadSheet(title: string, folder: GoogleAppsScript.Drive.Folder, header: string[]): GoogleAppsScript.Spreadsheet.Spreadsheet {
+        let spreadSheet: GoogleAppsScript.Spreadsheet.Spreadsheet | null = null;
+        const searchQuery2 = `title = '${title}' and '${folder.getId()}' in parents`; // より正確なファイル名検索クエリ
+        const fileIt = folder.searchFiles(searchQuery2);
+        if (fileIt.hasNext()) {
+            const sheetFile = fileIt.next();
+            spreadSheet = SpreadsheetApp.openById(sheetFile.getId());
+        } else {
+            spreadSheet = SpreadsheetApp.create(title); // スプレッドシートを作成
+            const sheet = spreadSheet.getActiveSheet();
+            sheet.appendRow(header);
+
+            // 新しく作成したスプレッドシートを指定のフォルダに移動
+            const file = DriveApp.getFileById(spreadSheet.getId());
+            folder.addFile(file); // フォルダにファイルを追加
+            DriveApp.getRootFolder().removeFile(file); // ルートフォルダからファイルを削除
+        }
+        return spreadSheet;
     }
 }
