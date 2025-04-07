@@ -89,7 +89,7 @@ export class RequestExecuter {
             title, // Title
             memo, // Memo
             payee, // Payee
-            amount, // Amount
+            Number(amount) * -1, // Amount
             '', // Balance
             invoiceId, // InvoiceId (assuming this is empty for now)
             calendarId, // CalendarId
