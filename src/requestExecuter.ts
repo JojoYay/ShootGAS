@@ -571,7 +571,7 @@ export class RequestExecuter {
                 console.log(`attendance_id: ${updateData['attendance_id']} の行を更新`);
                 const row = rowNumberToUpdate;
                 // 各パラメータを該当の列に更新 (列位置はheaderRowからcolumnIndexを検索して特定)
-                ['user_id', 'year', 'month', 'date', 'status', 'calendar_id'].forEach(paramName => {
+                ['user_id', 'year', 'month', 'date', 'status', 'calendar_id', 'adult_count', 'child_count'].forEach(paramName => {
                     if (updateData[paramName]) {
                         const colIndex = headerRow.indexOf(paramName); // ヘッダー行から列番号を取得
                         if (colIndex > -1) {

@@ -223,17 +223,17 @@ export class LiffApi {
         const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
         const videos: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
         let actDate: string = getEventHandler.e.parameter['actDate'];
-        console.log('info', actDate);
+        // console.log('info', actDate);
         //ない場合は今のやつ その場合全体のVideoリスト・日付のリストも含める
         if (!actDate) {
             // const den: DensukeUtil = new DensukeUtil();
             // const chee = den.getDensukeCheerio();
             const videoVals = videos.getDataRange().getValues();
-            console.log('videoVals', videoVals);
+            // console.log('videoVals', videoVals);
             if (videoVals.length > 1) {
                 actDate = videoVals[videoVals.length - 1][0]; // videosシートの最終行の１列目の値を取得
             }
-            console.log(actDate);
+            // console.log(actDate);
             getEventHandler.result.videos = videoVals;
             getEventHandler.result.actDates = [
                 ...new Set(
