@@ -258,66 +258,6 @@ export class RequestExecuter {
         }
     }
 
-    public createCalendar(postEventHander: PostEventHandler): void {
-        const su: SchedulerUtil = new SchedulerUtil();
-        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet = su.calendarSheet;
-        const id: string = Utilities.getUuid();
-        const eventType: string = postEventHander.parameter['event_type'];
-        const eventName: string = postEventHander.parameter['event_name'];
-        const sDate: string = postEventHander.parameter['start_datetime'];
-        const eDate: string = postEventHander.parameter['end_datetime'];
-        const place: string = postEventHander.parameter['place'];
-        const remark: string = postEventHander.parameter['remark'];
-        const payNow: string = postEventHander.parameter['paynow_link'];
-        const pitch: string = postEventHander.parameter['pitch_fee'];
-        const paticipation: string = postEventHander.parameter['paticipation_fee'];
-        const recursiveType: number = 0;
-        const headerRow = calendarSheet.getDataRange().getValues()[0]; // ヘッダー行を取得
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const newRowData: any[] = [];
-        headerRow.forEach(header => {
-            switch (header) {
-                case 'ID':
-                    newRowData.push(id);
-                    break;
-                case 'event_type':
-                    newRowData.push(eventType);
-                    break;
-                case 'event_name':
-                    newRowData.push(eventName);
-                    break;
-                case 'start_datetime':
-                    newRowData.push(sDate);
-                    break;
-                case 'end_datetime':
-                    newRowData.push(eDate);
-                    break;
-                case 'place':
-                    newRowData.push(place);
-                    break;
-                case 'remark':
-                    newRowData.push(remark);
-                    break;
-                case 'event_status':
-                    newRowData.push(recursiveType);
-                    break;
-                case 'pitch_fee':
-                    newRowData.push(pitch);
-                    break;
-                case 'paynow_link':
-                    newRowData.push(payNow);
-                    break;
-                case 'paticipation_fee':
-                    newRowData.push(paticipation);
-                    break;
-                default:
-                    newRowData.push(''); // その他のヘッダーの場合は空文字をセット
-            }
-        });
-        console.log(payNow);
-        calendarSheet.appendRow(newRowData);
-    }
-
     public registrationFromApp(postEventHander: PostEventHandler): void {
         const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
         const userId: string = postEventHander.parameter['userId'];
@@ -374,24 +314,80 @@ export class RequestExecuter {
         }
     }
 
+    public createCalendar(postEventHander: PostEventHandler): void {
+        const su: SchedulerUtil = new SchedulerUtil();
+        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet = su.calendarSheet;
+        const id: string = Utilities.getUuid();
+        const eventType: string = postEventHander.parameter['event_type'];
+        const eventName: string = postEventHander.parameter['event_name'];
+        const sDate: string = postEventHander.parameter['start_datetime'];
+        const eDate: string = postEventHander.parameter['end_datetime'];
+        const place: string = postEventHander.parameter['place'];
+        const remark: string = postEventHander.parameter['remark'];
+        const payNow: string = postEventHander.parameter['paynow_link'];
+        const pitch: string = postEventHander.parameter['pitch_fee'];
+        const paticipation: string = postEventHander.parameter['paticipation_fee'];
+        const recursiveType: number = 0;
+        const headerRow = calendarSheet.getDataRange().getValues()[0]; // ヘッダー行を取得
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const newRowData: any[] = [];
+
+        const calendar = CalendarApp.getCalendarById(ScriptProps.instance.calendarId);
+        const options = { description: remark, location: place };
+        const event = calendar.createEvent(eventName, new Date(sDate), new Date(eDate), options);
+        const eventId = event.getId();
+
+        headerRow.forEach(header => {
+            switch (header) {
+                case 'ID':
+                    newRowData.push(id);
+                    break;
+                case 'event_type':
+                    newRowData.push(eventType);
+                    break;
+                case 'event_name':
+                    newRowData.push(eventName);
+                    break;
+                case 'start_datetime':
+                    newRowData.push(sDate);
+                    break;
+                case 'end_datetime':
+                    newRowData.push(eDate);
+                    break;
+                case 'place':
+                    newRowData.push(place);
+                    break;
+                case 'remark':
+                    newRowData.push(remark);
+                    break;
+                case 'event_status':
+                    newRowData.push(recursiveType);
+                    break;
+                case 'pitch_fee':
+                    newRowData.push(pitch);
+                    break;
+                case 'paynow_link':
+                    newRowData.push(payNow);
+                    break;
+                case 'paticipation_fee':
+                    newRowData.push(paticipation);
+                    break;
+                case 'google_event_id':
+                    newRowData.push(eventId);
+                    break;
+                default:
+                    newRowData.push(''); // その他のヘッダーの場合は空文字をセット
+            }
+        });
+        // console.log(payNow);
+        calendarSheet.appendRow(newRowData);
+    }
+
     public updateCalendar(postEventHander: PostEventHandler): void {
         const su: SchedulerUtil = new SchedulerUtil();
         const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet = su.calendarSheet;
         // id パラメータから更新対象のIDを取得
         const id: string = postEventHander.parameter['id'];
-        // // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        // const eventType: string = postEventHander.parameter['event_type'];
-        // // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        // const eventName: string = postEventHander.parameter['event_name'];
-        // // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        // const sDate: string = postEventHander.parameter['start_datetime'];
-        // // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        // // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        // const place: string = postEventHander.parameter['place'];
-        // // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        // const remark: string = postEventHander.parameter['remark'];
-        // // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        // const recursiveType: number = postEventHander.parameter['event_status']; // default value
         const values = calendarSheet.getDataRange().getValues();
         const headerRow = values[0]; // ヘッダー行を取得
 
@@ -428,6 +424,23 @@ export class RequestExecuter {
                     }
                 }
             });
+            const gCalendar = CalendarApp.getCalendarById(ScriptProps.instance.calendarId);
+            const eventId = calendarSheet.getRange(row, 12).getValue(); //12行目
+            const remark = postEventHander.parameter['remark'];
+            const title = postEventHander.parameter['event_name'];
+            const sDate = new Date(postEventHander.parameter['start_datetime']);
+            const eDate = new Date(postEventHander.parameter['end_datetime']);
+            const place = postEventHander.parameter['place'];
+
+            const event: GoogleAppsScript.Calendar.CalendarEvent = gCalendar.getEventById(eventId);
+            console.log(event);
+            if (event) {
+                event.setTime(sDate, eDate);
+                event.setDescription(remark);
+                event.setTitle(title);
+                event.setLocation(place);
+                console.log('カレンダーも更新しました');
+            }
         } else {
             console.error(`No row found with id: ${id}.`);
             throw new Error(`No row found with id: ${id}.`); // ID が見つからない場合はエラーをthrow
@@ -453,6 +466,9 @@ export class RequestExecuter {
         if (rowNumberToDelete) {
             // 'id' に一致する行が見つかった場合、行を削除
             console.log(`id: ${id} の行を削除`);
+            const eventId = calendarSheet.getRange(rowNumberToDelete, 12).getValue(); //12行目
+            const gCalendar = CalendarApp.getCalendarById(ScriptProps.instance.calendarId);
+            gCalendar.getEventById(eventId).deleteEvent();
             calendarSheet.deleteRow(rowNumberToDelete);
         } else {
             console.error(`No row found with id: ${id}.`);

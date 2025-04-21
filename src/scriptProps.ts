@@ -13,6 +13,14 @@ export class ScriptProps {
 
     public ROWNUM: number = 1; //とりあえず一番上からデータとってくる運用
 
+    public get calendarId(): string {
+        const results: string | null = PropertiesService.getScriptProperties().getProperty('calendarId');
+        if (!results) {
+            throw new Error('Script Property (calendarId) was not found');
+        }
+        return results;
+    }
+
     public get eventResults(): string {
         const results: string | null = PropertiesService.getScriptProperties().getProperty('eventResults');
         if (!results) {
