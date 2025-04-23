@@ -46,6 +46,12 @@ export const COMMAND_MAP: Command[] = [
         condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'uploadToYoutube',
     },
     {
+        func: 'uploadToYoutube2',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'uploadToYoutube2',
+    },
+    {
         func: 'updateEventData',
         lineCmd: '',
         display: false,

@@ -109,6 +109,59 @@ export class RequestExecuter {
         return cashBook;
     }
 
+    public uploadToYoutube2(postEventHander: PostEventHandler): void {
+        console.log('uploadToYoutube');
+        const fileName: string = postEventHander.parameter['fileName'];
+        // const fileType: string = postEventHander.parameter['fileType'];
+        const fileSize: string = postEventHander.parameter['fileSize'];
+        const actDate: string = postEventHander.parameter['actDate'];
+        const file: Blob = postEventHander.parameter['file'];
+        const videoTitle: string = actDate + ' ' + fileName;
+        console.log('fileName', fileName);
+        console.log('title', videoTitle);
+        console.log('fileSize', fileSize);
+        console.log('file', file);
+
+        const payload = {
+            snippet: {
+                title: videoTitle,
+                description: 'YouTube API Upload via GAS',
+                tags: ['ShootSunday', 'YouTube API'],
+            },
+            status: {
+                privacyStatus: 'unlisted',
+                madeForKids: false, // 子供向けではない設定を追加
+            },
+        };
+        const video = YouTube.Videos?.insert(payload, 'snippet, status', file);
+
+        if (video && video.id) {
+            const videoUrl: string = `https://www.youtube.com/watch?v=${video.id}`;
+
+            const videoSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
+            const videoSheetVals = videoSheet.getDataRange().getValues();
+            let matchedRowIndex = -1;
+            // ２行目からデータ行を検索 (１行目、２行目は検索条件として使用するためスキップ)
+            for (let i = 2; i < videoSheetVals.length; i++) {
+                const row = videoSheetVals[i];
+                if (row[0] === actDate && row[1] === fileName) {
+                    matchedRowIndex = i;
+                    break; // 最初に見つかった行で処理を終える
+                }
+            }
+
+            if (matchedRowIndex !== -1) {
+                // マッチする行が見つかった場合、３列目（C列）にvideoUrlを書き込む
+                videoSheet.getRange(matchedRowIndex + 1, 3).setValue(videoUrl);
+                console.log(`Matched row found at index ${matchedRowIndex + 1}. videoUrl updated.`);
+            } else {
+                console.log(`No matching row found for actDate: ${actDate} and Title: ${fileName}`);
+            }
+        } else {
+            console.log(video);
+        }
+    }
+
     public uploadToYoutube(postEventHander: PostEventHandler): void {
         console.log('uploadToYoutube');
         const fileName: string = postEventHander.parameter['fileName'];
@@ -119,6 +172,7 @@ export class RequestExecuter {
         console.log('fileName', fileName);
         console.log('title', title);
         console.log('fileSize', fileSize);
+
         const accessToken = ScriptApp.getOAuthToken();
         // YouTube API の Resumable Upload URL を取得
         const options = {
@@ -156,15 +210,7 @@ export class RequestExecuter {
         const uploadUrl = headers.Location;
         console.log(uploadUrl);
         postEventHander.reponseObj.uploadUrl = uploadUrl;
-        // const videoId = this.getVideoIdByTitle(title);
-        // // const videoId = 'hogehoge';
-        // // 動画URLを生成
-        // const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-        // console.log('YouTube Video URL:', videoUrl);
-        // postEventHander.reponseObj.videoUrl = videoUrl;
-        // const accessToken2 = ScriptApp.getOAuthToken();
-        // console.log(accessToken2);
-        // postEventHander.reponseObj.token = accessToken2;
+        postEventHander.reponseObj.token = accessToken;
     }
 
     private getVideoIdByTitle(videoTitle: string): string | null {
