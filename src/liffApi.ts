@@ -356,12 +356,10 @@ export class LiffApi {
             shootLog = eventSS.insertSheet(this.getLogSheetName(actDate));
             shootLog.activate();
             eventSS.moveActiveSheet(0);
-            // shootLog.insertRows(shootLog.getDataRange().getLastRow(), 1);
-            shootLog.getRange(1, 1).setValue('No');
-            shootLog.getRange(1, 2).setValue('試合');
-            shootLog.getRange(1, 3).setValue('チーム');
-            shootLog.getRange(1, 4).setValue('アシスト');
-            shootLog.getRange(1, 5).setValue('ゴール');
+            // ヘッダーを一度に設定するための配列を作成
+            const headers = [['No', '試合', 'チーム', 'アシスト', 'ゴール']];
+            // 一度に範囲を設定
+            shootLog.getRange(1, 1, 1, headers[0].length).setValues(headers);
         }
 
         getEventHandler.result.scores = shootLog.getDataRange().getValues();

@@ -680,6 +680,7 @@ export class RequestExecuter {
 
         // プレイヤーごとの得点とアシストを集計するオブジェクト
         const playerStats: { [playerName: string]: { goals: number; assists: number } } = {};
+
         // shootLogVals をループして得点とアシストを集計
         for (let i = 1; i < shootLogVals.length; i++) {
             const row = shootLogVals[i];
@@ -698,22 +699,25 @@ export class RequestExecuter {
             }
         }
 
+        const goalsUpdates = [];
+        const assistsUpdates = [];
+
         for (let i = 1; i < eventDetailVals.length; i++) {
             const row = eventDetailVals[i];
             const playerName = row[0]; // 名前 (A列)
-            // console.log(playerName);
             if (playerName in playerStats) {
                 const stats = playerStats[playerName];
-                // 得点を書き込み (0点の場合は空文字にする)
-                eventDetail.getRange(i + 1, 3).setValue(stats.goals > 0 ? stats.goals : ''); // 3列目 (C列) : 得点
-                // アシストを書き込み (0アシストの場合は空文字にする)
-                eventDetail.getRange(i + 1, 4).setValue(stats.assists > 0 ? stats.assists : ''); // 4列目 (D列) : アシスト
+                goalsUpdates.push([stats.goals > 0 ? stats.goals : '']); // 3列目 (C列) : 得点
+                assistsUpdates.push([stats.assists > 0 ? stats.assists : '']); // 4列目 (D列) : アシスト
             } else {
-                // playerStats にデータがないプレイヤーは得点、アシストをクリア (念のため)
-                eventDetail.getRange(i + 1, 3).clearContent();
-                eventDetail.getRange(i + 1, 4).clearContent();
+                goalsUpdates.push(['']); // 0点の場合は空文字
+                assistsUpdates.push(['']); // 0アシストの場合は空文字
             }
         }
+
+        // 一度に得点とアシストを設定
+        eventDetail.getRange(2, 3, goalsUpdates.length, 1).setValues(goalsUpdates);
+        eventDetail.getRange(2, 4, assistsUpdates.length, 1).setValues(assistsUpdates);
 
         // videoSheet の更新処理
         const videoSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
@@ -723,7 +727,6 @@ export class RequestExecuter {
         // videoSheetVals をループして matchId が一致する行を探す (1行目はヘッダー行と仮定)
         for (let i = videoSheetVals.length - 1; i >= 1; i--) {
             if (videoSheetVals[i][10] === matchId) {
-                // 11列目 (K列) が matchId
                 targetRow = i + 1; // スプレッドシートの行番号は1から始まるので +1
                 break; // matchId が見つかったのでループを抜ける
             }
@@ -738,7 +741,6 @@ export class RequestExecuter {
 
             // 該当の matchId に基づいて shootLogVals をループ処理
             for (let i = 1; i < shootLogVals.length; i++) {
-                // 1行目はヘッダー行をスキップ
                 const log = shootLogVals[i];
                 const logMatchId = log[1]; // 2列目の値を取得
 
@@ -752,8 +754,8 @@ export class RequestExecuter {
                 }
             }
 
-            videoSheet.getRange(targetRow, 8).setValue(team1Score); // 8列目 (H列) : チーム1得点
-            videoSheet.getRange(targetRow, 9).setValue(team2Score); // 9列目 (I列) : チーム2得点
+            // 一度に得点を設定
+            videoSheet.getRange(targetRow, 8, 1, 2).setValues([[team1Score, team2Score]]); // 8列目 (H列) : チーム1得点, 9列目 (I列) : チーム2得点
             videoSheet.getRange(targetRow, 10).setValue(winner); // 10列目 (J列) : 勝者
 
             const lastHyphenIndex = matchId.lastIndexOf('-');
@@ -802,6 +804,146 @@ export class RequestExecuter {
         }
         postEventHander.reponseObj = { success: true };
     }
+
+    // public closeGame(postEventHander: PostEventHandler): void {
+    //     const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
+    //     const su: SchedulerUtil = new SchedulerUtil();
+    //     const actDate = su.extractDateFromRownum();
+    //     const shootLog: GoogleAppsScript.Spreadsheet.Sheet | null = eventSS.getSheetByName(this.getLogSheetName(actDate));
+    //     if (!shootLog) {
+    //         throw Error(this.getLogSheetName(actDate) + 'が存在しません！');
+    //     }
+    //     const shootLogVals = shootLog.getDataRange().getValues();
+    //     const matchId: string = postEventHander.parameter['matchId'];
+    //     const winner: string = postEventHander.parameter['winningTeam'];
+    //     const scoreBook: ScoreBook = new ScoreBook();
+    //     const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = scoreBook.getEventDetailSheet(eventSS, actDate);
+    //     const eventDetailVals = eventDetail.getDataRange().getValues();
+
+    //     // プレイヤーごとの得点とアシストを集計するオブジェクト
+    //     const playerStats: { [playerName: string]: { goals: number; assists: number } } = {};
+    //     // shootLogVals をループして得点とアシストを集計
+    //     for (let i = 1; i < shootLogVals.length; i++) {
+    //         const row = shootLogVals[i];
+    //         const scorer = row[4]; // ゴール (D列)
+    //         const assister = row[3]; // アシスト (E列)
+
+    //         // 得点者の集計
+    //         if (scorer) {
+    //             playerStats[scorer] = playerStats[scorer] || { goals: 0, assists: 0 };
+    //             playerStats[scorer].goals++;
+    //         }
+    //         // アシスト者の集計
+    //         if (assister) {
+    //             playerStats[assister] = playerStats[assister] || { goals: 0, assists: 0 };
+    //             playerStats[assister].assists++;
+    //         }
+    //     }
+
+    //     for (let i = 1; i < eventDetailVals.length; i++) {
+    //         const row = eventDetailVals[i];
+    //         const playerName = row[0]; // 名前 (A列)
+    //         // console.log(playerName);
+    //         if (playerName in playerStats) {
+    //             const stats = playerStats[playerName];
+    //             // 得点を書き込み (0点の場合は空文字にする)
+    //             eventDetail.getRange(i + 1, 3).setValue(stats.goals > 0 ? stats.goals : ''); // 3列目 (C列) : 得点
+    //             // アシストを書き込み (0アシストの場合は空文字にする)
+    //             eventDetail.getRange(i + 1, 4).setValue(stats.assists > 0 ? stats.assists : ''); // 4列目 (D列) : アシスト
+    //         } else {
+    //             // playerStats にデータがないプレイヤーは得点、アシストをクリア (念のため)
+    //             eventDetail.getRange(i + 1, 3).clearContent();
+    //             eventDetail.getRange(i + 1, 4).clearContent();
+    //         }
+    //     }
+
+    //     // videoSheet の更新処理
+    //     const videoSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
+    //     const videoSheetVals = videoSheet.getDataRange().getValues();
+    //     let targetRow: number | null = null;
+
+    //     // videoSheetVals をループして matchId が一致する行を探す (1行目はヘッダー行と仮定)
+    //     for (let i = videoSheetVals.length - 1; i >= 1; i--) {
+    //         if (videoSheetVals[i][10] === matchId) {
+    //             // 11列目 (K列) が matchId
+    //             targetRow = i + 1; // スプレッドシートの行番号は1から始まるので +1
+    //             break; // matchId が見つかったのでループを抜ける
+    //         }
+    //     }
+
+    //     if (targetRow) {
+    //         // matchId に一致する行が見つかった場合、データを更新
+    //         const team1Name: string = videoSheetVals[targetRow - 1][3]; // 4列目 (D列) : チーム1名
+    //         const team2Name: string = videoSheetVals[targetRow - 1][4]; // 5列目 (E列) : チーム2名
+    //         let team1Score: number = 0;
+    //         let team2Score: number = 0;
+
+    //         // 該当の matchId に基づいて shootLogVals をループ処理
+    //         for (let i = 1; i < shootLogVals.length; i++) {
+    //             // 1行目はヘッダー行をスキップ
+    //             const log = shootLogVals[i];
+    //             const logMatchId = log[1]; // 2列目の値を取得
+
+    //             if (logMatchId === matchId) {
+    //                 const logTeamName = log[2]; // ゴールを決めたプレイヤー名 (D列)
+    //                 if (team1Name === logTeamName) {
+    //                     team1Score++;
+    //                 } else if (team2Name === logTeamName) {
+    //                     team2Score++;
+    //                 }
+    //             }
+    //         }
+
+    //         videoSheet.getRange(targetRow, 8).setValue(team1Score); // 8列目 (H列) : チーム1得点
+    //         videoSheet.getRange(targetRow, 9).setValue(team2Score); // 9列目 (I列) : チーム2得点
+    //         videoSheet.getRange(targetRow, 10).setValue(winner); // 10列目 (J列) : 勝者
+
+    //         const lastHyphenIndex = matchId.lastIndexOf('-');
+    //         let matchType = null;
+    //         if (lastHyphenIndex !== -1) {
+    //             matchType = matchId.substring(lastHyphenIndex + 1);
+    //         }
+
+    //         console.log('matchType', matchType);
+    //         if (matchType?.startsWith('4_1') || matchType?.startsWith('4_2')) {
+    //             //今のところ４人の場合のみトーナメント
+    //             let flg1 = false;
+    //             let flg2 = false;
+    //             for (let i = videoSheetVals.length - 1; i >= 1; i--) {
+    //                 if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '３位決定戦') {
+    //                     console.log('3rd ', videoSheetVals[i][10]);
+    //                     flg1 = true;
+    //                     const looser = winner === team1Name ? team2Name : team1Name; // ３位決定戦は勝者じゃない方のチームをセット
+    //                     const lostMembers = winner === team1Name ? videoSheetVals[targetRow - 1][6] : videoSheetVals[targetRow - 1][5];
+    //                     if (!videoSheetVals[i][3]) {
+    //                         videoSheet.getRange(i + 1, 4).setValue(looser);
+    //                         videoSheet.getRange(i + 1, 6).setValue(lostMembers);
+    //                     } else if (!videoSheetVals[i][4]) {
+    //                         videoSheet.getRange(i + 1, 5).setValue(looser);
+    //                         videoSheet.getRange(i + 1, 7).setValue(lostMembers);
+    //                     }
+    //                 } else if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '決勝') {
+    //                     console.log('1st ', videoSheetVals[i][10]);
+    //                     flg2 = true;
+    //                     const winMembers = winner === team1Name ? videoSheetVals[targetRow - 1][5] : videoSheetVals[targetRow - 1][6];
+    //                     if (!videoSheetVals[i][3]) {
+    //                         videoSheet.getRange(i + 1, 4).setValue(winner);
+    //                         videoSheet.getRange(i + 1, 6).setValue(winMembers);
+    //                     } else if (!videoSheetVals[i][4]) {
+    //                         videoSheet.getRange(i + 1, 5).setValue(winner);
+    //                         videoSheet.getRange(i + 1, 7).setValue(winMembers);
+    //                     }
+    //                 }
+    //                 if (flg1 && flg2) {
+    //                     break;
+    //                 }
+    //             }
+    //         }
+    //     } else {
+    //         console.warn(`No row found in videoSheet with matchId: ${matchId}.`);
+    //     }
+    //     postEventHander.reponseObj = { success: true };
+    // }
 
     private matchTeamName(playerTeam: string, teamName: string): boolean {
         let result = false;
@@ -890,11 +1032,17 @@ export class RequestExecuter {
         }
 
         if (rowNumberToUpdate) {
-            // 'no' に一致する行が見つかった場合、データを更新
-            shootLog.getRange(rowNumberToUpdate, 2).setValue(matchId); // 2列目 (B列) : 試合
-            shootLog.getRange(rowNumberToUpdate, 3).setValue(team); // 3列目 (C列) : チーム
-            shootLog.getRange(rowNumberToUpdate, 5).setValue(scorer); // 4列目 (D列) : ゴール
-            shootLog.getRange(rowNumberToUpdate, 4).setValue(assister ? assister : ''); // 5列目 (E列) : アシスト
+            // データを一度に設定するための配列を作成
+            const rowData = [
+                '', // 1列目 (A列) : 空の値
+                matchId, // 2列目 (B列) : 試合
+                team, // 3列目 (C列) : チーム
+                assister ? assister : '', // 4列目 (D列) : アシスト
+                scorer, // 5列目 (E列) : ゴール
+            ];
+
+            // 一度に範囲を設定
+            shootLog.getRange(rowNumberToUpdate, 1, 1, rowData.length).setValues([rowData]);
         } else {
             console.error(`No row found with No: ${no}. Appending new row instead.`);
             shootLog.appendRow([no, matchId, team, scorer, assister ? assister : '']); // No はそのまま parameter の no を使用
@@ -1022,12 +1170,8 @@ export class RequestExecuter {
             shootLog = eventSS.insertSheet(this.getLogSheetName(actDate));
             shootLog.activate();
             eventSS.moveActiveSheet(0);
-            // shootLog.insertRows(shootLog.getDataRange().getLastRow(), 1);
-            shootLog.getRange(1, 1).setValue('No');
-            shootLog.getRange(1, 2).setValue('試合');
-            shootLog.getRange(1, 3).setValue('チーム');
-            shootLog.getRange(1, 4).setValue('アシスト');
-            shootLog.getRange(1, 5).setValue('ゴール');
+            const headerValues = [['No', '試合', 'チーム', 'アシスト', 'ゴール']];
+            shootLog.getRange(1, 1, 1, headerValues[0].length).setValues(headerValues);
         } else {
             const records = videoSheet.getDataRange().getValues();
             for (let i = records.length - 1; i >= 0; i--) {
@@ -1046,22 +1190,29 @@ export class RequestExecuter {
         //アップのひな形を作る（ついでにここを見る）
         switch (teamCount) {
             case '3': //3チームの場合
-                videoSheet.insertRows(lastRow + 1, 4);
+                videoSheet.insertRows(lastRow + 1, 7);
                 this.addRow(videoSheet, lastRow + 1, actDate, eventDetails, '#1 Team1 vs Team2', 'Team1', 'Team2', '-3_1');
-                this.addRow(videoSheet, lastRow + 3, actDate, eventDetails, '#3 Team1 vs Team3', 'Team1', 'Team3', '-3_2');
-                this.addRow(videoSheet, lastRow + 2, actDate, eventDetails, '#2 Team2 vs Team3', 'Team2', 'Team3', '-3_3');
-                this.addRow(videoSheet, lastRow + 4, actDate, eventDetails, 'ゴール集', '', '', '-3_g');
+                this.addRow(videoSheet, lastRow + 2, actDate, eventDetails, '#2 Team1 vs Team3', 'Team1', 'Team3', '-3_2');
+                this.addRow(videoSheet, lastRow + 3, actDate, eventDetails, '#3 Team2 vs Team3', 'Team2', 'Team3', '-3_3');
+                this.addRow(videoSheet, lastRow + 4, actDate, eventDetails, '#1 Team1 vs Team2 Drone', 'Team1', 'Team2', '-3_1d');
+                this.addRow(videoSheet, lastRow + 5, actDate, eventDetails, '#2 Team1 vs Team3 Drone', 'Team1', 'Team3', '-3_2d');
+                this.addRow(videoSheet, lastRow + 6, actDate, eventDetails, '#3 Team2 vs Team3 Drone', 'Team2', 'Team3', '-3_3d');
+                this.addRow(videoSheet, lastRow + 7, actDate, eventDetails, 'ゴール集', '', '', '-3_g');
                 break;
             case '4': //4チームの場合
-                videoSheet.insertRows(lastRow + 1, 5);
-                this.addRow(videoSheet, lastRow + 1, actDate, eventDetails, 'Team1 vs Team2', 'Team1', 'Team2', '-4_1');
-                this.addRow(videoSheet, lastRow + 2, actDate, eventDetails, 'Team3 vs Team4', 'Team3', 'Team4', '-4_2');
-                this.addRow(videoSheet, lastRow + 3, actDate, eventDetails, '３位決定戦', '', '', '-4_3');
-                this.addRow(videoSheet, lastRow + 4, actDate, eventDetails, '決勝', '', '', '-4_4');
-                this.addRow(videoSheet, lastRow + 5, actDate, eventDetails, 'ゴール集', '', '', '-4_g');
+                videoSheet.insertRows(lastRow + 1, 9);
+                this.addRow(videoSheet, lastRow + 1, actDate, eventDetails, '#1 Team1 vs Team2', 'Team1', 'Team2', '-4_1');
+                this.addRow(videoSheet, lastRow + 2, actDate, eventDetails, '#2 Team3 vs Team4', 'Team3', 'Team4', '-4_2');
+                this.addRow(videoSheet, lastRow + 3, actDate, eventDetails, '#3 ３位決定戦', '', '', '-4_3');
+                this.addRow(videoSheet, lastRow + 4, actDate, eventDetails, '#4 決勝', '', '', '-4_4');
+                this.addRow(videoSheet, lastRow + 5, actDate, eventDetails, '#1 Team1 vs Team2 Drone', 'Team1', 'Team2', '-4_1d');
+                this.addRow(videoSheet, lastRow + 6, actDate, eventDetails, '#2 Team3 vs Team4 Drone', 'Team3', 'Team4', '-4_2d');
+                this.addRow(videoSheet, lastRow + 7, actDate, eventDetails, '#3 ３位決定戦 Drone', '', '', '-4_3d');
+                this.addRow(videoSheet, lastRow + 8, actDate, eventDetails, '#4 決勝 Drone', '', '', '-4_4d');
+                this.addRow(videoSheet, lastRow + 9, actDate, eventDetails, 'ゴール集', '', '', '-4_g');
                 break;
             case '5': //5チームの場合(2ピッチ前提)
-                videoSheet.insertRows(lastRow + 1, 11);
+                videoSheet.insertRows(lastRow + 1, 12);
                 this.addRow(videoSheet, lastRow + 1, actDate, eventDetails, '#1 Pitch1 Team1 vs Team2', 'Team1', 'Team2', '-5_1_1');
                 this.addRow(videoSheet, lastRow + 2, actDate, eventDetails, '#1 Pitch2 Team3 vs Team4', 'Team3', 'Team4', '-5_1_2');
                 this.addRow(videoSheet, lastRow + 3, actDate, eventDetails, '#2 Pitch1 Team1 vs Team3', 'Team1', 'Team3', '-5_2_1');
@@ -1072,10 +1223,22 @@ export class RequestExecuter {
                 this.addRow(videoSheet, lastRow + 8, actDate, eventDetails, '#4 Pitch2 Team1 vs Team4', 'Team1', 'Team4', '-5_4_2');
                 this.addRow(videoSheet, lastRow + 9, actDate, eventDetails, '#5 Pitch2 Team4 vs Team5', 'Team4', 'Team5', '-5_5_1');
                 this.addRow(videoSheet, lastRow + 10, actDate, eventDetails, '#5 Pitch2 Team2 vs Team3', 'Team2', 'Team3', '-5_5_2');
-                this.addRow(videoSheet, lastRow + 11, actDate, eventDetails, 'ゴール集 pitch1', '', '', '-5_1_g');
-                this.addRow(videoSheet, lastRow + 12, actDate, eventDetails, 'ゴール集 pitch2', '', '', '-5_2_g');
+
+                this.addRow(videoSheet, lastRow + 11, actDate, eventDetails, '#1 Drone', '', '', '-5_1_1d');
+                this.addRow(videoSheet, lastRow + 12, actDate, eventDetails, '#2 Drone', '', '', '-5_2_1d');
+                this.addRow(videoSheet, lastRow + 13, actDate, eventDetails, '#3 Drone', '', '', '-5_3_1d');
+                this.addRow(videoSheet, lastRow + 14, actDate, eventDetails, '#4 Drone', '', '', '-5_4_1d');
+                this.addRow(videoSheet, lastRow + 15, actDate, eventDetails, '#5 Drone', '', '', '-5_5_1d');
+
+                this.addRow(videoSheet, lastRow + 16, actDate, eventDetails, 'ゴール集 pitch1', '', '', '-5_1_g');
+                this.addRow(videoSheet, lastRow + 17, actDate, eventDetails, 'ゴール集 pitch2', '', '', '-5_2_g');
                 break;
         }
+    }
+
+    private convertTeamName(teamName: string): string {
+        // "Team" の部分を "チーム" に置き換え、残りの数字をそのまま使用
+        return teamName.replace(/^Team/, 'チーム');
     }
 
     private addRow(
@@ -1088,201 +1251,28 @@ export class RequestExecuter {
         left: string,
         count: string
     ) {
-        videoSheet.getRange(row, 1).setValue(actDate);
-        videoSheet.getRange(row, 2).setValue(title);
-        videoSheet.getRange(row, 4).setValue(right);
-        videoSheet.getRange(row, 5).setValue(left);
-        switch (right) {
-            case 'Team1':
-                videoSheet.getRange(row, 6).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム1')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team2':
-                videoSheet.getRange(row, 6).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム2')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team3':
-                videoSheet.getRange(row, 6).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム3')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team4':
-                videoSheet.getRange(row, 6).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム4')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team5':
-                videoSheet.getRange(row, 6).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム5')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team6':
-                videoSheet.getRange(row, 6).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム6')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team7':
-                videoSheet.getRange(row, 6).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム7')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team8':
-                videoSheet.getRange(row, 6).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム8')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team9':
-                videoSheet.getRange(row, 6).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム9')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team10':
-                videoSheet.getRange(row, 6).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム10')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
+        const values = [
+            [actDate, title, '', right, left, '', '', '', '', '', actDate + count], // 初期値を設定
+        ];
+        // videoSheet.getRange(row, 1).setValue(actDate);
+        // videoSheet.getRange(row, 2).setValue(title);
+        // videoSheet.getRange(row, 4).setValue(right);
+        // videoSheet.getRange(row, 5).setValue(left);
+        const rightMembers = eventDetails
+            .slice(1)
+            .filter(val => val[1] === this.convertTeamName(right))
+            .map(val => val[0])
+            .join(', ');
+        values[0][5] = rightMembers;
 
-            default:
-                break;
-        }
-        switch (left) {
-            case 'Team1':
-                videoSheet.getRange(row, 7).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム1')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team2':
-                videoSheet.getRange(row, 7).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム2')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team3':
-                videoSheet.getRange(row, 7).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム3')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team4':
-                videoSheet.getRange(row, 7).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム4')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team5':
-                videoSheet.getRange(row, 7).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム5')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team6':
-                videoSheet.getRange(row, 6).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム6')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team7':
-                videoSheet.getRange(row, 6).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム7')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team8':
-                videoSheet.getRange(row, 6).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム8')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team9':
-                videoSheet.getRange(row, 6).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム9')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-            case 'Team10':
-                videoSheet.getRange(row, 6).setValue(
-                    eventDetails
-                        .slice(1)
-                        .filter(val => val[1] === 'チーム10')
-                        .map(val => val[0])
-                        .join(', ')
-                );
-                break;
-
-            default:
-                break;
-        }
-        videoSheet.getRange(row, 11).setValue(actDate + count);
+        const leftMembers = eventDetails
+            .slice(1)
+            .filter(val => val[1] === this.convertTeamName(left))
+            .map(val => val[0])
+            .join(', ');
+        values[0][6] = leftMembers;
+        // videoSheet.getRange(row, 11).setValue(actDate + count);
+        videoSheet.getRange(row, 1, 1, values[0].length).setValues(values);
     }
 
     private convertVal(val: string): string {
@@ -1311,7 +1301,6 @@ export class RequestExecuter {
     }
 
     public deleteEx(postEventHander: PostEventHandler): void {
-        console.log('execute deleteEx');
         const title: string = postEventHander.parameter.title;
         const rootFolder = DriveApp.getFolderById(ScriptProps.instance.expenseFolder);
         const titleFolderIt: GoogleAppsScript.Drive.FolderIterator = rootFolder.getFoldersByName(title);
@@ -1324,7 +1313,6 @@ export class RequestExecuter {
     }
 
     public loadExList(postEventHander: PostEventHandler): void {
-        // console.log('execute loadExList');
         const rootFolder = DriveApp.getFolderById(ScriptProps.instance.expenseFolder);
         const titleFolderIt: GoogleAppsScript.Drive.FolderIterator = rootFolder.getFolders();
         const results = [];
@@ -1339,7 +1327,6 @@ export class RequestExecuter {
     }
 
     public uploadPaticipationPayNow(postEventHander: PostEventHandler): void {
-        console.log('execute uploadPaticipationPayNow');
         const decodedFile = Utilities.base64Decode(postEventHander.parameter.file);
         const userId: string = postEventHander.parameter.userId;
         const mappingSheet = GasProps.instance.mappingSheet;

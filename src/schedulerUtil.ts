@@ -186,7 +186,7 @@ export class SchedulerUtil {
         for (let i = values.length; i >= 10; i--) {
             report.deleteRow(i);
         }
-        this.reCalcTotalVal(cashBook);
+        // this.reCalcTotalVal(cashBook);
         const mappingSheet = GasProps.instance.mappingSheet;
         const mapValues = mappingSheet.getDataRange().getValues();
         const userIdToDensukeNameMap: { [key: string]: [string, string] } = {};
@@ -225,25 +225,33 @@ export class SchedulerUtil {
             actDate,
             '参加費(' + attendeeUserIds.length + '名)',
             '' + attendFeeTotal,
-            '=' + 'E' + lastRow + '+D' + (lastRow + 1),
+            '=IF(ROW()=5, INDEX(D:D, ROW()), INDEX(E:E, ROW()-1) + INDEX(D:D, ROW()))',
+            // '=' + 'E' + lastRow + '+D' + (lastRow + 1),
         ]);
-        cashBook.appendRow([dd, actDate, 'ピッチ使用料金', '-' + rentalFee, '=' + 'E' + (lastRow + 1) + '+D' + (lastRow + 2)]);
+        // cashBook.appendRow([dd, actDate, 'ピッチ使用料金', '-' + rentalFee, '=' + 'E' + (lastRow + 1) + '+D' + (lastRow + 2)]);
+        cashBook.appendRow([
+            dd,
+            actDate,
+            'ピッチ使用料金',
+            '-' + rentalFee,
+            '=IF(ROW()=5, INDEX(D:D, ROW()), INDEX(E:E, ROW()-1) + INDEX(D:D, ROW()))',
+        ]);
         const clastRow = cashBook.getLastRow();
         cashBook.getRange(1, 1, clastRow, 5).setBorder(true, true, true, true, true, true);
-        this.reCalcTotalVal(cashBook);
+        // this.reCalcTotalVal(cashBook);
     }
 
-    private reCalcTotalVal(cashBook: GoogleAppsScript.Spreadsheet.Sheet) {
-        const allData = cashBook.getDataRange().getValues();
-        let index = 1;
-        for (const allRow of allData) {
-            if (allRow[3] && allRow[3] !== '金額(SGD)') {
-                const formula = `E${index - 1}+D${index}`;
-                cashBook.getRange(index, 5).setFormula(formula);
-            }
-            index++;
-        }
-    }
+    // private reCalcTotalVal(cashBook: GoogleAppsScript.Spreadsheet.Sheet) {
+    //     const allData = cashBook.getDataRange().getValues();
+    //     let index = 1;
+    //     for (const allRow of allData) {
+    //         if (allRow[3] && allRow[3] !== '金額(SGD)') {
+    //             const formula = `E${index - 1}+D${index}`;
+    //             cashBook.getRange(index, 5).setFormula(formula);
+    //         }
+    //         index++;
+    //     }
+    // }
 
     public getSummaryStr(): string {
         const attendees: string[] = this.extractAttendees('〇');

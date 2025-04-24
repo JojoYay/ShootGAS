@@ -173,10 +173,127 @@ export class ScoreBook {
         return max;
     }
 
+    // private writeTotalRecord(totalResult: GoogleAppsScript.Spreadsheet.Sheet, dataList: TotalScore[]) {
+    //     let lastRow: number = totalResult.getLastRow();
+    //     if (lastRow > 2) {
+    //         totalResult.deleteRows(2, lastRow - 1);
+    //     }
+
+    //     // データを一度に追加するための配列を作成
+    //     const rowsToAdd = dataList.map(score => [
+    //         score.userId,
+    //         score.name,
+    //         score.playTime,
+    //         score.sunnyPlay,
+    //         score.rainyPlay,
+    //         score.goalCount,
+    //         score.assistCount,
+    //         score.mipCount,
+    //         score.teamPoint,
+    //         score.winCount,
+    //         score.loseCount,
+    //         score.totalMatchs,
+    //     ]);
+
+    //     // 一度にデータを追加
+    //     totalResult.getRange(2, 1, rowsToAdd.length, rowsToAdd[0].length).setValues(rowsToAdd);
+
+    //     lastRow = totalResult.getLastRow();
+    //     const lastCol = totalResult.getLastColumn();
+    //     if (lastRow > 1) {
+    //         totalResult.getRange(1, 1, lastRow, lastCol).setBorder(true, true, true, true, true, true);
+    //         totalResult.getRange(2, 1, lastRow - 1, lastCol).sort({ column: 6, ascending: false });
+
+    //         let rank = 1;
+    //         let prevScore = null;
+    //         let prevRank = 1;
+    //         let rangeVals = totalResult.getDataRange().getValues();
+
+    //         // 得点王
+    //         const grankingUpdates = [];
+    //         const orankingUpdates = [];
+    //         for (let i = 1; i < rangeVals.length; i++) {
+    //             const currentScore = rangeVals[i][5];
+    //             if (currentScore !== prevScore) {
+    //                 prevRank = rank;
+    //             }
+    //             grankingUpdates.push([prevRank]);
+    //             if (currentScore !== prevScore) {
+    //                 rank++;
+    //             }
+    //             prevScore = currentScore;
+    //         }
+    //         totalResult.getRange(2, 13, grankingUpdates.length, 1).setValues(grankingUpdates);
+
+    //         // 追加のランクを設定
+    //         for (let i = 1; i < rangeVals.length; i++) {
+    //             orankingUpdates.push([rank - 1]);
+    //         }
+    //         totalResult.getRange(2, 17, orankingUpdates.length, 1).setValues(orankingUpdates);
+
+    //         // okamoto
+    //         rank = 1;
+    //         prevScore = null;
+    //         prevRank = 1;
+    //         totalResult.getRange(2, 1, lastRow - 1, lastCol).sort({ column: 9, ascending: false });
+    //         rangeVals = totalResult.getDataRange().getValues();
+    //         const okamotoUpdates = [];
+    //         for (let i = 1; i < rangeVals.length; i++) {
+    //             const currentScore = rangeVals[i][8];
+    //             if (currentScore !== prevScore) {
+    //                 prevRank = rank;
+    //             }
+    //             okamotoUpdates.push([prevRank]);
+    //             if (currentScore !== prevScore) {
+    //                 rank++;
+    //             }
+    //             prevScore = currentScore;
+    //         }
+    //         totalResult.getRange(2, 15, okamotoUpdates.length, 1).setValues(okamotoUpdates);
+
+    //         // assist
+    //         rank = 1;
+    //         prevScore = null;
+    //         prevRank = 1;
+    //         const assistUpdates = [];
+    //         for (let i = 1; i < rangeVals.length; i++) {
+    //             const currentScore = rangeVals[i][6];
+    //             if (currentScore !== prevScore) {
+    //                 prevRank = rank;
+    //             }
+    //             assistUpdates.push([prevRank]);
+    //             if (currentScore !== prevScore) {
+    //                 rank++;
+    //             }
+    //             prevScore = currentScore;
+    //         }
+    //         totalResult.getRange(2, 14, assistUpdates.length, 1).setValues(assistUpdates);
+
+    //         // 特別な条件を満たす場合の処理
+    //         const mipNames: string[] = this.checkMip(GasProps.instance.eventResultSheet.getDataRange().getValues());
+    //         const specialUpdates = [];
+    //         for (let i = 1; i < rangeVals.length; i++) {
+    //             const currentName = rangeVals[i][1];
+    //             const currentGranking = rangeVals[i][12];
+    //             const currentAranking = rangeVals[i][13];
+    //             const currentOranking = rangeVals[i][14];
+
+    //             if (currentGranking === 1 || currentAranking === 1 || currentOranking === 1 || mipNames.includes(currentName)) {
+    //                 specialUpdates.push([1]);
+    //             } else {
+    //                 specialUpdates.push([0]);
+    //             }
+    //         }
+    //         totalResult.getRange(2, 16, specialUpdates.length, 1).setValues(specialUpdates);
+    //     }
+    // }
+
     private writeTotalRecord(totalResult: GoogleAppsScript.Spreadsheet.Sheet, dataList: TotalScore[]) {
         let lastRow: number = totalResult.getLastRow();
         if (lastRow > 2) {
-            totalResult.deleteRows(2, lastRow - 1);
+            // ヘッダーを除く全行をクリア
+            totalResult.getRange(2, 1, lastRow - 1, totalResult.getLastColumn()).clearContent();
+            totalResult.getRange(2, 1, lastRow - 1, totalResult.getLastColumn()).setBorder(false, false, false, false, false, false);
         }
         for (const score of dataList) {
             totalResult.appendRow([
@@ -280,6 +397,7 @@ export class ScoreBook {
             }
         }
     }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private checkMip(eventDataVal: any[][]): string[] {
         const resultNames: string[] = [];
@@ -386,6 +504,40 @@ export class ScoreBook {
         return -1;
     }
 
+    // private createInitialEvent(attendees: string[], eventData: GoogleAppsScript.Spreadsheet.Sheet, now: Date, actDate: string): void {
+    //     const teamPoint: string[] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+    //     const teamPointVal = SpreadsheetApp.newDataValidation().requireValueInList(teamPoint).build();
+    //     const weather: string[] = ['晴れ', '曇り', '雨'];
+    //     const weatherVal = SpreadsheetApp.newDataValidation().requireValueInList(weather).build();
+    //     const attendVal = SpreadsheetApp.newDataValidation().requireValueInList(attendees).build();
+    //     const lastCol: number = eventData.getLastColumn();
+    //     eventData.appendRow([now, actDate, attendees.length, attendees.join(',')]);
+    //     const lastRow: number = eventData.getLastRow();
+
+    //     eventData.getRange(lastRow, 5).setDataValidation(weatherVal);
+    //     eventData.getRange(lastRow, 6).setDataValidation(attendVal);
+
+    //     eventData.getRange(lastRow, 8).setDataValidation(teamPointVal);
+    //     eventData.getRange(lastRow, 9).setDataValidation(teamPointVal);
+    //     eventData.getRange(lastRow, 10).setDataValidation(teamPointVal);
+    //     eventData.getRange(lastRow, 11).setDataValidation(teamPointVal);
+    //     eventData.getRange(lastRow, 12).setDataValidation(teamPointVal);
+    //     eventData.getRange(lastRow, 13).setDataValidation(teamPointVal);
+    //     //追加
+    //     eventData.getRange(lastRow, 14).setDataValidation(teamPointVal);
+    //     eventData.getRange(lastRow, 15).setDataValidation(teamPointVal);
+    //     eventData.getRange(lastRow, 16).setDataValidation(teamPointVal);
+    //     eventData.getRange(lastRow, 17).setDataValidation(teamPointVal);
+    //     eventData.getRange(lastRow, 18).setDataValidation(attendVal);
+    //     eventData.getRange(lastRow, 19).setDataValidation(attendVal);
+    //     eventData.getRange(lastRow, 20).setDataValidation(attendVal);
+    //     eventData.getRange(lastRow, 21).setDataValidation(attendVal);
+
+    //     if (lastRow > 2) {
+    //         const newRowRange: GoogleAppsScript.Spreadsheet.Range = eventData.getRange(lastRow, 1, 1, lastCol - 1);
+    //         eventData.moveRows(newRowRange, 2);
+    //     }
+    // }
     private createInitialEvent(attendees: string[], eventData: GoogleAppsScript.Spreadsheet.Sheet, now: Date, actDate: string): void {
         const teamPoint: string[] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
         const teamPointVal = SpreadsheetApp.newDataValidation().requireValueInList(teamPoint).build();
@@ -393,33 +545,122 @@ export class ScoreBook {
         const weatherVal = SpreadsheetApp.newDataValidation().requireValueInList(weather).build();
         const attendVal = SpreadsheetApp.newDataValidation().requireValueInList(attendees).build();
         const lastCol: number = eventData.getLastColumn();
+
+        // 新しい行を追加
         eventData.appendRow([now, actDate, attendees.length, attendees.join(',')]);
         const lastRow: number = eventData.getLastRow();
 
-        eventData.getRange(lastRow, 5).setDataValidation(weatherVal);
-        eventData.getRange(lastRow, 6).setDataValidation(attendVal);
+        // データバリデーションを一度に設定するための配列を作成
+        const validations = Array(lastCol).fill(null); // lastColの数だけnullで初期化
+        validations[4] = weatherVal; // 5列目
+        validations[5] = attendVal; // 6列目
 
-        eventData.getRange(lastRow, 8).setDataValidation(teamPointVal);
-        eventData.getRange(lastRow, 9).setDataValidation(teamPointVal);
-        eventData.getRange(lastRow, 10).setDataValidation(teamPointVal);
-        eventData.getRange(lastRow, 11).setDataValidation(teamPointVal);
-        eventData.getRange(lastRow, 12).setDataValidation(teamPointVal);
-        eventData.getRange(lastRow, 13).setDataValidation(teamPointVal);
-        //追加
-        eventData.getRange(lastRow, 14).setDataValidation(teamPointVal);
-        eventData.getRange(lastRow, 15).setDataValidation(teamPointVal);
-        eventData.getRange(lastRow, 16).setDataValidation(teamPointVal);
-        eventData.getRange(lastRow, 17).setDataValidation(teamPointVal);
-        eventData.getRange(lastRow, 18).setDataValidation(attendVal);
-        eventData.getRange(lastRow, 19).setDataValidation(attendVal);
-        eventData.getRange(lastRow, 20).setDataValidation(attendVal);
-        eventData.getRange(lastRow, 21).setDataValidation(attendVal);
+        // 8列目から21列目までのデータバリデーションを設定
+        for (let i = 7; i <= 20; i++) {
+            validations[i] = i <= 12 ? teamPointVal : attendVal; // 8-12列目はteamPointVal、13-21列目はattendVal
+        }
+
+        // 一度に範囲を設定
+        const range = eventData.getRange(lastRow, 1, 1, lastCol);
+        range.setDataValidations([validations]);
 
         if (lastRow > 2) {
             const newRowRange: GoogleAppsScript.Spreadsheet.Range = eventData.getRange(lastRow, 1, 1, lastCol - 1);
             eventData.moveRows(newRowRange, 2);
         }
     }
+
+    // public generateOkamotoBook(actDate: string, attendees: string[]) {
+    //     const reportSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+    //     let scoreSheet: GoogleAppsScript.Spreadsheet.Sheet | null = reportSS.getSheetByName(Title.OKAMOTO);
+
+    //     if (!scoreSheet) {
+    //         scoreSheet = reportSS.insertSheet(Title.OKAMOTO);
+    //         scoreSheet.appendRow(['伝助名称', '順位', '前回順位', '合計ポイント']);
+    //         scoreSheet.insertRowBefore(1);
+    //     }
+
+    //     if (!this.isActDateExists(actDate, scoreSheet)) {
+    //         scoreSheet.insertColumnBefore(5);
+    //         scoreSheet.getRange('E2').setValue(actDate);
+    //         if (scoreSheet.getLastColumn() > 5) {
+    //             scoreSheet.getRange(3, 2, scoreSheet.getLastRow() - 1, 1).copyTo(scoreSheet.getRange(3, 3, scoreSheet.getLastRow() - 1, 1));
+    //         }
+    //     }
+
+    //     this.addAttendee(scoreSheet, attendees, true);
+    //     const scoreValues = scoreSheet.getDataRange().getValues();
+    //     const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
+    //     const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = this.getEventDetailSheet(eventSS, actDate);
+    //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    //     const detailValues: any[][] = eventDetail.getDataRange().getValues();
+    //     const eventSummary: GoogleAppsScript.Spreadsheet.Sheet = this.getEventDataSheet(eventSS.getSheets());
+    //     const eventRow = eventSummary
+    //         .getDataRange()
+    //         .getValues()
+    //         .find(item => item[1].toString() === actDate);
+
+    //     if (!eventRow) {
+    //         throw new Error(actDate + ' event is not found in EventData Sheet');
+    //     }
+
+    //     const resultPoints = eventRow.slice(7, 17).map(point => point || 0); // 7-16列目のポイントを取得
+    //     const lastCol = scoreSheet.getLastColumn();
+    //     const updates = []; // 更新するデータを格納する配列
+
+    //     for (const score of scoreValues) {
+    //         if (score[0] === '伝助名称' || score[0] === '') {
+    //             continue;
+    //         }
+
+    //         const resultRow = detailValues.find(item => !!item[0] && item[0] === score[0]);
+    //         if (resultRow) {
+    //             const teamIndex = parseInt(resultRow[1].replace('チーム', '')) - 1; // チーム名からインデックスを取得
+    //             const point = resultPoints[teamIndex] || 0; // ポイントを取得
+    //             updates.push([point]); // ポイントを更新リストに追加
+    //         } else {
+    //             updates.push([0]); // 該当チームがない場合は0を追加
+    //         }
+    //     }
+
+    //     // 一度にポイントを設定
+    //     scoreSheet.getRange(3, 5, updates.length, 1).setValues(updates);
+
+    //     // 合計ポイントの計算式を設定
+    //     for (let index = 0; index < updates.length; index++) {
+    //         const formula = `=SUM(${scoreSheet.getRange(3 + index, 5, 1, lastCol - 4).getA1Notation()})`;
+    //         scoreSheet.getRange(3 + index, 4).setFormula(formula);
+    //     }
+
+    //     const finalRow = scoreSheet.getLastRow();
+    //     const finalCol = scoreSheet.getLastColumn();
+    //     scoreSheet.getRange(2, 1, finalRow - 1, finalCol).setBorder(true, true, true, true, true, true);
+    //     scoreSheet.getRange(3, 1, finalRow - 1, finalCol).sort({ column: 4, ascending: false });
+    //     scoreSheet.getRange(2, 1, 1, finalCol).setBackground('#fff2cc');
+    //     scoreSheet.activate();
+    //     reportSS.moveActiveSheet(1);
+
+    //     let rank = 1;
+    //     let prevScore = null;
+    //     let prevRank = 1;
+    //     const rangeVals = scoreSheet.getDataRange().getValues();
+    //     const rankUpdates = []; // ランクを格納する配列
+
+    //     for (let i = 2; i < rangeVals.length; i++) {
+    //         const currentScore = rangeVals[i][3];
+    //         if (currentScore !== prevScore) {
+    //             prevRank = rank;
+    //         }
+    //         rankUpdates.push([prevRank]); // ランクを更新リストに追加
+    //         if (currentScore !== prevScore) {
+    //             rank++;
+    //         }
+    //         prevScore = currentScore;
+    //     }
+
+    //     // 一度にランクを設定
+    //     scoreSheet.getRange(3, 2, rankUpdates.length, 1).setValues(rankUpdates);
+    // }
 
     public generateOkamotoBook(actDate: string, attendees: string[]) {
         const reportSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
@@ -524,6 +765,89 @@ export class ScoreBook {
             prevScore = currentScore;
         }
     }
+
+    // public generateScoreBook(actDate: string, attendees: string[], title: Title): void {
+    //     const reportSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+    //     let scoreSheet: GoogleAppsScript.Spreadsheet.Sheet | null = reportSS.getSheetByName(title);
+
+    //     if (!scoreSheet) {
+    //         scoreSheet = reportSS.insertSheet(title);
+    //         scoreSheet.appendRow(['伝助名称', '順位', '前回順位', '合計得点']);
+    //         scoreSheet.insertRowBefore(1);
+    //     }
+
+    //     if (!this.isActDateExists(actDate, scoreSheet)) {
+    //         scoreSheet.insertColumnBefore(5);
+    //         scoreSheet.getRange('E2').setValue(actDate);
+    //         if (scoreSheet.getLastColumn() > 5) {
+    //             scoreSheet.getRange(3, 2, scoreSheet.getLastRow() - 1, 1).copyTo(scoreSheet.getRange(3, 3, scoreSheet.getLastRow() - 1, 1));
+    //         }
+    //     }
+
+    //     this.addAttendee(scoreSheet, attendees, true);
+
+    //     const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
+    //     const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = this.getEventDetailSheet(eventSS, actDate);
+    //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    //     const eventValues: any[][] = eventDetail.getDataRange().getValues();
+    //     const allVals = scoreSheet.getDataRange().getValues();
+    //     const lastCol = scoreSheet.getLastColumn();
+    //     const updates = []; // 更新するデータを格納する配列
+
+    //     for (const allRow of allVals) {
+    //         if (allRow[0] === '伝助名称' || allRow[0] === '') {
+    //             continue;
+    //         }
+    //         for (const eventRow of eventValues) {
+    //             if (eventRow[0] === '名前') {
+    //                 continue;
+    //             }
+    //             if (eventRow[0] === allRow[0]) {
+    //                 const score = title === Title.ASSIST ? eventRow[3] : eventRow[2];
+    //                 updates.push([score]); // スコアを更新リストに追加
+    //                 break; // 一致したら次の allRow に進む
+    //             }
+    //         }
+    //     }
+
+    //     // 一度にスコアを設定
+    //     scoreSheet.getRange(3, 5, updates.length, 1).setValues(updates);
+
+    //     // 合計ポイントの計算式を設定
+    //     for (let index = 0; index < updates.length; index++) {
+    //         const formula = `=SUM(${scoreSheet.getRange(3 + index, 5, 1, lastCol - 3).getA1Notation()})`;
+    //         scoreSheet.getRange(3 + index, 4).setFormula(formula);
+    //     }
+
+    //     const finalRow = scoreSheet.getLastRow();
+    //     const finalCol = scoreSheet.getLastColumn();
+    //     scoreSheet.getRange(2, 1, finalRow - 1, finalCol).setBorder(true, true, true, true, true, true);
+    //     scoreSheet.getRange(3, 1, finalRow - 1, finalCol).sort({ column: 4, ascending: false });
+    //     scoreSheet.getRange(2, 1, 1, finalCol).setBackground('#fff2cc');
+    //     scoreSheet.activate();
+    //     reportSS.moveActiveSheet(1);
+
+    //     let rank = 1;
+    //     let prevScore = null;
+    //     let prevRank = 1;
+    //     const rangeVals = scoreSheet.getDataRange().getValues();
+    //     const rankUpdates = []; // ランクを格納する配列
+
+    //     for (let i = 2; i < rangeVals.length; i++) {
+    //         const currentScore = rangeVals[i][3];
+    //         if (currentScore !== prevScore) {
+    //             prevRank = rank;
+    //         }
+    //         rankUpdates.push([prevRank]); // ランクを更新リストに追加
+    //         if (currentScore !== prevScore) {
+    //             rank++;
+    //         }
+    //         prevScore = currentScore;
+    //     }
+
+    //     // 一度にランクを設定
+    //     scoreSheet.getRange(3, 2, rankUpdates.length, 1).setValues(rankUpdates);
+    // }
 
     public generateScoreBook(actDate: string, attendees: string[], title: Title): void {
         const reportSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
