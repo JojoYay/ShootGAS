@@ -664,6 +664,7 @@ export class RequestExecuter {
 
     //毎回全部集計してアシストと得点を入れなおす
     public closeGame(postEventHander: PostEventHandler): void {
+        console.log('closegame');
         const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
         const su: SchedulerUtil = new SchedulerUtil();
         const actDate = su.extractDateFromRownum();
@@ -674,6 +675,10 @@ export class RequestExecuter {
         const shootLogVals = shootLog.getDataRange().getValues();
         const matchId: string = postEventHander.parameter['matchId'];
         const winner: string = postEventHander.parameter['winningTeam'];
+
+        const team1mem: string = postEventHander.parameter['team1Players'];
+        const team2mem: string = postEventHander.parameter['team2Players'];
+
         const scoreBook: ScoreBook = new ScoreBook();
         const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = scoreBook.getEventDetailSheet(eventSS, actDate);
         const eventDetailVals = eventDetail.getDataRange().getValues();
@@ -723,6 +728,7 @@ export class RequestExecuter {
         const videoSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
         const videoSheetVals = videoSheet.getDataRange().getValues();
         let targetRow: number | null = null;
+        let droneTargetRow: number | null = null;
 
         // videoSheetVals をループして matchId が一致する行を探す (1行目はヘッダー行と仮定)
         for (let i = videoSheetVals.length - 1; i >= 1; i--) {
@@ -732,10 +738,19 @@ export class RequestExecuter {
             }
         }
 
-        if (targetRow) {
+        // videoSheetVals をループして matchId が一致する行を探す (1行目はヘッダー行と仮定)
+        for (let i = videoSheetVals.length - 1; i >= 1; i--) {
+            if (videoSheetVals[i][10] === matchId + 'd') {
+                droneTargetRow = i + 1; // スプレッドシートの行番号は1から始まるので +1
+                break; // matchId が見つかったのでループを抜ける
+            }
+        }
+
+        if (targetRow && droneTargetRow) {
             // matchId に一致する行が見つかった場合、データを更新
             const team1Name: string = videoSheetVals[targetRow - 1][3]; // 4列目 (D列) : チーム1名
             const team2Name: string = videoSheetVals[targetRow - 1][4]; // 5列目 (E列) : チーム2名
+
             let team1Score: number = 0;
             let team2Score: number = 0;
 
@@ -755,8 +770,8 @@ export class RequestExecuter {
             }
 
             // 一度に得点を設定
-            videoSheet.getRange(targetRow, 8, 1, 2).setValues([[team1Score, team2Score]]); // 8列目 (H列) : チーム1得点, 9列目 (I列) : チーム2得点
-            videoSheet.getRange(targetRow, 10).setValue(winner); // 10列目 (J列) : 勝者
+            videoSheet.getRange(targetRow, 6, 1, 5).setValues([[team1mem, team2mem, team1Score, team2Score, winner]]);
+            videoSheet.getRange(droneTargetRow, 6, 1, 5).setValues([[team1mem, team2mem, team1Score, team2Score, winner]]);
 
             const lastHyphenIndex = matchId.lastIndexOf('-');
             let matchType = null;
@@ -766,11 +781,14 @@ export class RequestExecuter {
 
             console.log('matchType', matchType);
             if (matchType?.startsWith('4_1') || matchType?.startsWith('4_2')) {
+                console.log('enter');
                 //今のところ４人の場合のみトーナメント
                 let flg1 = false;
                 let flg2 = false;
+                let flg3 = false;
+                let flg4 = false;
                 for (let i = videoSheetVals.length - 1; i >= 1; i--) {
-                    if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '３位決定戦') {
+                    if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '#3 ３位決定戦') {
                         console.log('3rd ', videoSheetVals[i][10]);
                         flg1 = true;
                         const looser = winner === team1Name ? team2Name : team1Name; // ３位決定戦は勝者じゃない方のチームをセット
@@ -782,7 +800,7 @@ export class RequestExecuter {
                             videoSheet.getRange(i + 1, 5).setValue(looser);
                             videoSheet.getRange(i + 1, 7).setValue(lostMembers);
                         }
-                    } else if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '決勝') {
+                    } else if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '#4 決勝') {
                         console.log('1st ', videoSheetVals[i][10]);
                         flg2 = true;
                         const winMembers = winner === team1Name ? videoSheetVals[targetRow - 1][5] : videoSheetVals[targetRow - 1][6];
@@ -793,8 +811,31 @@ export class RequestExecuter {
                             videoSheet.getRange(i + 1, 5).setValue(winner);
                             videoSheet.getRange(i + 1, 7).setValue(winMembers);
                         }
+                    } else if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '#3 ３位決定戦 Drone') {
+                        console.log('3rd ', videoSheetVals[i][10]);
+                        flg3 = true;
+                        const looser = winner === team1Name ? team2Name : team1Name; // ３位決定戦は勝者じゃない方のチームをセット
+                        const lostMembers = winner === team1Name ? videoSheetVals[targetRow - 1][6] : videoSheetVals[targetRow - 1][5];
+                        if (!videoSheetVals[i][3]) {
+                            videoSheet.getRange(i + 1, 4).setValue(looser);
+                            videoSheet.getRange(i + 1, 6).setValue(lostMembers);
+                        } else if (!videoSheetVals[i][4]) {
+                            videoSheet.getRange(i + 1, 5).setValue(looser);
+                            videoSheet.getRange(i + 1, 7).setValue(lostMembers);
+                        }
+                    } else if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '#4 決勝 Drone') {
+                        console.log('1st ', videoSheetVals[i][10]);
+                        flg4 = true;
+                        const winMembers = winner === team1Name ? videoSheetVals[targetRow - 1][5] : videoSheetVals[targetRow - 1][6];
+                        if (!videoSheetVals[i][3]) {
+                            videoSheet.getRange(i + 1, 4).setValue(winner);
+                            videoSheet.getRange(i + 1, 6).setValue(winMembers);
+                        } else if (!videoSheetVals[i][4]) {
+                            videoSheet.getRange(i + 1, 5).setValue(winner);
+                            videoSheet.getRange(i + 1, 7).setValue(winMembers);
+                        }
                     }
-                    if (flg1 && flg2) {
+                    if (flg1 && flg2 && flg3 && flg4) {
                         break;
                     }
                 }
