@@ -91,7 +91,8 @@ export class ScoreBook {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const eventRow: any[] | undefined = eventSheetVal.find(item => item[1] === sheet.getSheetName());
             if (!eventRow) {
-                throw new Error('以下のデータが見つかりません actDat/SheetName:' + sheet.getSheetName());
+                continue;
+                // throw new Error('以下のデータが見つかりません actDate SheetName:' + sheet.getSheetName());
             }
             const g: GasUtil = new GasUtil();
             const densukeMappingValue = g.getLineUserIdRangeValue();
@@ -429,77 +430,75 @@ export class ScoreBook {
         throw new Error('EventData Sheet was not found');
     }
 
-    private updateAttendeeName(eventDetail: GoogleAppsScript.Spreadsheet.Sheet, attendees: string[]): void {
+    public updateAttendeeName(eventDetail: GoogleAppsScript.Spreadsheet.Sheet, attendees: string[]): void {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const allDetails: any[][] = eventDetail.getDataRange().getValues();
         const attendeesArray = Array.isArray(attendees) ? attendees : [attendees]; // attendees が配列でない場合の安全策
 
-        // for (let i = allDetails.length - 1; i >= 1; i--) {
-        //     const name = allDetails[i][0];
-        //     const isEmptyRow = allDetails[i].slice(1, 4).every(cell => !cell); // B列からD列がすべて空かチェック
-        //     if (!attendeesArray.includes(name) && isEmptyRow) {
-        //         // attendeesArray.includes(name) でチェック
-        //         eventDetail.deleteRow(i + 1);
-        //     }
-        // }
-
-        // まず、全データをクリアする
         const lastRow: number = eventDetail.getLastRow();
-        if (lastRow > 1) {
-            eventDetail.getRange(2, 1, lastRow - 1, eventDetail.getLastColumn()).clearContent(); // ヘッダーを除く全行をクリア
-        }
         // 条件に合うデータを格納する配列
         const filteredData: string[][] = [];
         //あとで存在してるやつかどうか判定で使うSet
         const loggedAttendeesSet = new Set<string>();
 
-        // allDetails を逆順にループ
-        for (let i = 0; i < allDetails.length; i++) {
-            const name = allDetails[i][0];
-            const isEmptyRow = allDetails[i].slice(1, 4).every(cell => !cell); // B列からD列がすべて空かチェック
-            if (attendeesArray.includes(name) && !isEmptyRow) {
-                // 条件に合うデータを filteredData に追加
-                filteredData.push(allDetails[i]);
-                loggedAttendeesSet.add(allDetails[i][0] as string);
-                console.log(allDetails[i]);
+        if (attendees.length > 0) {
+            if (lastRow > 1) {
+                // allDetails を逆順にループ
+                for (let i = 0; i < allDetails.length; i++) {
+                    const name = allDetails[i][0];
+                    const isEmptyRow = allDetails[i].slice(1, 4).every(cell => !cell); // B列からD列がすべて空かチェック
+                    if (attendeesArray.includes(name) && !isEmptyRow) {
+                        // 条件に合うデータを filteredData に追加
+                        filteredData.push(allDetails[i]);
+                        loggedAttendeesSet.add(allDetails[i][0] as string);
+                        // console.log(allDetails[i]);
+                    }
+                }
+                if (lastRow > 1) {
+                    eventDetail.getRange(2, 1, lastRow - 1, eventDetail.getLastColumn()).clearContent(); // ヘッダーを除く全行をクリア
+                    // eventDetail.getRange(2, 1, lastRow - 1, eventDetail.getLastColumn()).clearDataValidations(); // ヘッダーを除く全行をクリア
+                }
+                // filteredData を一括でシートに書き込む
+                if (filteredData.length > 0) {
+                    eventDetail.getRange(2, 1, filteredData.length, filteredData[0].length).setValues(filteredData);
+                }
+            }
+            const teamName: string[] = [
+                'チーム1',
+                'チーム2',
+                'チーム3',
+                'チーム4',
+                'チーム5',
+                'チーム6',
+                'チーム7',
+                'チーム8',
+                'チーム9',
+                'チーム10',
+            ];
+
+            // 新しく追加した行のインデックスを取得
+            let newRowIndex = eventDetail.getLastRow(); // appendRow の後に行数を取得
+            // データバリデーションを設定
+            const teamNameVal = SpreadsheetApp.newDataValidation().requireValueInList(teamName).build();
+            const goalCount: string[] = ['', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+            const goalCountVal = SpreadsheetApp.newDataValidation().requireValueInList(goalCount).build();
+
+            const validations = {
+                2: teamNameVal, // 2列目 (B列) : チーム名
+                3: goalCountVal, // 3列目 (C列) : 得点
+                4: goalCountVal, // 4列目 (D列) : 得点
+            };
+
+            for (let i = 0; i < attendees.length; i++) {
+                if (!loggedAttendeesSet.has(attendees[i])) {
+                    eventDetail.appendRow([attendees[i]]); // 新しい行を追加
+                    newRowIndex++;
+                    for (const [column, validation] of Object.entries(validations)) {
+                        eventDetail.getRange(newRowIndex, Number(column)).setDataValidation(validation);
+                    }
+                }
             }
         }
-        // filteredData を一括でシートに書き込む
-        if (filteredData.length > 0) {
-            eventDetail.getRange(2, 1, filteredData.length, filteredData[0].length).setValues(filteredData);
-        }
-
-        const teamName: string[] = ['チーム1', 'チーム2', 'チーム3', 'チーム4', 'チーム5', 'チーム6', 'チーム7', 'チーム8', 'チーム9', 'チーム10'];
-        const teamNameVal = SpreadsheetApp.newDataValidation().requireValueInList(teamName).build();
-        const goalCount: string[] = ['', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-        const goalCountVal = SpreadsheetApp.newDataValidation().requireValueInList(goalCount).build();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        // const allAttendees: any[][] = eventDetail.getDataRange().getValues(); // 1回だけ取得
-        // 既存参加者名を Set に格納して高速化
-        // for (let j = 1; j < allAttendees.length; j++) {
-        //     loggedAttendeesSet.add(allAttendees[j][0]);
-        // }
-
-        for (let i = 0; i < attendees.length; i++) {
-            if (!loggedAttendeesSet.has(attendees[i])) {
-                // Set.has() で高速チェック
-                eventDetail.appendRow([attendees[i]]);
-            }
-        }
-
-        const validations = {
-            2: teamNameVal, // 2列目 (B列) : チーム名
-            3: goalCountVal, // 3列目 (C列) : 得点
-            4: goalCountVal, // 4列目 (D列) : 得点
-        };
-        for (const [column, validation] of Object.entries(validations)) {
-            eventDetail.getRange(2, Number(column), lastRow - 1).setDataValidation(validation);
-        }
-        // for (let i = 1; i < allAttendees.length; i++) {
-        //     eventDetail.getRange(i + 1, 2).setDataValidation(teamNameVal);
-        //     eventDetail.getRange(i + 1, 3).setDataValidation(goalCountVal);
-        //     eventDetail.getRange(i + 1, 4).setDataValidation(goalCountVal);
-        // }
     }
 
     private moveSheetToHead(sheet: GoogleAppsScript.Spreadsheet.Sheet, eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet): void {
@@ -507,7 +506,7 @@ export class ScoreBook {
         eventSS.moveActiveSheet(3);
     }
 
-    private updateEventSheet(actDate: string, attendees: string[]): void {
+    public updateEventSheet(actDate: string, attendees: string[]): void {
         const eventData: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.eventResultSheet;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rangeValues: any[][] = eventData.getDataRange().getValues();
@@ -516,9 +515,12 @@ export class ScoreBook {
         if (rowNumber === -1) {
             this.createInitialEvent(attendees, eventData, now, actDate);
         } else {
-            eventData.getRange(rowNumber + 1, 1).setValue(now);
-            eventData.getRange(rowNumber + 1, 3).setValue(attendees.length);
-            eventData.getRange(rowNumber + 1, 4).setValue(attendees.join(', '));
+            const valuesToSet = [now, actDate, attendees.length, attendees.join(', ')];
+            eventData.getRange(rowNumber + 1, 1, 1, valuesToSet.length).setValues([valuesToSet]);
+            // eventData.getRange(rowNumber + 1, 1).setValue(now);
+            // eventData.getRange(rowNumber + 1, 2).setValue(actDate);
+            // eventData.getRange(rowNumber + 1, 3).setValue(attendees.length);
+            // eventData.getRange(rowNumber + 1, 4).setValue(attendees.join(', '));
             const attendVal = SpreadsheetApp.newDataValidation().requireValueInList(attendees).build();
             eventData.getRange(rowNumber + 1, 6).setDataValidation(attendVal);
         }

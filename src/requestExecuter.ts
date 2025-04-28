@@ -591,12 +591,49 @@ export class RequestExecuter {
     }
 
     public updateParticipation(postEventHander: PostEventHandler): void {
+        // const sp1: StopWatch = new StopWatch();
+        // const sp2: StopWatch = new StopWatch();
+        // const sp3: StopWatch = new StopWatch();
+        // sp3.start();
+
+        const sb: ScoreBook = new ScoreBook();
         const su: SchedulerUtil = new SchedulerUtil();
         const attendanceSheet = su.attendanceSheet;
         const attendanceValues = attendanceSheet.getDataRange().getValues(); // 出席シートのデータを取得
         const headerRow = attendanceValues[0]; // ヘッダー行を保持
         const param = postEventHander.parameter;
         const updates: Record<string, Record<string, string>> = {};
+        const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
+        const calendarSheet = su.calendarSheet;
+        const calVals = calendarSheet.getDataRange().getValues();
+
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const mappingValues = mappingSheet.getDataRange().getValues();
+        const userIdToDensukeNameMap: { [key: string]: string } = {};
+        // mappingSheetからuserIdと伝助上の名前のマッピングを作成
+        for (let i = 1; i < mappingValues.length; i++) {
+            const row = mappingValues[i];
+            const userId = row[2]; // LINE ID (3列目)
+            const densukeName = row[1]; // 伝助上の名前 (2列目)
+            if (userId && densukeName) {
+                userIdToDensukeNameMap[userId] = densukeName;
+            }
+        }
+
+        const attendeeIdMap: { [calendarId: string]: string[] } = {};
+        for (let i = 1; i < attendanceValues.length; i++) {
+            const row = attendanceValues[i];
+            const userId = row[1];
+            const calendarId = row[6];
+            const status = row[5];
+            if (status === '〇') {
+                if (attendeeIdMap[calendarId]) {
+                    attendeeIdMap[calendarId].push(userId);
+                } else {
+                    attendeeIdMap[calendarId] = [userId];
+                }
+            }
+        }
 
         // パラメータを処理して updates オブジェクトに整理
         for (const key in param) {
@@ -611,7 +648,7 @@ export class RequestExecuter {
             }
         }
 
-        console.log(updates);
+        // console.log(updates);
         for (const index in updates) {
             const updateData = updates[index];
             let rowNumberToUpdate: number | null = null;
@@ -627,10 +664,10 @@ export class RequestExecuter {
                     }
                 }
             }
-
+            console.log('rowNumberToUpdate', rowNumberToUpdate);
             if (rowNumberToUpdate) {
                 // 既存の行を更新
-                console.log(`attendance_id: ${updateData['attendance_id']} の行を更新`);
+                // console.log(`attendance_id: ${updateData['attendance_id']} の行を更新`);
                 const row = rowNumberToUpdate;
                 // 各パラメータを該当の列に更新 (列位置はheaderRowからcolumnIndexを検索して特定)
                 ['user_id', 'year', 'month', 'date', 'status', 'calendar_id', 'adult_count', 'child_count'].forEach(paramName => {
@@ -642,8 +679,6 @@ export class RequestExecuter {
                     }
                 });
             } else {
-                // 新規追加
-                console.log('新規行を追加');
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const newRowData: any[] = [];
                 // ヘッダー行に基づいて新しい行データを作成
@@ -656,10 +691,106 @@ export class RequestExecuter {
                         newRowData.push(''); // データがない場合は空文字
                     }
                 });
-                console.log(newRowData);
+                // console.log(newRowData);
                 attendanceSheet.appendRow(newRowData);
             }
+            //EventDetailsも無かったら作ってデータぶっこんでおく
+            //これによりRankingBatchが基本要らなくなるはず
+            // sp2.start();
+            // calendar_id に基づいて actDate を生成
+            const calendarId = updateData['calendar_id'];
+            const event = calVals.find(row => row[0] === calendarId); // 10列目が calendar_id と仮定
+            // console.log('対象イベント:' + event + ' calendarId:' + calendarId);
+            if (event) {
+                const date = new Date(event[3]); // start_datetime (4列目) を取得
+                const actDate = event[2] + '(' + Utilities.formatDate(date, Session.getScriptTimeZone(), 'dd MMM') + ')'; // event_name (3列目) と日付を組み合わせ
+                // console.log(actDate);
+
+                //IDの集合体
+                let attend: string[] = attendeeIdMap[calendarId];
+                if (updateData['status'] === '〇') {
+                    if (!attend.includes(updateData['user_id'])) {
+                        attend.push(updateData['user_id']);
+                    }
+                } else {
+                    attend = attend.filter(userId => userId !== updateData['user_id']);
+                }
+                // console.log(attend);
+
+                // userIdの配列を伝助上の名称の配列に変換
+                const attendees = attend.map(userId => userIdToDensukeNameMap[userId] || userId);
+                // console.log(attendees);
+                // sp1.start();
+                const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = sb.getEventDetailSheet(eventSS, actDate);
+                //ここで渡すattendeesはその日の全部のattendees
+                sb.updateAttendeeName(eventDetail, attendees);
+                // sp1.stop();
+                // console.log('sp1:' + sp1.getElapsedTime());
+            }
+            // sp2.stop();
+            // console.log('sp2所要時間' + sp2.getElapsedTime());
         }
+        // sp3.stop();
+        // console.log('sp3: ' + sp3.getElapsedTime());
+    }
+
+    public work1(): void {
+        const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
+
+        const su: SchedulerUtil = new SchedulerUtil();
+        const calendarSheet = su.calendarSheet;
+        const calVals = calendarSheet.getDataRange().getValues();
+
+        const attendanceSheet = su.attendanceSheet;
+        const attendanceValues = attendanceSheet.getDataRange().getValues(); // 出席シートのデータを取得
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const mappingValues = mappingSheet.getDataRange().getValues();
+        const userIdToDensukeNameMap: { [key: string]: string } = {};
+        // mappingSheetからuserIdと伝助上の名前のマッピングを作成
+        for (let i = 1; i < mappingValues.length; i++) {
+            const row = mappingValues[i];
+            const userId = row[2]; // LINE ID (3列目)
+            const densukeName = row[1]; // 伝助上の名前 (2列目)
+            if (userId && densukeName) {
+                userIdToDensukeNameMap[userId] = densukeName;
+            }
+        }
+
+        const attendeeIdMap: { [calendarId: string]: string[] } = {};
+        for (let i = 1; i < attendanceValues.length; i++) {
+            const row = attendanceValues[i];
+            const userId = row[1];
+            const calendarId = row[6];
+            const status = row[5];
+            if (status === '〇') {
+                if (attendeeIdMap[calendarId]) {
+                    attendeeIdMap[calendarId].push(userId);
+                } else {
+                    attendeeIdMap[calendarId] = [userId];
+                }
+            }
+        }
+
+        const sb: ScoreBook = new ScoreBook();
+        calVals
+            .filter(calVal => calVal[7] === 20 || calVal[7] === 0)
+            .forEach(event => {
+                const calendarId = event[0];
+                console.log(calendarId);
+                const date = new Date(event[3]); // start_datetime (4列目) を取得
+                const actDate = event[2] + '(' + Utilities.formatDate(date, Session.getScriptTimeZone(), 'dd MMM') + ')'; // event_name (3列目) と日付を組み合わせ
+
+                //IDの集合体
+                const attend: string[] = attendeeIdMap[calendarId];
+                if (attend) {
+                    const attendees = attend.map(userId => userIdToDensukeNameMap[userId] || userId);
+                    const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = sb.getEventDetailSheet(eventSS, actDate);
+                    //ここで渡すattendeesはその日の全部のattendees
+                    sb.updateAttendeeName(eventDetail, attendees);
+                }
+                console.log(calendarId + ' done!');
+            });
+        console.log('全部終わり');
     }
 
     //毎回全部集計してアシストと得点を入れなおす
@@ -1198,10 +1329,11 @@ export class RequestExecuter {
         const su: SchedulerUtil = new SchedulerUtil();
         const scoreBook: ScoreBook = new ScoreBook();
         const actDate = su.extractDateFromRownum();
-        console.log('ac', actDate);
+        // console.log('ac', actDate);
         const activitySS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
         const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
         const eventDetails = scoreBook.getEventDetailSheet(eventSS, actDate).getDataRange().getValues();
+        // const eventData: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.eventResultSheet;
 
         const videoSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
         videoSheet.activate();
@@ -1225,10 +1357,10 @@ export class RequestExecuter {
             }
         }
         const lastRow = videoSheet.getLastRow();
-        console.log('last Row Value' + videoSheet.getRange(lastRow, 1).getValue());
-        console.log('team count', teamCount);
+        //アップのひな形を作る
+        const attendees = eventDetails.slice(1).map(val => val[0]);
+        scoreBook.updateEventSheet(actDate, attendees);
 
-        //アップのひな形を作る（ついでにここを見る）
         switch (teamCount) {
             case '3': //3チームの場合
                 videoSheet.insertRows(lastRow + 1, 7);

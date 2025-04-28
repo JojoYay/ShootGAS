@@ -1,16 +1,20 @@
 import { GasProps } from './gasProps';
 import { GetEventHandler } from './getEventHandler';
-import { GoogleCalendar } from './googleCalendar';
+// import { GoogleCalendar } from './googleCalendar';
 import { LiffApi } from './liffApi';
 import { LineUtil } from './lineUtil';
 import { COMMAND_MAP, PostEventHandler } from './postEventHandler';
 import { RequestExecuter } from './requestExecuter';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function syncAllToCalendar() {
-    const g: GoogleCalendar = new GoogleCalendar();
-    g.syncAllToCalendar();
+function calendarWork() {
+    const re: RequestExecuter = new RequestExecuter();
+    re.work1();
 }
+// function syncAllToCalendar() {
+//     const g: GoogleCalendar = new GoogleCalendar();
+//     g.syncAllToCalendar();
+// }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function updateProfilePic() {

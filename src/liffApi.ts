@@ -299,51 +299,7 @@ export class LiffApi {
         // console.log('resultInput: ' + actDate);
         const values = eventDetail.getDataRange().getValues();
         getEventHandler.result.teams = values;
-
-        // const count = this.getMatchType(actDate);
-        // getEventHandler.result.matchCount = count;
     }
-
-    // private getMatchType(actDate: string) {
-    //     const videoSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
-    //     const videoVals = videoSheet.getDataRange().getValues();
-    //     let count = 0;
-    //     for (let i = videoVals.length - 1; i >= 0; i--) {
-    //         // Start from the last row and go backwards
-    //         const val = videoVals[i];
-    //         if (val[0] === actDate) {
-    //             // Check if the first column matches actDate
-    //             if (typeof val[10] !== 'string' || !val[10].endsWith('_g') || !val[10].endsWith('d')) {
-    //                 // Check the second condition
-    //                 count++;
-    //             }
-    //         } else {
-    //             if (count > 0) {
-    //                 break; // If the first column does not match actDate, break the loop
-    //             }
-    //         }
-    //     }
-    //     return this.convertMatchCount(count);
-    // }
-
-    // private convertMatchCount(c: number): string {
-    //     let result = '3';
-    //     switch (c) {
-    //         case 2:
-    //             result = '4';
-    //             break;
-    //         case 3: //3チームの場合
-    //             result = '3';
-    //             break;
-    //         case 4:
-    //             result = '4';
-    //             break;
-    //         case 10:
-    //             result = '5';
-    //             break;
-    //     }
-    //     return result;
-    // }
 
     private getLogSheetName(actDate: string) {
         return actDate + '_s';
