@@ -9,6 +9,12 @@ type Command = {
 
 export const COMMAND_MAP: Command[] = [
     {
+        func: 'updateUser',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'updateUser',
+    },
+    {
         func: 'uploadInvoice',
         lineCmd: '',
         display: false,

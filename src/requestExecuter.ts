@@ -13,6 +13,38 @@ const lineUtil: LineUtil = new LineUtil();
 const gasUtil: GasUtil = new GasUtil();
 
 export class RequestExecuter {
+    public updateUser(postEventHandler: PostEventHandler): void {
+        console.log('update user', postEventHandler.parameter);
+        const lineId: string = postEventHandler.parameter['LINE ID'];
+
+        // マッピングシートのデータを取得
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const dataRange = mappingSheet.getDataRange();
+        const dataValues = dataRange.getValues();
+
+        // ヘッダー行を取得
+        const headers = dataValues[0];
+        const lineIdIndex = headers.indexOf('LINE ID');
+
+        // LINE IDで該当行を検索
+        for (let i = 1; i < dataValues.length; i++) {
+            console.log(dataValues[i][lineIdIndex]);
+            if (dataValues[i][lineIdIndex] === lineId) {
+                // ヘッダーに基づいて値を更新
+                for (const key in postEventHandler.parameter) {
+                    if (key !== 'LINE ID') {
+                        // LINE IDはスキップ
+                        const headerIndex = headers.indexOf(key);
+                        if (headerIndex !== -1) {
+                            mappingSheet.getRange(i + 1, headerIndex + 1).setValue(postEventHandler.parameter[key]);
+                        }
+                    }
+                }
+                break; // 更新が完了したらループを抜ける
+            }
+        }
+    }
+
     public insertCashBook(postEventHandler: PostEventHandler): void {
         const memo: string = postEventHandler.parameter['memo'];
         const title: string = postEventHandler.parameter['title'];
