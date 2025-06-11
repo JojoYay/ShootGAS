@@ -12,16 +12,14 @@
     "build": "npm run clean && npm run bundle && ncp appsscript.json dist/appsscript.json",
     "license": "license-check-and-add add -f license-config.json",
     "test": "jest test/ --passWithNoTests --detectOpenHandles",
-    "deploy":      "npm run lint && npm run test && npm run build && ncp .clasp-dev.json .clasp.json && clasp push -f && clasp deploy -i AKfycbw7wL2okZJ8z9Vv7G4nQS3asz-pEmoRSJrNMKmI50p2ZsegfcyxWAUwxoVcAHiiYIQWZA",
+    "deploy": "npm run lint && npm run test && npm run build && ncp .clasp-dev.json .clasp.json && clasp push -f && clasp deploy -i AKfycbwf7HIt4NTEyJAMPACPS7BGBiq9CJ14wg0jBwjWdj6yCLz9wdWkmzN0PjdqzpnCUBWrSA",
     "deploy:prod": "npm run lint && npm run test && npm run build && ncp .clasp-prod.json .clasp.json && clasp push && clasp deploy -i AKfycbysS9XmULaZ9HtsLjWDYKrEuNZ7ws9xtK-Qmy3jbNfrCKYXU3upWYybefshFlX2ypfG",
     "deploy:bvs": "npm run lint && npm run test && npm run build && ncp .clasp-bvs.json .clasp.json && clasp push && clasp deploy -i AKfycbyNWSZa57KCoMxkBaf0ie4BykQOlp77wIkS_np_f8QskVrmD8jju95MiQxXwclA77p9ug"
-
   },
   "engines": {
     "node": ">=12"
   },
   "dependencies": {
-    "@google/clasp": "^2.4.2",
     "@types/google-apps-script": "^1.0.83",
     "@types/jest": "^29.5.12",
     "@typescript-eslint/eslint-plugin": "^7.11.0",
@@ -45,6 +43,7 @@
     "typescript": "^5.4.5"
   },
   "devDependencies": {
+    "@google/clasp": "^2.5.0",
     "@types/cheerio": "^0.22.35",
     "@types/prettier": "^3.0.0"
   }
