@@ -627,7 +627,6 @@ export class RequestExecuter {
         // const sp2: StopWatch = new StopWatch();
         // const sp3: StopWatch = new StopWatch();
         // sp3.start();
-
         const sb: ScoreBook = new ScoreBook();
         const su: SchedulerUtil = new SchedulerUtil();
         const attendanceSheet = su.attendanceSheet;
@@ -666,7 +665,9 @@ export class RequestExecuter {
                 }
             }
         }
-
+        console.log('Initial attendeeIdMap:', attendeeIdMap);
+        // console.log(param);
+        // console.log(attendeeIdMap);
         // パラメータを処理して updates オブジェクトに整理
         for (const key in param) {
             const lastUnderscoreIndex = key.lastIndexOf('_');
@@ -680,7 +681,7 @@ export class RequestExecuter {
             }
         }
 
-        // console.log(updates);
+        console.log(updates);
         for (const index in updates) {
             const updateData = updates[index];
             let rowNumberToUpdate: number | null = null;
@@ -696,7 +697,7 @@ export class RequestExecuter {
                     }
                 }
             }
-            console.log('rowNumberToUpdate', rowNumberToUpdate);
+            console.log('rowNumberToUpdateeeee', rowNumberToUpdate);
             if (rowNumberToUpdate) {
                 // 既存の行を更新
                 // console.log(`attendance_id: ${updateData['attendance_id']} の行を更新`);
@@ -736,10 +737,11 @@ export class RequestExecuter {
             if (event) {
                 const date = new Date(event[3]); // start_datetime (4列目) を取得
                 const actDate = event[2] + '(' + Utilities.formatDate(date, Session.getScriptTimeZone(), 'dd MMM') + ')'; // event_name (3列目) と日付を組み合わせ
-                // console.log(actDate);
+                console.log(`Processing event for calendarId: ${calendarId}, actDate: ${actDate}`);
 
                 //IDの集合体
-                let attend: string[] = attendeeIdMap[calendarId];
+                let attend: string[] = attendeeIdMap[calendarId] || [];
+                console.log(`Current attendees for calendarId ${calendarId}:`, attend);
                 if (updateData['status'] === '〇') {
                     if (!attend.includes(updateData['user_id'])) {
                         attend.push(updateData['user_id']);
@@ -747,7 +749,9 @@ export class RequestExecuter {
                 } else {
                     attend = attend.filter(userId => userId !== updateData['user_id']);
                 }
-                // console.log(attend);
+                // attendeeIdMapを更新
+                attendeeIdMap[calendarId] = attend;
+                console.log(`Updated attendees for calendarId ${calendarId}:`, attend);
 
                 // userIdの配列を伝助上の名称の配列に変換
                 const attendees = attend.map(userId => userIdToDensukeNameMap[userId] || userId);
