@@ -1,6 +1,7 @@
 import { GasProps } from './gasProps';
 import { GasUtil } from './gasUtil';
 import { ScriptProps } from './scriptProps';
+import { AttendeeInfo } from './Types/AttendeeInfo';
 const gasUtil: GasUtil = new GasUtil();
 
 export class SchedulerUtil {
@@ -26,6 +27,63 @@ export class SchedulerUtil {
             throw new Error('シート "attendance" が見つかりません。');
         }
         return attendanceSheet;
+    }
+
+    public extractAttendeeInfo(symbol: string): AttendeeInfo[] {
+        const attendanceSheet: GoogleAppsScript.Spreadsheet.Sheet = this.attendanceSheet;
+        const aValues = attendanceSheet.getDataRange().getValues();
+        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet = this.calendarSheet;
+        const cValues = calendarSheet.getDataRange().getValues();
+
+        // mappingSheetを利用してuserIdと伝助上の名前のマッピングを作成
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const mappingValues = mappingSheet.getDataRange().getValues();
+        const userIdToNameMap: { [key: string]: { densukeName: string; lineName: string } } = {};
+        for (let i = 1; i < mappingValues.length; i++) {
+            const row = mappingValues[i];
+            const userId = row[2]; // LINE ID (3列目)
+            const densukeName = row[1]; // 伝助上の名前 (2列目)
+            const lineName = row[0]; // LINE名称 (1列目)
+            if (userId && densukeName) {
+                userIdToNameMap[userId] = { densukeName, lineName };
+            }
+        }
+
+        const attend: AttendeeInfo[] = [];
+        // event_status=20 のイベントを探す
+        for (let i = 1; i < cValues.length; i++) {
+            // 1行目はヘッダーなのでスキップ
+            const event = cValues[i];
+            if (!event || event.length < 8 || event[7] !== 20) continue; // データが不足している or event_status が 20 でない場合はスキップ
+
+            const targetCalendarId = event[0]; // calendar_id (1列目)
+            // attendanceSheetから該当calendar_idとsymbolに一致するuser_idを抽出
+            for (let j = 1; j < aValues.length; j++) {
+                // 1行目はヘッダーなのでスキップ
+                const attendance = aValues[j];
+                // console.log('attendance', attendance);
+                if (!attendance || attendance.length < 7) continue; // データが不足している場合はスキップ
+
+                const aCalendarId = attendance[6]; // calendar_id (7列目)
+                const status = attendance[5]; // status (6列目)
+                const userId = attendance[1]; // user_id (2列目)
+                if (aCalendarId === targetCalendarId && status === symbol) {
+                    // マッピングから名前情報を取得
+                    const nameInfo = userIdToNameMap[userId] || { densukeName: userId, lineName: userId };
+
+                    // オブジェクトとして返す
+                    attend.push({
+                        userId: userId,
+                        userName: nameInfo,
+                        adult: attendance[7] || 1, // 実際のデータから取得する必要があります
+                        child: attendance[8] || 0, // 実際のデータから取得する必要があります
+                    });
+                }
+            }
+            // event_status=20 のイベントは複数存在しない前提なので、最初に見つかった時点でループを抜ける
+            break;
+        }
+        return attend;
     }
 
     public extractAttendeeUserIds(symbol: string): string[] {
@@ -65,7 +123,7 @@ export class SchedulerUtil {
 
     //集計対象イベントのAttendeesを取っている
     public extractAttendees(symbol: string): string[] {
-        const attend: string[] = this.extractAttendeeUserIds(symbol);
+        const attend: string[] = this.extractAttendeeInfo(symbol).map(info => info.userId);
         // mappingSheetを利用してuserIdの配列を伝助上の名称の配列に変換
         const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
         const mappingValues = mappingSheet.getDataRange().getValues();
@@ -106,9 +164,58 @@ export class SchedulerUtil {
     }
 
     public generateRemind(): string {
-        const attendees: string[] = this.extractAttendees('〇');
-        const unknown: string[] = this.extractAttendees('△');
+        const attendeeInfos: AttendeeInfo[] = this.extractAttendeeInfo('〇');
+        const attendeeUserIds: string[] = attendeeInfos.map(info => info.userId);
         const actDate: string = this.extractDateFromRownum();
+
+        // 大人の総数とゲスト数を計算
+        const totalAdults: number = attendeeInfos.reduce((sum, info) => sum + info.adult, 0);
+        const uniqueUserIds = new Set(attendeeUserIds).size;
+        const guestCount = totalAdults - uniqueUserIds;
+
+        // 参加者名の配列を作成（大人が2人以上の場合はゲスト表記を追加）
+        const attendeeNames: string[] = [];
+        for (let i = 0; i < attendeeInfos.length; i++) {
+            const attendeeInfo = attendeeInfos[i];
+            const attendeeName = attendeeInfo.userName.densukeName;
+
+            if (attendeeInfo.adult === 1) {
+                attendeeNames.push(attendeeName);
+            } else {
+                // 大人が2人以上の場合はゲスト表記を追加
+                for (let j = 0; j < attendeeInfo.adult; j++) {
+                    if (j === 0) {
+                        attendeeNames.push(attendeeName);
+                    } else {
+                        attendeeNames.push(attendeeName + '_ゲスト' + j);
+                    }
+                }
+            }
+        }
+
+        // △（未定）の参加者も同様に処理
+        const unknownInfos: AttendeeInfo[] = this.extractAttendeeInfo('△');
+        // const unknownUserIds: string[] = unknownInfos.map(info => info.userId);
+        const unknownTotalAdults: number = unknownInfos.reduce((sum, info) => sum + info.adult, 0);
+
+        const unknownNames: string[] = [];
+        for (let i = 0; i < unknownInfos.length; i++) {
+            const attendeeInfo = unknownInfos[i];
+            const attendeeName = attendeeInfo.userName.densukeName;
+
+            if (attendeeInfo.adult === 1) {
+                unknownNames.push(attendeeName);
+            } else {
+                // 大人が2人以上の場合はゲスト表記を追加
+                for (let j = 0; j < attendeeInfo.adult; j++) {
+                    if (j === 0) {
+                        unknownNames.push(attendeeName);
+                    } else {
+                        unknownNames.push(attendeeName + '_ゲスト' + j);
+                    }
+                }
+            }
+        }
 
         let remindStr: string =
             '次回予定' +
@@ -116,7 +223,7 @@ export class SchedulerUtil {
             'リマインドです！\nスケジューラーの更新お忘れなく！\nThis is gentle reminder of ' +
             actDate +
             '.\nPlease update your schedule.\n';
-        if (attendees.length < 10) {
+        if (totalAdults < 10) {
             remindStr =
                 '次回予定' +
                 actDate +
@@ -127,14 +234,16 @@ export class SchedulerUtil {
         const summary: string =
             remindStr +
             '〇(' +
-            attendees.length +
+            totalAdults +
+            '名、うちゲスト' +
+            guestCount +
             '名): ' +
-            attendees.join(', ') +
+            attendeeNames.join(', ') +
             '\n' +
             '△(' +
-            unknown.length +
+            unknownTotalAdults +
             '名): ' +
-            unknown.join(', ') +
+            unknownNames.join(', ') +
             '\n' +
             'スケジューラーURL：' +
             this.schedulerUrl;
@@ -144,7 +253,9 @@ export class SchedulerUtil {
     public generateSummaryBase(): void {
         const cashBook = GasProps.instance.cashBookSheet;
         // const attendees: string[] = this.extractAttendees('〇');
-        const attendeeUserIds: string[] = this.extractAttendeeUserIds('〇');
+        const attendeeInfos: AttendeeInfo[] = this.extractAttendeeInfo('〇');
+        console.log('attendeeInfos', attendeeInfos);
+        const attendeeUserIds: string[] = attendeeInfos.map(info => info.userId);
         const actDate: string = this.extractDateFromRownum();
         // データの範囲を取得
         const cRangeValues = cashBook.getDataRange().getValues();
@@ -160,7 +271,11 @@ export class SchedulerUtil {
         const rentalFee: number = this.getPitchFee();
         const attendFee: number = this.getPaticipationFee();
         gasUtil.archiveFiles(actDate);
-        const attendFeeTotal: number = attendFee * attendeeUserIds.length;
+
+        // adultのカウント分で参加費合計を計算
+        const totalAdults: number = attendeeInfos.reduce((sum, info) => sum + info.adult, 0);
+        const attendFeeTotal: number = attendFee * totalAdults;
+
         const report: GoogleAppsScript.Spreadsheet.Sheet = gasUtil.getReportSheet(actDate, true); //ない場合作る
         const dd: string = new Date().toLocaleString();
         report.getRange('A1').setValue('日付');
@@ -170,7 +285,7 @@ export class SchedulerUtil {
         report.getRange('A3').setValue('繰り越し残高(SGD)');
         report.getRange('B3').setValue('' + orgPrice);
         report.getRange('A4').setValue('参加人数(人)');
-        report.getRange('B4').setValue('' + attendeeUserIds.length);
+        report.getRange('B4').setValue('' + totalAdults);
         report.getRange('A5').setValue('参加費合計(SGD))');
         report.getRange('B5').setValue('' + attendFeeTotal);
         report.getRange('A6').setValue('ピッチ使用料金(SGD)');
@@ -181,6 +296,7 @@ export class SchedulerUtil {
         report.getRange('A9').setValue('参加者（スケジューラ名称）');
         report.getRange('B9').setValue('参加者（Line名称）');
         report.getRange('C9').setValue('支払い状況');
+        report.getRange('D9').setValue('金額(SGD)');
 
         const values = report.getDataRange().getValues();
         for (let i = values.length; i >= 10; i--) {
@@ -200,12 +316,14 @@ export class SchedulerUtil {
                 userIdToDensukeNameMap[userId] = [densukeName, lineName];
             }
         }
-        const reportNames = attendeeUserIds.map(userId => userIdToDensukeNameMap[userId]);
 
-        for (let i = 0; i < reportNames.length; i++) {
-            const reportName: [string, string] = reportNames[i];
-            report.appendRow(reportName);
-            const paymentUrl: GoogleAppsScript.Spreadsheet.RichTextValue | null = gasUtil.getPaymentUrl(reportName[0], actDate);
+        // attendeeInfosを直接使用して、userName情報を取得
+        for (let i = 0; i < attendeeInfos.length; i++) {
+            const attendeeInfo = attendeeInfos[i];
+            const individualFee = attendFee * attendeeInfo.adult;
+
+            report.appendRow([attendeeInfo.userName.densukeName, attendeeInfo.userName.lineName, '', individualFee]);
+            const paymentUrl: GoogleAppsScript.Spreadsheet.RichTextValue | null = gasUtil.getPaymentUrl(attendeeInfo.userName.densukeName, actDate);
             const lastRow = report.getLastRow();
             if (paymentUrl) {
                 report.getRange(lastRow, 3).setRichTextValue(paymentUrl);
@@ -213,17 +331,22 @@ export class SchedulerUtil {
         }
         report.setColumnWidth(1, 170);
         report.setColumnWidth(2, 200);
+        report.setColumnWidth(4, 100);
         report.getRange(1, 1, 7, 2).setBorder(true, true, true, true, true, true);
         report.getRange(1, 1, 7, 1).setBackground('#fff2cc');
 
         const rlastRow = report.getLastRow();
-        report.getRange(9, 1, rlastRow - 8, 3).setBorder(true, true, true, true, true, true);
-        report.getRange(9, 1, 1, 3).setBackground('#fff2cc');
+        report.getRange(9, 1, rlastRow - 8, 4).setBorder(true, true, true, true, true, true);
+        report.getRange(9, 1, 1, 4).setBackground('#fff2cc');
+
+        // ゲスト数の計算（大人の総数 - ユニークなuserIdの数）
+        const uniqueUserIds = new Set(attendeeUserIds).size;
+        const guestCount = totalAdults - uniqueUserIds;
 
         cashBook.appendRow([
             dd,
             actDate,
-            '参加費(' + attendeeUserIds.length + '名)',
+            '参加費 ' + totalAdults + '人分 （うちゲスト' + guestCount + '名）',
             '' + attendFeeTotal,
             '=IF(ROW()=5, INDEX(D:D, ROW()), INDEX(E:E, ROW()-1) + INDEX(D:D, ROW()))',
             // '=' + 'E' + lastRow + '+D' + (lastRow + 1),
@@ -254,10 +377,37 @@ export class SchedulerUtil {
     // }
 
     public getSummaryStr(): string {
-        const attendees: string[] = this.extractAttendees('〇');
+        const attendeeInfos: AttendeeInfo[] = this.extractAttendeeInfo('〇');
+        const attendeeUserIds: string[] = attendeeInfos.map(info => info.userId);
         const actDate: string = this.extractDateFromRownum();
         const payNowAddy: string = this.getPayNowAddress();
         const paticipationFee: string = this.getPaticipationFee();
+
+        // 大人の総数とゲスト数を計算
+        const totalAdults: number = attendeeInfos.reduce((sum, info) => sum + info.adult, 0);
+        const uniqueUserIds = new Set(attendeeUserIds).size;
+        const guestCount = totalAdults - uniqueUserIds;
+
+        // 参加者名の配列を作成（大人が2人以上の場合はゲスト表記を追加）
+        const attendeeNames: string[] = [];
+        for (let i = 0; i < attendeeInfos.length; i++) {
+            const attendeeInfo = attendeeInfos[i];
+            const attendeeName = attendeeInfo.userName.densukeName;
+
+            if (attendeeInfo.adult === 1) {
+                attendeeNames.push(attendeeName);
+            } else {
+                // 大人が2人以上の場合はゲスト表記を追加
+                for (let j = 0; j < attendeeInfo.adult; j++) {
+                    if (j === 0) {
+                        attendeeNames.push(attendeeName);
+                    } else {
+                        attendeeNames.push(attendeeName + '_ゲスト' + j);
+                    }
+                }
+            }
+        }
+
         let paynowStr = '';
         if (gasUtil.getUnpaid(actDate).length === 0) {
             paynowStr =
@@ -274,9 +424,11 @@ export class SchedulerUtil {
             actDate +
             ']のReport\n' +
             '参加者 participants (' +
-            attendees.length +
+            totalAdults +
+            '名、うちゲスト' +
+            guestCount +
             '名): ' +
-            attendees.join(', ') +
+            attendeeNames.join(', ') +
             '\n' +
             'Report URL:' +
             GasProps.instance.reportSheetUrl +
