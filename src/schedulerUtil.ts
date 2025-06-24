@@ -86,61 +86,81 @@ export class SchedulerUtil {
         return attend;
     }
 
-    public extractAttendeeUserIds(symbol: string): string[] {
-        const attendanceSheet: GoogleAppsScript.Spreadsheet.Sheet = this.attendanceSheet;
-        const aValues = attendanceSheet.getDataRange().getValues();
-        const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet = this.calendarSheet;
-        const cValues = calendarSheet.getDataRange().getValues();
+    // public extractAttendeeUserIds(symbol: string): string[] {
+    //     const attendanceSheet: GoogleAppsScript.Spreadsheet.Sheet = this.attendanceSheet;
+    //     const aValues = attendanceSheet.getDataRange().getValues();
+    //     const calendarSheet: GoogleAppsScript.Spreadsheet.Sheet = this.calendarSheet;
+    //     const cValues = calendarSheet.getDataRange().getValues();
 
-        const attend: string[] = [];
-        // event_status=20 のイベントを探す
-        for (let i = 1; i < cValues.length; i++) {
-            // 1行目はヘッダーなのでスキップ
-            const event = cValues[i];
-            if (!event || event.length < 8 || event[7] !== 20) continue; // データが不足している or event_status が 20 でない場合はスキップ
+    //     const attend: string[] = [];
+    //     // event_status=20 のイベントを探す
+    //     for (let i = 1; i < cValues.length; i++) {
+    //         // 1行目はヘッダーなのでスキップ
+    //         const event = cValues[i];
+    //         if (!event || event.length < 8 || event[7] !== 20) continue; // データが不足している or event_status が 20 でない場合はスキップ
 
-            const targetCalendarId = event[0]; // calendar_id (1列目)
-            // attendanceSheetから該当calendar_idとsymbolに一致するuser_idを抽出
-            for (let j = 1; j < aValues.length; j++) {
-                // 1行目はヘッダーなのでスキップ
-                const attendance = aValues[j];
-                if (!attendance || attendance.length < 7) continue; // データが不足している場合はスキップ
+    //         const targetCalendarId = event[0]; // calendar_id (1列目)
+    //         // attendanceSheetから該当calendar_idとsymbolに一致するuser_idを抽出
+    //         for (let j = 1; j < aValues.length; j++) {
+    //             // 1行目はヘッダーなのでスキップ
+    //             const attendance = aValues[j];
+    //             if (!attendance || attendance.length < 7) continue; // データが不足している場合はスキップ
 
-                const aCalendarId = attendance[6]; // calendar_id (7列目)
-                const status = attendance[5]; // status (6列目)
-                const userId = attendance[1]; // user_id (2列目)
-                console.log(aCalendarId === targetCalendarId);
-                console.log(status === symbol);
-                if (aCalendarId === targetCalendarId && status === symbol) {
-                    attend.push(userId);
-                }
-            }
-            // event_status=20 のイベントは複数存在しない前提なので、最初に見つかった時点でループを抜ける
-            break;
-        }
-        return attend;
-    }
+    //             const aCalendarId = attendance[6]; // calendar_id (7列目)
+    //             const status = attendance[5]; // status (6列目)
+    //             const userId = attendance[1]; // user_id (2列目)
+    //             console.log(aCalendarId === targetCalendarId);
+    //             console.log(status === symbol);
+    //             if (aCalendarId === targetCalendarId && status === symbol) {
+    //                 attend.push(userId);
+    //             }
+    //         }
+    //         // event_status=20 のイベントは複数存在しない前提なので、最初に見つかった時点でループを抜ける
+    //         break;
+    //     }
+    //     return attend;
+    // }
 
     //集計対象イベントのAttendeesを取っている
     public extractAttendees(symbol: string): string[] {
-        const attend: string[] = this.extractAttendeeInfo(symbol).map(info => info.userId);
-        // mappingSheetを利用してuserIdの配列を伝助上の名称の配列に変換
-        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
-        const mappingValues = mappingSheet.getDataRange().getValues();
-        const userIdToDensukeNameMap: { [key: string]: string } = {};
-        // mappingSheetからuserIdと伝助上の名前のマッピングを作成
-        for (let i = 1; i < mappingValues.length; i++) {
-            const row = mappingValues[i];
-            const userId = row[2]; // LINE ID (3列目)
-            const densukeName = row[1]; // 伝助上の名前 (2列目)
-            if (userId && densukeName) {
-                userIdToDensukeNameMap[userId] = densukeName;
+        const attendeeInfos: AttendeeInfo[] = this.extractAttendeeInfo(symbol);
+        // userNameのdensukeNameを直接取得
+        const densukeNames = attendeeInfos.map(info => info.userName.densukeName);
+        return densukeNames;
+    }
+
+    // 参加者を大人と子供を含めて抽出するメソッド
+    public extractPlayers(noGuest: boolean = false): string[] {
+        const attendeeInfos: AttendeeInfo[] = this.extractAttendeeInfo('〇');
+        const players: string[] = [];
+
+        for (let i = 0; i < attendeeInfos.length; i++) {
+            const attendeeInfo = attendeeInfos[i];
+            const densukeName = attendeeInfo.userName.densukeName;
+
+            // 大人の処理
+            if (attendeeInfo.adult === 1) {
+                // 大人が1人の場合はそのまま追加
+                players.push(densukeName);
+            } else if (attendeeInfo.adult >= 2) {
+                // 大人が2人以上の場合は1人目はそのまま、2人目以降はゲスト表記
+                players.push(densukeName); // 1人目
+                if (!noGuest) {
+                    for (let j = 1; j < attendeeInfo.adult; j++) {
+                        players.push(densukeName + '_Guest' + j);
+                    }
+                }
+            }
+
+            // 子供の処理
+            if (attendeeInfo.child >= 1) {
+                for (let k = 0; k < attendeeInfo.child; k++) {
+                    players.push(densukeName + '_Child' + (k + 1));
+                }
             }
         }
-        // userIdの配列を伝助上の名称の配列に変換
-        const densukeNames = attend.map(userId => userIdToDensukeNameMap[userId] || userId);
-        // console.log(densukeNames);
-        return densukeNames;
+
+        return players;
     }
 
     public extractDateFromRownum(): string {
@@ -187,7 +207,7 @@ export class SchedulerUtil {
                     if (j === 0) {
                         attendeeNames.push(attendeeName);
                     } else {
-                        attendeeNames.push(attendeeName + '_ゲスト' + j);
+                        attendeeNames.push(attendeeName + '_Guest' + j);
                     }
                 }
             }
@@ -211,7 +231,7 @@ export class SchedulerUtil {
                     if (j === 0) {
                         unknownNames.push(attendeeName);
                     } else {
-                        unknownNames.push(attendeeName + '_ゲスト' + j);
+                        unknownNames.push(attendeeName + '_Guest' + j);
                     }
                 }
             }
@@ -402,7 +422,7 @@ export class SchedulerUtil {
                     if (j === 0) {
                         attendeeNames.push(attendeeName);
                     } else {
-                        attendeeNames.push(attendeeName + '_ゲスト' + j);
+                        attendeeNames.push(attendeeName + '_Guest' + j);
                     }
                 }
             }

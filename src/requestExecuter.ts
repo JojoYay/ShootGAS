@@ -753,12 +753,42 @@ export class RequestExecuter {
                 attendeeIdMap[calendarId] = attend;
                 console.log(`Updated attendees for calendarId ${calendarId}:`, attend);
 
-                // userIdの配列を伝助上の名称の配列に変換
-                const attendees = attend.map(userId => userIdToDensukeNameMap[userId] || userId);
+                // 更新後のattendanceValuesを再取得
+                const updatedAttendanceValues = attendanceSheet.getDataRange().getValues();
+
+                // 大人と子供を含む参加者リストを作成
+                const attendees: string[] = [];
+                for (const userId of attend) {
+                    // 更新後のattendanceSheetから該当ユーザーのadult_countとchild_countを取得
+                    const userAttendance = updatedAttendanceValues.find(row => row[1] === userId && row[6] === calendarId);
+                    if (userAttendance) {
+                        const densukeName = userIdToDensukeNameMap[userId] || userId;
+                        const adultCount = userAttendance[7] || 1; // adult_count (8列目)
+                        const childCount = userAttendance[8] || 0; // child_count (9列目)
+
+                        // 大人の処理
+                        if (adultCount === 1) {
+                            attendees.push(densukeName);
+                        } else if (adultCount >= 2) {
+                            attendees.push(densukeName); // 1人目
+                            for (let j = 1; j < adultCount; j++) {
+                                attendees.push(densukeName + '_Guest' + j);
+                            }
+                        }
+
+                        // 子供の処理
+                        if (childCount >= 1) {
+                            for (let k = 0; k < childCount; k++) {
+                                attendees.push(densukeName + '_Child' + (k + 1));
+                            }
+                        }
+                    }
+                }
+
                 // console.log(attendees);
                 // sp1.start();
                 const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = sb.getEventDetailSheet(eventSS, actDate);
-                //ここで渡すattendeesはその日の全部のattendees
+                //ここで渡すattendeesはその日の全部のattendees（大人と子供を含む）
                 sb.updateAttendeeName(eventDetail, attendees);
                 // sp1.stop();
                 // console.log('sp1:' + sp1.getElapsedTime());
@@ -1994,11 +2024,14 @@ export class RequestExecuter {
 
         // const $ = densukeUtil.getDensukeCheerio();
         const actDate = su.extractDateFromRownum();
-        const attendees = su.extractAttendees('〇');
+        const attendeesNoGuest = su.extractPlayers(true);
+        const attendees = su.extractPlayers();
+        console.log('attendees', attendees);
+        // const attendees = su.extractAttendees('〇');
         scoreBook.makeEventFormat(actDate, attendees);
-        scoreBook.generateScoreBook(actDate, attendees, Title.ASSIST);
-        scoreBook.generateScoreBook(actDate, attendees, Title.TOKUTEN);
-        scoreBook.generateOkamotoBook(actDate, attendees);
+        scoreBook.generateScoreBook(actDate, attendeesNoGuest, Title.ASSIST);
+        scoreBook.generateScoreBook(actDate, attendeesNoGuest, Title.TOKUTEN);
+        scoreBook.generateOkamotoBook(actDate, attendeesNoGuest);
         scoreBook.aggregateScore();
         postEventHander.resultMessage = 'ランキングが更新されました\n' + GasProps.instance.eventResultUrl;
     }
