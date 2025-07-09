@@ -19,6 +19,7 @@ export class GasProps {
     private A_RANKING_SHEET_NAME: string = 'アシスト王ランキング';
     private O_RANKING_SHEET_NAME: string = '岡本カップランキング';
     private VIDEO_SHEET: string = 'videos';
+    public WEIGHT_RECORD_SHEET_NAME: string = 'WeightRecord';
 
     public get settingSheet(): GoogleAppsScript.Spreadsheet.Sheet {
         const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
@@ -134,5 +135,21 @@ export class GasProps {
             return 'https://docs.google.com/spreadsheets/d/' + prop + '?usp=sharing';
         }
         return 'https://docs.google.com/spreadsheets/d/' + prop + '/edit?usp=sharing&ccc=' + new Date().getTime();
+    }
+
+    public get weightRecordSheet(): GoogleAppsScript.Spreadsheet.Sheet {
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        let weightRecord: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName(this.WEIGHT_RECORD_SHEET_NAME);
+
+        if (!weightRecord) {
+            // シートが存在しない場合は新規作成
+            weightRecord = setting.insertSheet(this.WEIGHT_RECORD_SHEET_NAME);
+
+            // ヘッダーを設定
+            const headers = ['id', 'userId', 'height', 'weight', 'bfp', 'date'];
+            weightRecord.getRange(1, 1, 1, headers.length).setValues([headers]);
+        }
+
+        return weightRecord;
     }
 }

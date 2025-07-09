@@ -9,6 +9,36 @@ import { ScoreBook } from './scoreBook';
 import { ScriptProps } from './scriptProps';
 
 export class LiffApi {
+    private getWeightRecord(getEventHandler: GetEventHandler): void {
+        getEventHandler.e.parameter['sheetName'] = 'WeightRecord';
+        getEventHandler.e.parameter['type'] = 'setting';
+        this.getSheetData(getEventHandler);
+        getEventHandler.result.weightRecord = getEventHandler.result.data;
+        delete getEventHandler.result.data;
+    }
+
+    private saveWeightRecord(getEventHandler: GetEventHandler): void {
+        getEventHandler.e.parameter['sheetName'] = 'WeightRecord';
+        getEventHandler.e.parameter['type'] = 'setting';
+        const userId = getEventHandler.e.parameter['userId'];
+        const height = getEventHandler.e.parameter['height'];
+        const weight = getEventHandler.e.parameter['weight'];
+        const bfp = getEventHandler.e.parameter['bfp'];
+        const date = getEventHandler.e.parameter['date'];
+
+        // データをJSON文字列として設定
+        getEventHandler.e.parameter['data'] = JSON.stringify([userId, height, weight, bfp, date]);
+
+        // this.saveSheetData(getEventHandler);
+    }
+
+    private deleteWeightRecord(getEventHandler: GetEventHandler): void {
+        getEventHandler.e.parameter['sheetName'] = 'WeightRecord';
+        getEventHandler.e.parameter['type'] = 'setting';
+
+        this.deleteSheetData(getEventHandler);
+    }
+
     private test(getEventHandler: GetEventHandler): void {
         const value: string = getEventHandler.e.parameters['param'][0];
         getEventHandler.result = { result: value };
@@ -785,5 +815,47 @@ export class LiffApi {
         getEventHandler.result.folder = 'https://drive.google.com/drive/folders/' + ScriptProps.instance.folderId + '?usp=sharing';
         getEventHandler.result.sheet = GasProps.instance.generateSheetUrl(fileId);
         getEventHandler.result.url = ScriptProps.instance.liffUrl + '/expense/input?title=' + title;
+    }
+
+    // 汎用的なシート操作メソッド
+    private getSheetData(getEventHandler: GetEventHandler): void {
+        const sheetName: string = getEventHandler.e.parameter['sheetName'];
+        const type: string = getEventHandler.e.parameter['type'];
+
+        const sheet: GoogleAppsScript.Spreadsheet.Sheet = this.getSheetByName(sheetName, type);
+        getEventHandler.result[sheetName] = sheet.getDataRange().getValues();
+    }
+
+    private deleteSheetData(getEventHandler: GetEventHandler): void {
+        const sheetName: string = getEventHandler.e.parameter['sheetName'];
+        const type: string = getEventHandler.e.parameter['type'];
+        const sheet: GoogleAppsScript.Spreadsheet.Sheet = this.getSheetByName(sheetName, type);
+        const sheetValues = sheet.getDataRange().getValues();
+        const id = getEventHandler.e.parameter['id'];
+
+        const rowIndex = sheetValues.findIndex(row => row[0] === id);
+        if (rowIndex !== -1) {
+            sheet.deleteRow(rowIndex + 1);
+        } else {
+            throw new Error(`Data Not Found in ${sheetName}, id: ${id}`);
+        }
+    }
+
+    public getSheetByName(sheetName: string, type: string): GoogleAppsScript.Spreadsheet.Sheet {
+        let ss: GoogleAppsScript.Spreadsheet.Spreadsheet | null = null;
+        let sheet: GoogleAppsScript.Spreadsheet.Sheet | null = null;
+        if (type === 'setting') {
+            ss = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        } else if (type === 'report') {
+            ss = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+        } else {
+            ss = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+        }
+        sheet = ss.getSheetByName(sheetName);
+
+        if (!sheet) {
+            throw new Error(`Sheet '${sheetName}' was not found. type: ${type}`);
+        }
+        return sheet;
     }
 }

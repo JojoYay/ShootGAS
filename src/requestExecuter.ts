@@ -2,6 +2,7 @@
 import { GasProps } from './gasProps';
 import { GasTestSuite } from './gasTestSuite';
 import { GasUtil } from './gasUtil';
+import { LiffApi } from './liffApi';
 import { LineUtil } from './lineUtil';
 import { PostEventHandler } from './postEventHandler';
 import { SchedulerUtil } from './schedulerUtil';
@@ -2061,6 +2062,62 @@ export class RequestExecuter {
             postEventHander.resultImage = '';
         } finally {
             ScriptProps.endTest();
+        }
+    }
+
+    private saveSheetData(postEventHandler: PostEventHandler): void {
+        const sheetName: string = postEventHandler.parameter['sheetName'];
+        const type: string = postEventHandler.parameter['type'];
+        const la: LiffApi = new LiffApi();
+        const sheet: GoogleAppsScript.Spreadsheet.Sheet = la.getSheetByName(sheetName, type);
+        const sheetValues = sheet.getDataRange().getValues();
+        const dataString = postEventHandler.parameter['data']; // JSON文字列として受け取る
+        const dataArray = JSON.parse(dataString); // JSON文字列をパースして配列として取得
+
+        // 配列でない場合は配列に変換
+        const dataList = Array.isArray(dataArray) ? dataArray : [dataArray];
+
+        // 各データについて処理
+        for (const data of dataList) {
+            // data内のidフィールドを確認
+            const dataId = data.id;
+
+            if (dataId && dataId !== '') {
+                // 既存データの更新
+                let rowIndex = -1;
+                for (let i = 1; i < sheetValues.length; i++) {
+                    if (sheetValues[i][0] === dataId) {
+                        rowIndex = i;
+                        break;
+                    }
+                }
+
+                if (rowIndex !== -1) {
+                    // 該当行が見つかった場合、データを更新
+                    const updatedRow = [dataId, ...Object.values(data).filter((_, index) => index !== 0)]; // idを除いたデータ
+                    sheet.getRange(rowIndex + 1, 1, 1, updatedRow.length).setValues([updatedRow]);
+                } else {
+                    throw new Error(`Data Not Found in ${sheetName}, id: ${dataId}`);
+                }
+            } else {
+                // 新規作成
+                const newId = Utilities.getUuid();
+                // idプロパティが存在する場合はそのプロパティにIDを代入
+                if ('id' in data) {
+                    const dataId = data.id;
+                    if (!dataId || dataId === '') {
+                        data.id = newId;
+                    }
+                    // idを除いたデータを取得してから、先頭にIDを追加
+                    const dataWithoutId = Object.values(data).filter((_, index) => index !== 0);
+                    const newRow = [newId, ...dataWithoutId];
+                    sheet.appendRow(newRow);
+                } else {
+                    // idプロパティが存在しない場合は、全データをそのまま使用
+                    const newRow = [newId, ...Object.values(data)];
+                    sheet.appendRow(newRow);
+                }
+            }
         }
     }
 }

@@ -241,17 +241,6 @@ export const COMMAND_MAP: Command[] = [
             postEventHander.messageType === 'text' &&
             (postEventHander.messageText === '紹介' || postEventHander.messageText.toLowerCase() === 'introduce'),
     },
-    // {
-    //     func: 'regInfo',
-    //     lineCmd: '登録, how to register',
-    //     display: true,
-    //     condition: (postEventHander: PostEventHandler) =>
-    //         postEventHander.type === 'message' &&
-    //         postEventHander.messageType === 'text' &&
-    //         (postEventHander.messageText === '登録' ||
-    //             postEventHander.messageText.toLowerCase() === '@@register@@' ||
-    //             postEventHander.messageText.toLowerCase() === 'how to register'),
-    // },
     {
         func: 'ranking',
         lineCmd: 'ランキング, ranking',
@@ -279,21 +268,18 @@ export const COMMAND_MAP: Command[] = [
             postEventHander.messageType === 'text' &&
             (postEventHander.messageText === '管理' || postEventHander.messageText.toLowerCase() === 'manage'),
     },
-    // {
-    //     func: 'register',
-    //     lineCmd: '@@register@@',
-    //     display: true,
-    //     condition: (postEventHander: PostEventHandler) =>
-    //         postEventHander.type === 'message' &&
-    //         postEventHander.messageType === 'text' &&
-    //         postEventHander.messageText.toLowerCase().startsWith('@@register@@'),
-    // },
     {
         func: 'systemTest',
         lineCmd: 'システムテスト',
         display: false,
         condition: (postEventHander: PostEventHandler) =>
             postEventHander.type === 'message' && postEventHander.messageType === 'text' && postEventHander.messageText.startsWith('システムテスト'),
+    },
+    {
+        func: 'saveSheetData',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'saveSheetData',
     },
 ];
 
