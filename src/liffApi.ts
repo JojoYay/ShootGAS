@@ -841,7 +841,7 @@ export class LiffApi {
         }
     }
 
-    public getSheetByName(sheetName: string, type: string): GoogleAppsScript.Spreadsheet.Sheet {
+    private getSheetByName(sheetName: string, type: string): GoogleAppsScript.Spreadsheet.Sheet {
         let ss: GoogleAppsScript.Spreadsheet.Spreadsheet | null = null;
         let sheet: GoogleAppsScript.Spreadsheet.Sheet | null = null;
         if (type === 'setting') {
