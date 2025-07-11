@@ -2,7 +2,6 @@
 import { GasProps } from './gasProps';
 import { GasTestSuite } from './gasTestSuite';
 import { GasUtil } from './gasUtil';
-import { LiffApi } from './liffApi';
 import { LineUtil } from './lineUtil';
 import { PostEventHandler } from './postEventHandler';
 import { SchedulerUtil } from './schedulerUtil';
@@ -2064,12 +2063,28 @@ export class RequestExecuter {
             ScriptProps.endTest();
         }
     }
+    private getSheetByName(sheetName: string, type: string): GoogleAppsScript.Spreadsheet.Sheet {
+        let ss: GoogleAppsScript.Spreadsheet.Spreadsheet | null = null;
+        let sheet: GoogleAppsScript.Spreadsheet.Sheet | null = null;
+        if (type === 'setting') {
+            ss = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        } else if (type === 'report') {
+            ss = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+        } else {
+            ss = SpreadsheetApp.openById(ScriptProps.instance.reportSheet);
+        }
+        sheet = ss.getSheetByName(sheetName);
+
+        if (!sheet) {
+            throw new Error(`Sheet '${sheetName}' was not found. type: ${type}`);
+        }
+        return sheet;
+    }
 
     private saveSheetData(postEventHandler: PostEventHandler): void {
         const sheetName: string = postEventHandler.parameter['sheetName'];
         const type: string = postEventHandler.parameter['type'];
-        const la: LiffApi = new LiffApi();
-        const sheet: GoogleAppsScript.Spreadsheet.Sheet = la.getSheetByName(sheetName, type);
+        const sheet: GoogleAppsScript.Spreadsheet.Sheet = this.getSheetByName(sheetName, type);
         const sheetValues = sheet.getDataRange().getValues();
         const dataString = postEventHandler.parameter['data']; // JSON文字列として受け取る
         const dataArray = JSON.parse(dataString); // JSON文字列をパースして配列として取得
