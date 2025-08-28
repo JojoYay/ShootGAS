@@ -79,9 +79,10 @@ export class LiffApi {
                     } else {
                         console.log(`No matching row found for actDate: ${actDate} and Title: ${fileName}`);
                     }
+                } else {
+                    console.log('動画が見つかりませんでした。タイトル:', videoTitle);
                 }
             }
-            console.log('動画が見つかりませんでした。タイトル:', videoTitle);
         } catch (error) {
             console.error('Videos: get API エラー:', error);
         }
@@ -857,5 +858,152 @@ export class LiffApi {
             throw new Error(`Sheet '${sheetName}' was not found. type: ${type}`);
         }
         return sheet;
+    }
+
+    public loadVideoFolders(getEventHander: GetEventHandler): void {
+        const rootFolder = DriveApp.getFolderById(ScriptProps.instance.videoFolder);
+        const titleFolderIt: GoogleAppsScript.Drive.FolderIterator = rootFolder.getFolders();
+        const results = [];
+        while (titleFolderIt.hasNext()) {
+            const folder: GoogleAppsScript.Drive.Folder = titleFolderIt.next();
+            const title = folder.getName();
+            const url = folder.getUrl(); // フォルダのURLを取得
+            const folderId = folder.getId(); // フォルダIDを取得
+
+            // フォルダ内のファイル情報を取得
+            const filesIterator = folder.getFiles();
+            const fileNames: string[] = [];
+            let fileCount = 0;
+
+            while (filesIterator.hasNext()) {
+                const file = filesIterator.next();
+                fileNames.push(file.getName());
+                fileCount++;
+            }
+
+            // サブフォルダの情報を取得
+            const subFoldersIterator = folder.getFolders();
+            const subFolderNames: string[] = [];
+            let hasResultFolder = false;
+            let hasYouTubeFolder = false;
+
+            while (subFoldersIterator.hasNext()) {
+                const subFolder = subFoldersIterator.next();
+                const subFolderName = subFolder.getName();
+                subFolderNames.push(subFolderName);
+
+                if (subFolderName === 'result') {
+                    hasResultFolder = true;
+                }
+                if (subFolderName === 'YouTube') {
+                    hasYouTubeFolder = true;
+                }
+            }
+
+            // フォルダの作成日時と更新日時を取得
+            const createdTime = folder.getDateCreated().toISOString();
+            const modifiedTime = folder.getLastUpdated().toISOString();
+
+            results.push({
+                id: folderId,
+                title: title,
+                url: url,
+                createdTime: createdTime,
+                modifiedTime: modifiedTime,
+                fileCount: fileCount,
+                fileNames: fileNames,
+                subFolderNames: subFolderNames,
+                hasResultFolder: hasResultFolder,
+                hasYouTubeFolder: hasYouTubeFolder,
+            });
+        }
+        getEventHander.result = { videoFolders: results };
+    }
+
+    public executeVideoTask(getEventHandler: GetEventHandler): void {
+        const folderId: string = getEventHandler.e.parameter['folderId'];
+        const folderName: string = getEventHandler.e.parameter['folderName'];
+        const taskType: string = getEventHandler.e.parameter['taskType'];
+
+        try {
+            // Google Colabのノートブックファイルを取得
+            const colabFolderId = '1Yr4NsedItfew0cQSeG2vZl8kJFdVZL4i';
+            const colabFolder = DriveApp.getFolderById(colabFolderId);
+
+            // タスクタイプに応じたnotebookファイル名とメッセージを設定
+            const taskConfig = this.getTaskConfig(taskType);
+
+            // 指定されたnotebookを検索
+            const notebookFiles = colabFolder.getFilesByName(taskConfig.notebookName);
+
+            if (notebookFiles.hasNext()) {
+                const notebookFile = notebookFiles.next();
+                const notebookId = notebookFile.getId();
+
+                // サービスアカウントの認証情報をColabに渡すためのパラメータ
+                const serviceAccountEmail = 'shoot-sunday-sg@colablogics.iam.gserviceaccount.com';
+                // const encodedFolderId = encodeURIComponent(folderId);
+                // const encodedFolderName = encodeURIComponent(folderName);
+
+                // Colabで開くためのURLを生成（必要なパラメータを含む）
+                const colabUrl = `https://colab.research.google.com/drive/${notebookId}`;
+
+                // 処理対象フォルダの情報をログに記録
+                console.log(`${taskConfig.logMessage} started for folder: ${folderName} (${folderId})`);
+
+                getEventHandler.result = {
+                    success: true,
+                    colabUrl: colabUrl,
+                    message: `${taskConfig.successMessage}: ${folderName}`,
+                    folderName: folderName,
+                    folderId: folderId,
+                    taskType: taskType,
+                    serviceAccountEmail: serviceAccountEmail,
+                };
+            } else {
+                throw new Error(`${taskConfig.errorMessage}: ${taskConfig.notebookName}`);
+            }
+        } catch (error) {
+            console.error(`Video task (${taskType}) error:`, error);
+            getEventHandler.result = {
+                success: false,
+                error: error instanceof Error ? error.message : String(error),
+                message: `${taskType}処理でエラーが発生しました: ${folderName}`,
+                taskType: taskType,
+            };
+        }
+    }
+
+    private getTaskConfig(taskType: string): {
+        notebookName: string;
+        logMessage: string;
+        successMessage: string;
+        errorMessage: string;
+    } {
+        switch (taskType) {
+            case 'goal':
+                return {
+                    notebookName: 'videoGoal.ipynb',
+                    logMessage: 'Goal video creation',
+                    successMessage: 'ゴール集作成を開始しました',
+                    errorMessage: 'ゴール集作成用のnotebookが見つかりません',
+                };
+            case 'merge':
+                return {
+                    notebookName: 'videoMerge.ipynb',
+                    logMessage: 'Video merge',
+                    successMessage: '動画統合を開始しました',
+                    errorMessage: '動画統合用のnotebookが見つかりません',
+                };
+            // case 'upload':
+            //     return {
+            //         notebookName: 'youtube_uploader.ipynb',
+            //         logMessage: 'YouTube upload',
+            //         successMessage: 'YouTubeアップロードを開始しました',
+            //         errorMessage: 'YouTubeアップロード用のnotebookが見つかりません'
+            //     };
+            default:
+                throw Error('task typeが指定されていません');
+        }
     }
 }

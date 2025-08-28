@@ -100,6 +100,14 @@ export class ScriptProps {
         return expenseFolder;
     }
 
+    public get videoFolder(): string {
+        const videoFolder: string | null = PropertiesService.getScriptProperties().getProperty('videoFolder');
+        if (!videoFolder) {
+            throw new Error('Script Property (videoFolder) was not found');
+        }
+        return videoFolder;
+    }
+
     public get channelQr(): string {
         const channelQrProp: string | null = PropertiesService.getScriptProperties().getProperty('channelQr');
         if (!channelQrProp) {

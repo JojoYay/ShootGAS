@@ -6,7 +6,7 @@ const gasUtil: GasUtil = new GasUtil();
 
 export class SchedulerUtil {
     public get schedulerUrl(): string {
-        return 'https://shootsundayfront.web.app/calendar';
+        return 'https://liff.line.me/2005609256-Vr4YQvm2/calendar';
     }
 
     public get calendarSheet(): GoogleAppsScript.Spreadsheet.Sheet {

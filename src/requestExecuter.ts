@@ -1,4 +1,3 @@
-// import { DensukeUtil } from './densukeUtil';
 import { GasProps } from './gasProps';
 import { GasTestSuite } from './gasTestSuite';
 import { GasUtil } from './gasUtil';
@@ -8,7 +7,6 @@ import { SchedulerUtil } from './schedulerUtil';
 import { ScoreBook, Title } from './scoreBook';
 import { ScriptProps } from './scriptProps';
 
-// const densukeUtil: DensukeUtil = new DensukeUtil();
 const lineUtil: LineUtil = new LineUtil();
 const gasUtil: GasUtil = new GasUtil();
 
@@ -141,59 +139,6 @@ export class RequestExecuter {
         return cashBook;
     }
 
-    public uploadToYoutube2(postEventHander: PostEventHandler): void {
-        console.log('uploadToYoutube');
-        const fileName: string = postEventHander.parameter['fileName'];
-        // const fileType: string = postEventHander.parameter['fileType'];
-        const fileSize: string = postEventHander.parameter['fileSize'];
-        const actDate: string = postEventHander.parameter['actDate'];
-        const file: Blob = postEventHander.parameter['file'];
-        const videoTitle: string = actDate + ' ' + fileName;
-        console.log('fileName', fileName);
-        console.log('title', videoTitle);
-        console.log('fileSize', fileSize);
-        console.log('file', file);
-
-        const payload = {
-            snippet: {
-                title: videoTitle,
-                description: 'YouTube API Upload via GAS',
-                tags: ['ShootSunday', 'YouTube API'],
-            },
-            status: {
-                privacyStatus: 'unlisted',
-                madeForKids: false, // 子供向けではない設定を追加
-            },
-        };
-        const video = YouTube.Videos?.insert(payload, 'snippet, status', file);
-
-        if (video && video.id) {
-            const videoUrl: string = `https://www.youtube.com/watch?v=${video.id}`;
-
-            const videoSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
-            const videoSheetVals = videoSheet.getDataRange().getValues();
-            let matchedRowIndex = -1;
-            // ２行目からデータ行を検索 (１行目、２行目は検索条件として使用するためスキップ)
-            for (let i = 2; i < videoSheetVals.length; i++) {
-                const row = videoSheetVals[i];
-                if (row[0] === actDate && row[1] === fileName) {
-                    matchedRowIndex = i;
-                    break; // 最初に見つかった行で処理を終える
-                }
-            }
-
-            if (matchedRowIndex !== -1) {
-                // マッチする行が見つかった場合、３列目（C列）にvideoUrlを書き込む
-                videoSheet.getRange(matchedRowIndex + 1, 3).setValue(videoUrl);
-                console.log(`Matched row found at index ${matchedRowIndex + 1}. videoUrl updated.`);
-            } else {
-                console.log(`No matching row found for actDate: ${actDate} and Title: ${fileName}`);
-            }
-        } else {
-            console.log(video);
-        }
-    }
-
     public uploadToYoutube(postEventHander: PostEventHandler): void {
         console.log('uploadToYoutube');
         const fileName: string = postEventHander.parameter['fileName'];
@@ -220,7 +165,7 @@ export class RequestExecuter {
                 snippet: {
                     // title: fileName,
                     title: title,
-                    description: 'YouTube API Upload via GAS',
+                    description: 'Uploaded by Jittee Technology',
                     tags: ['ShootSunday', 'YouTube API'],
                     // categoryId: '21',
                 },
@@ -245,27 +190,27 @@ export class RequestExecuter {
         postEventHander.reponseObj.token = accessToken;
     }
 
-    private getVideoIdByTitle(videoTitle: string): string | null {
-        try {
-            const response = YouTube.Search?.list('id,snippet', {
-                forMine: true,
-                type: 'video',
-                q: videoTitle, // 検索クエリに動画タイトルを指定
-            });
-            if (response && response.items && response.items.length > 0) {
-                // 検索結果が複数件の場合、最初の動画をvideoIdとする (より厳密な絞り込みが必要な場合あり)
-                const video: GoogleAppsScript.YouTube.Schema.SearchResult = response.items[0];
-                if (video.id?.videoId) {
-                    return video.id.videoId;
-                }
-            }
-            console.log('動画が見つかりませんでした。タイトル:', videoTitle);
-            return null;
-        } catch (error) {
-            console.error('Videos: get API エラー:', error);
-            return null;
-        }
-    }
+    // private getVideoIdByTitle(videoTitle: string): string | null {
+    //     try {
+    //         const response = YouTube.Search?.list('id,snippet', {
+    //             forMine: true,
+    //             type: 'video',
+    //             q: videoTitle, // 検索クエリに動画タイトルを指定
+    //         });
+    //         if (response && response.items && response.items.length > 0) {
+    //             // 検索結果が複数件の場合、最初の動画をvideoIdとする (より厳密な絞り込みが必要な場合あり)
+    //             const video: GoogleAppsScript.YouTube.Schema.SearchResult = response.items[0];
+    //             if (video.id?.videoId) {
+    //                 return video.id.videoId;
+    //             }
+    //         }
+    //         console.log('動画が見つかりませんでした。タイトル:', videoTitle);
+    //         return null;
+    //     } catch (error) {
+    //         console.error('Videos: get API エラー:', error);
+    //         return null;
+    //     }
+    // }
 
     public updateEventData(postEventHander: PostEventHandler): void {
         const title: string = postEventHander.parameter['title']; //こいつで一意
@@ -1427,26 +1372,29 @@ export class RequestExecuter {
         const attendees = eventDetails.slice(1).map(val => val[0]);
         scoreBook.updateEventSheet(actDate, attendees);
 
+        // ビデオフォルダの作成処理
+        this.createVideoFoldersForActivity(actDate, teamCount);
+
         switch (teamCount) {
             case '3': //3チームの場合
                 videoSheet.insertRows(lastRow + 1, 7);
                 this.addRow(videoSheet, lastRow + 1, actDate, eventDetails, '#1 Team1 vs Team2', 'Team1', 'Team2', '-3_1');
-                this.addRow(videoSheet, lastRow + 2, actDate, eventDetails, '#2 Team1 vs Team3', 'Team1', 'Team3', '-3_2');
-                this.addRow(videoSheet, lastRow + 3, actDate, eventDetails, '#3 Team2 vs Team3', 'Team2', 'Team3', '-3_3');
-                this.addRow(videoSheet, lastRow + 4, actDate, eventDetails, '#1 Team1 vs Team2 Drone', 'Team1', 'Team2', '-3_1d');
-                this.addRow(videoSheet, lastRow + 5, actDate, eventDetails, '#2 Team1 vs Team3 Drone', 'Team1', 'Team3', '-3_2d');
+                this.addRow(videoSheet, lastRow + 2, actDate, eventDetails, '#1 Team1 vs Team2 Drone', 'Team1', 'Team2', '-3_1d');
+                this.addRow(videoSheet, lastRow + 3, actDate, eventDetails, '#2 Team1 vs Team3', 'Team1', 'Team3', '-3_2');
+                this.addRow(videoSheet, lastRow + 4, actDate, eventDetails, '#2 Team1 vs Team3 Drone', 'Team1', 'Team3', '-3_2d');
+                this.addRow(videoSheet, lastRow + 5, actDate, eventDetails, '#3 Team2 vs Team3', 'Team2', 'Team3', '-3_3');
                 this.addRow(videoSheet, lastRow + 6, actDate, eventDetails, '#3 Team2 vs Team3 Drone', 'Team2', 'Team3', '-3_3d');
                 this.addRow(videoSheet, lastRow + 7, actDate, eventDetails, 'ゴール集', '', '', '-3_g');
                 break;
             case '4': //4チームの場合
                 videoSheet.insertRows(lastRow + 1, 9);
                 this.addRow(videoSheet, lastRow + 1, actDate, eventDetails, '#1 Team1 vs Team2', 'Team1', 'Team2', '-4_1');
-                this.addRow(videoSheet, lastRow + 2, actDate, eventDetails, '#2 Team3 vs Team4', 'Team3', 'Team4', '-4_2');
-                this.addRow(videoSheet, lastRow + 3, actDate, eventDetails, '#3 ３位決定戦', '', '', '-4_3');
-                this.addRow(videoSheet, lastRow + 4, actDate, eventDetails, '#4 決勝', '', '', '-4_4');
-                this.addRow(videoSheet, lastRow + 5, actDate, eventDetails, '#1 Team1 vs Team2 Drone', 'Team1', 'Team2', '-4_1d');
-                this.addRow(videoSheet, lastRow + 6, actDate, eventDetails, '#2 Team3 vs Team4 Drone', 'Team3', 'Team4', '-4_2d');
-                this.addRow(videoSheet, lastRow + 7, actDate, eventDetails, '#3 ３位決定戦 Drone', '', '', '-4_3d');
+                this.addRow(videoSheet, lastRow + 2, actDate, eventDetails, '#1 Team1 vs Team2 Drone', 'Team1', 'Team2', '-4_1d');
+                this.addRow(videoSheet, lastRow + 3, actDate, eventDetails, '#2 Team3 vs Team4', 'Team3', 'Team4', '-4_2');
+                this.addRow(videoSheet, lastRow + 4, actDate, eventDetails, '#2 Team3 vs Team4 Drone', 'Team3', 'Team4', '-4_2d');
+                this.addRow(videoSheet, lastRow + 5, actDate, eventDetails, '#3 ３位決定戦', '', '', '-4_3');
+                this.addRow(videoSheet, lastRow + 6, actDate, eventDetails, '#3 ３位決定戦 Drone', '', '', '-4_3d');
+                this.addRow(videoSheet, lastRow + 7, actDate, eventDetails, '#4 決勝', '', '', '-4_4');
                 this.addRow(videoSheet, lastRow + 8, actDate, eventDetails, '#4 決勝 Drone', '', '', '-4_4d');
                 this.addRow(videoSheet, lastRow + 9, actDate, eventDetails, 'ゴール集', '', '', '-4_g');
                 break;
@@ -1454,21 +1402,19 @@ export class RequestExecuter {
                 videoSheet.insertRows(lastRow + 1, 12);
                 this.addRow(videoSheet, lastRow + 1, actDate, eventDetails, '#1 Pitch1 Team1 vs Team2', 'Team1', 'Team2', '-5_1_1');
                 this.addRow(videoSheet, lastRow + 2, actDate, eventDetails, '#1 Pitch2 Team3 vs Team4', 'Team3', 'Team4', '-5_1_2');
-                this.addRow(videoSheet, lastRow + 3, actDate, eventDetails, '#2 Pitch1 Team1 vs Team3', 'Team1', 'Team3', '-5_2_1');
-                this.addRow(videoSheet, lastRow + 4, actDate, eventDetails, '#2 Pitch2 Team2 vs Team5', 'Team2', 'Team5', '-5_2_2');
-                this.addRow(videoSheet, lastRow + 5, actDate, eventDetails, '#3 Pitch2 Team2 vs Team4', 'Team2', 'Team4', '-5_3_1');
-                this.addRow(videoSheet, lastRow + 6, actDate, eventDetails, '#3 Pitch2 Team1 vs Team5', 'Team1', 'Team5', '-5_3_2');
-                this.addRow(videoSheet, lastRow + 7, actDate, eventDetails, '#4 Pitch2 Team3 vs Team5', 'Team3', 'Team5', '-5_4_1');
-                this.addRow(videoSheet, lastRow + 8, actDate, eventDetails, '#4 Pitch2 Team1 vs Team4', 'Team1', 'Team4', '-5_4_2');
-                this.addRow(videoSheet, lastRow + 9, actDate, eventDetails, '#5 Pitch2 Team4 vs Team5', 'Team4', 'Team5', '-5_5_1');
-                this.addRow(videoSheet, lastRow + 10, actDate, eventDetails, '#5 Pitch2 Team2 vs Team3', 'Team2', 'Team3', '-5_5_2');
-
-                this.addRow(videoSheet, lastRow + 11, actDate, eventDetails, '#1 Drone', '', '', '-5_1_1d');
-                this.addRow(videoSheet, lastRow + 12, actDate, eventDetails, '#2 Drone', '', '', '-5_2_1d');
-                this.addRow(videoSheet, lastRow + 13, actDate, eventDetails, '#3 Drone', '', '', '-5_3_1d');
-                this.addRow(videoSheet, lastRow + 14, actDate, eventDetails, '#4 Drone', '', '', '-5_4_1d');
+                this.addRow(videoSheet, lastRow + 3, actDate, eventDetails, '#1 Drone', '', '', '-5_1_1d');
+                this.addRow(videoSheet, lastRow + 4, actDate, eventDetails, '#2 Pitch1 Team1 vs Team3', 'Team1', 'Team3', '-5_2_1');
+                this.addRow(videoSheet, lastRow + 5, actDate, eventDetails, '#2 Pitch2 Team2 vs Team5', 'Team2', 'Team5', '-5_2_2');
+                this.addRow(videoSheet, lastRow + 6, actDate, eventDetails, '#2 Drone', '', '', '-5_2_1d');
+                this.addRow(videoSheet, lastRow + 7, actDate, eventDetails, '#3 Pitch2 Team2 vs Team4', 'Team2', 'Team4', '-5_3_1');
+                this.addRow(videoSheet, lastRow + 8, actDate, eventDetails, '#3 Pitch2 Team1 vs Team5', 'Team1', 'Team5', '-5_3_2');
+                this.addRow(videoSheet, lastRow + 9, actDate, eventDetails, '#3 Drone', '', '', '-5_3_1d');
+                this.addRow(videoSheet, lastRow + 10, actDate, eventDetails, '#4 Pitch2 Team3 vs Team5', 'Team3', 'Team5', '-5_4_1');
+                this.addRow(videoSheet, lastRow + 11, actDate, eventDetails, '#4 Pitch2 Team1 vs Team4', 'Team1', 'Team4', '-5_4_2');
+                this.addRow(videoSheet, lastRow + 12, actDate, eventDetails, '#4 Drone', '', '', '-5_4_1d');
+                this.addRow(videoSheet, lastRow + 13, actDate, eventDetails, '#5 Pitch2 Team4 vs Team5', 'Team4', 'Team5', '-5_5_1');
+                this.addRow(videoSheet, lastRow + 14, actDate, eventDetails, '#5 Pitch2 Team2 vs Team3', 'Team2', 'Team3', '-5_5_2');
                 this.addRow(videoSheet, lastRow + 15, actDate, eventDetails, '#5 Drone', '', '', '-5_5_1d');
-
                 this.addRow(videoSheet, lastRow + 16, actDate, eventDetails, 'ゴール集 pitch1', '', '', '-5_1_g');
                 this.addRow(videoSheet, lastRow + 17, actDate, eventDetails, 'ゴール集 pitch2', '', '', '-5_2_g');
                 break;
@@ -1563,6 +1509,87 @@ export class RequestExecuter {
             results.push({ title: title, url: url });
         }
         postEventHander.reponseObj = { resultList: results };
+    }
+
+    private createVideoFoldersForActivity(actDate: string, teamCount: string): void {
+        // ビデオフォルダのルートフォルダを取得
+        const rootFolder = DriveApp.getFolderById(ScriptProps.instance.videoFolder);
+
+        // Videoフォルダ以下のすべてのファイルとフォルダを削除
+        const existingFolders = rootFolder.getFolders();
+        while (existingFolders.hasNext()) {
+            const folder = existingFolders.next();
+            // フォルダ内のすべてのファイルを削除
+            const filesInFolder = folder.getFiles();
+            while (filesInFolder.hasNext()) {
+                const file = filesInFolder.next();
+                DriveApp.removeFile(file);
+            }
+            // フォルダ内のすべてのサブフォルダを削除
+            const subFolders = folder.getFolders();
+            while (subFolders.hasNext()) {
+                const subFolder = subFolders.next();
+                // サブフォルダ内のファイルを削除
+                const subFiles = subFolder.getFiles();
+                while (subFiles.hasNext()) {
+                    const subFile = subFiles.next();
+                    DriveApp.removeFile(subFile);
+                }
+                subFolder.setTrashed(true);
+            }
+            folder.setTrashed(true);
+        }
+
+        const existingFiles = rootFolder.getFiles();
+        while (existingFiles.hasNext()) {
+            const file = existingFiles.next();
+            DriveApp.removeFile(file);
+        }
+
+        // チーム数に応じてフォルダを作成
+        switch (teamCount) {
+            case '3': // 3チームの場合
+                rootFolder.createFolder(actDate + ' #1 Team1 vs Team2');
+                rootFolder.createFolder(actDate + ' #1 Team1 vs Team2 Drone');
+                rootFolder.createFolder(actDate + ' #2 Team1 vs Team3');
+                rootFolder.createFolder(actDate + ' #2 Team1 vs Team3 Drone');
+                rootFolder.createFolder(actDate + ' #3 Team2 vs Team3');
+                rootFolder.createFolder(actDate + ' #3 Team2 vs Team3 Drone');
+                rootFolder.createFolder(actDate + ' #4 Goals');
+                break;
+            case '4': // 4チームの場合
+                rootFolder.createFolder(actDate + ' #1 Team1 vs Team2');
+                rootFolder.createFolder(actDate + ' #1 Team1 vs Team2 Drone');
+                rootFolder.createFolder(actDate + ' #2 Team3 vs Team4');
+                rootFolder.createFolder(actDate + ' #2 Team3 vs Team4 Drone');
+                rootFolder.createFolder(actDate + ' #3 ３位決定戦');
+                rootFolder.createFolder(actDate + ' #3 ３位決定戦 Drone');
+                rootFolder.createFolder(actDate + ' #4 決勝');
+                rootFolder.createFolder(actDate + ' #4 決勝 Drone');
+                rootFolder.createFolder(actDate + ' #5 Goals');
+                break;
+            case '5': // 5チームの場合(2ピッチ前提)
+                rootFolder.createFolder(actDate + ' #1 Pitch1 Team1 vs Team2');
+                rootFolder.createFolder(actDate + ' #1 Pitch2 Team3 vs Team4');
+                rootFolder.createFolder(actDate + ' #1 Drone');
+                rootFolder.createFolder(actDate + ' #2 Pitch1 Team1 vs Team3');
+                rootFolder.createFolder(actDate + ' #2 Pitch2 Team2 vs Team5');
+                rootFolder.createFolder(actDate + ' #2 Drone');
+                rootFolder.createFolder(actDate + ' #3 Pitch2 Team2 vs Team4');
+                rootFolder.createFolder(actDate + ' #3 Pitch2 Team1 vs Team5');
+                rootFolder.createFolder(actDate + ' #3 Drone');
+                rootFolder.createFolder(actDate + ' #4 Pitch2 Team3 vs Team5');
+                rootFolder.createFolder(actDate + ' #4 Pitch2 Team1 vs Team4');
+                rootFolder.createFolder(actDate + ' #4 Drone');
+                rootFolder.createFolder(actDate + ' #5 Pitch2 Team4 vs Team5');
+                rootFolder.createFolder(actDate + ' #5 Pitch2 Team2 vs Team3');
+                rootFolder.createFolder(actDate + ' #5 Drone');
+                rootFolder.createFolder(actDate + ' #6 Goals pitch1');
+                rootFolder.createFolder(actDate + ' #7 Goals pitch2');
+                break;
+        }
+
+        console.log(`Created video folders for ${actDate} with ${teamCount} teams`);
     }
 
     public uploadPaticipationPayNow(postEventHander: PostEventHandler): void {
