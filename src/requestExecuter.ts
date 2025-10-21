@@ -1371,9 +1371,14 @@ export class RequestExecuter {
         //アップのひな形を作る
         const attendees = eventDetails.slice(1).map(val => val[0]);
         scoreBook.updateEventSheet(actDate, attendees);
-
-        // ビデオフォルダの作成処理
-        this.createVideoFoldersForActivity(actDate, teamCount);
+        try {
+            // ビデオフォルダの作成処理
+            this.createVideoFoldersForActivity(actDate, teamCount);
+        } catch (error) {
+            console.error('ビデオフォルダの作成エラー:', error);
+            // postEventHander.reponseObj = { success: false, error: (error as Error).message };
+            // return;
+        }
 
         switch (teamCount) {
             case '3': //3チームの場合
