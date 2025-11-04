@@ -1517,6 +1517,12 @@ export class RequestExecuter {
     }
 
     private createVideoFoldersForActivity(actDate: string, teamCount: string): void {
+        // 実行ユーザーをログに出力（デバッグ用）
+        const activeUser = Session.getActiveUser();
+        const effectiveUser = Session.getEffectiveUser();
+        console.log('実行ユーザー (Active):', activeUser.getEmail());
+        console.log('実行ユーザー (Effective):', effectiveUser.getEmail());
+
         // ビデオフォルダのルートフォルダを取得
         const rootFolder = DriveApp.getFolderById(ScriptProps.instance.videoFolder);
 
@@ -1528,7 +1534,7 @@ export class RequestExecuter {
             const filesInFolder = folder.getFiles();
             while (filesInFolder.hasNext()) {
                 const file = filesInFolder.next();
-                DriveApp.removeFile(file);
+                file.setTrashed(true); // Shared Drive対応: DriveApp.removeFile()の代わりに使用
             }
             // フォルダ内のすべてのサブフォルダを削除
             const subFolders = folder.getFolders();
@@ -1538,7 +1544,7 @@ export class RequestExecuter {
                 const subFiles = subFolder.getFiles();
                 while (subFiles.hasNext()) {
                     const subFile = subFiles.next();
-                    DriveApp.removeFile(subFile);
+                    subFile.setTrashed(true); // Shared Drive対応: DriveApp.removeFile()の代わりに使用
                 }
                 subFolder.setTrashed(true);
             }
@@ -1548,7 +1554,7 @@ export class RequestExecuter {
         const existingFiles = rootFolder.getFiles();
         while (existingFiles.hasNext()) {
             const file = existingFiles.next();
-            DriveApp.removeFile(file);
+            file.setTrashed(true); // Shared Drive対応: DriveApp.removeFile()の代わりに使用
         }
 
         // チーム数に応じてフォルダを作成
