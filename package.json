@@ -12,9 +12,9 @@
     "build": "npm run clean && npm run bundle && ncp appsscript.json dist/appsscript.json",
     "license": "license-check-and-add add -f license-config.json",
     "test": "jest test/ --passWithNoTests --detectOpenHandles",
-    "deploy": "npm run lint && npm run test && npm run build && ncp .clasp-dev.json .clasp.json && clasp push -f && clasp deploy -i AKfycbwf7HIt4NTEyJAMPACPS7BGBiq9CJ14wg0jBwjWdj6yCLz9wdWkmzN0PjdqzpnCUBWrSA",
-    "deploy:prod": "npm run lint && npm run test && npm run build && ncp .clasp-prod.json .clasp.json && clasp push && clasp deploy -i AKfycbysS9XmULaZ9HtsLjWDYKrEuNZ7ws9xtK-Qmy3jbNfrCKYXU3upWYybefshFlX2ypfG",
-    "deploy:bvs": "npm run lint && npm run test && npm run build && ncp .clasp-bvs.json .clasp.json && clasp push && clasp deploy -i AKfycbyNWSZa57KCoMxkBaf0ie4BykQOlp77wIkS_np_f8QskVrmD8jju95MiQxXwclA77p9ug"
+    "deploy": "npm run lint && npm run test && npm run build && ncp .clasp-dev.json .clasp.json && clasp deploy -i AKfycbwf7HIt4NTEyJAMPACPS7BGBiq9CJ14wg0jBwjWdj6yCLz9wdWkmzN0PjdqzpnCUBWrSA",
+    "deploy:prod": "npm run lint && npm run test && npm run build && ncp .clasp-prod.json .clasp.json && clasp deploy -i AKfycbysS9XmULaZ9HtsLjWDYKrEuNZ7ws9xtK-Qmy3jbNfrCKYXU3upWYybefshFlX2ypfG",
+    "deploy:bvs": "npm run lint && npm run test && npm run build && ncp .clasp-bvs.json .clasp.json && clasp deploy -i AKfycbyNWSZa57KCoMxkBaf0ie4BykQOlp77wIkS_np_f8QskVrmD8jju95MiQxXwclA77p9ug"
   },
   "engines": {
     "node": ">=12"
@@ -43,7 +43,7 @@
     "typescript": "^5.4.5"
   },
   "devDependencies": {
-    "@google/clasp": "^2.5.0",
+    "@google/clasp": "^3.1.3",
     "@types/cheerio": "^0.22.35",
     "@types/prettier": "^3.0.0"
   }

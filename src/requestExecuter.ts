@@ -178,12 +178,12 @@ export class RequestExecuter {
         // console.log('payload:', options.payload); // payload をログ出力
         const response = UrlFetchApp.fetch(
             'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
-            // @ts-ignore
+            // @ts-expect-error - UrlFetchApp.fetchの型定義が完全ではないため
             options
         );
 
         const headers = response.getAllHeaders();
-        // @ts-ignore
+        // @ts-expect-error - getAllHeaders()の戻り値にLocationプロパティが型定義されていないため
         const uploadUrl = headers.Location;
         console.log(uploadUrl);
         postEventHander.reponseObj.uploadUrl = uploadUrl;
