@@ -632,13 +632,44 @@ export class LiffApi {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const resultValues: any[][] = resultSheet.getDataRange().getValues();
         getEventHandler.result.stats = resultValues;
+        getEventHandler.result.jsonStats = this.convertSheetDataToJson(resultValues);
     }
 
-    private getUsers(getEventHandler: GetEventHandler): void {
+    /**
+     * スプレッドシートの2次元配列を、ヘッダー行をキーとしたJSONオブジェクトの配列に変換する
+     * @param values スプレッドシートから取得した2次元配列（1行目がヘッダー）
+     * @returns ヘッダーをキーとしたJSONオブジェクトの配列
+     */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    private convertSheetDataToJson(values: any[][]): any[] {
+        if (!values || values.length === 0) {
+            return [];
+        }
+        const headers: string[] = values[0].map(header => String(header || ''));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const jsonArray: any[] = [];
+        for (let i = 1; i < values.length; i++) {
+            const row = values[i];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const jsonObject: any = {};
+            for (let j = 0; j < headers.length; j++) {
+                const header = headers[j];
+                if (header) {
+                    jsonObject[header] = row[j];
+                }
+            }
+            jsonArray.push(jsonObject);
+        }
+        return jsonArray;
+    }
+
+    public getUsers(getEventHandler: GetEventHandler): void {
         const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const resultValues: any[][] = mappingSheet.getDataRange().getValues();
         getEventHandler.result.users = resultValues;
+        getEventHandler.result.jsonUsers = this.convertSheetDataToJson(resultValues);
+        console.log(getEventHandler.result.jsonUsers);
     }
 
     private getYTComments(getEventHandler: GetEventHandler): void {

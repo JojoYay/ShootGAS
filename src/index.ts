@@ -51,13 +51,39 @@ function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.Content.TextO
     let getEventHandler: GetEventHandler;
     try {
         getEventHandler = new GetEventHandler(e);
+        const liffApi = new LiffApi();
         for (const methodName of getEventHandler.funcs) {
-            executeMethod(new LiffApi(), methodName, getEventHandler);
+            executeMethod(liffApi, methodName, getEventHandler);
         }
-        return ContentService.createTextOutput(JSON.stringify(getEventHandler.result));
+        // jsonで始まるキーの値はすでにJSONオブジェクトなので、そのまま使用（stringify時に正しく処理される）
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const processedResult: any = {};
+        for (const key in getEventHandler.result) {
+            if (key.startsWith('json')) {
+                // jsonで始まるキーはすでにJSONオブジェクト（またはJSON文字列）なので、そのまま使用
+                if (typeof getEventHandler.result[key] === 'string') {
+                    // 文字列の場合はJSONオブジェクトに変換
+                    try {
+                        processedResult[key] = JSON.parse(getEventHandler.result[key]);
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    } catch (e) {
+                        // JSON文字列として解析できない場合はそのまま
+                        processedResult[key] = getEventHandler.result[key];
+                    }
+                } else {
+                    // オブジェクト/配列の場合はそのまま使用
+                    processedResult[key] = getEventHandler.result[key];
+                }
+            } else {
+                processedResult[key] = getEventHandler.result[key];
+            }
+        }
+        return ContentService.createTextOutput(JSON.stringify(processedResult)).setMimeType(ContentService.MimeType.JSON);
     } catch (err) {
         console.log(err);
-        return ContentService.createTextOutput(JSON.stringify({ err: (err as Error).message, stacktrace: (err as Error).stack }));
+        return ContentService.createTextOutput(JSON.stringify({ err: (err as Error).message, stacktrace: (err as Error).stack })).setMimeType(
+            ContentService.MimeType.JSON
+        );
     }
 }
 
