@@ -648,8 +648,22 @@ export class RequestExecuter {
                 // console.log(`attendance_id: ${updateData['attendance_id']} の行を更新`);
                 const row = rowNumberToUpdate;
                 // 各パラメータを該当の列に更新 (列位置はheaderRowからcolumnIndexを検索して特定)
-                ['user_id', 'year', 'month', 'date', 'status', 'calendar_id', 'adult_count', 'child_count'].forEach(paramName => {
-                    if (updateData[paramName]) {
+                [
+                    'user_id',
+                    'year',
+                    'month',
+                    'date',
+                    'status',
+                    'calendar_id',
+                    'adult_count',
+                    'child_count',
+                    'child1',
+                    'child2',
+                    'child3',
+                    'child4',
+                    'child5',
+                ].forEach(paramName => {
+                    if (updateData[paramName] !== undefined) {
                         const colIndex = headerRow.indexOf(paramName); // ヘッダー行から列番号を取得
                         if (colIndex > -1) {
                             attendanceSheet.getRange(row, colIndex + 1).setValue(updateData[paramName]);
@@ -709,7 +723,7 @@ export class RequestExecuter {
                     if (userAttendance) {
                         const densukeName = userIdToDensukeNameMap[userId] || userId;
                         const adultCount = userAttendance[7] || 1; // adult_count (8列目)
-                        const childCount = userAttendance[8] || 0; // child_count (9列目)
+                        // const childCount = userAttendance[8] || 0; // child_count (9列目)
 
                         // 大人の処理
                         if (adultCount === 1) {
@@ -721,11 +735,49 @@ export class RequestExecuter {
                             }
                         }
 
-                        // 子供の処理
-                        if (childCount >= 1) {
-                            for (let k = 0; k < childCount; k++) {
-                                attendees.push(densukeName + '_Child' + (k + 1));
-                            }
+                        // 子供の処理 - child1からchild5にTRUEが入っているかどうかで判断
+                        const headerRowIndex = updatedAttendanceValues[0];
+                        const child1Index = headerRowIndex.indexOf('child1');
+                        const child2Index = headerRowIndex.indexOf('child2');
+                        const child3Index = headerRowIndex.indexOf('child3');
+                        const child4Index = headerRowIndex.indexOf('child4');
+                        const child5Index = headerRowIndex.indexOf('child5');
+
+                        let childNumber = 1;
+                        if (
+                            child1Index > -1 &&
+                            (userAttendance[child1Index] === 'TRUE' || userAttendance[child1Index] === true || userAttendance[child1Index] === 'true')
+                        ) {
+                            attendees.push(densukeName + '_Child' + childNumber);
+                            childNumber++;
+                        }
+                        if (
+                            child2Index > -1 &&
+                            (userAttendance[child2Index] === 'TRUE' || userAttendance[child2Index] === true || userAttendance[child2Index] === 'true')
+                        ) {
+                            attendees.push(densukeName + '_Child' + childNumber);
+                            childNumber++;
+                        }
+                        if (
+                            child3Index > -1 &&
+                            (userAttendance[child3Index] === 'TRUE' || userAttendance[child3Index] === true || userAttendance[child3Index] === 'true')
+                        ) {
+                            attendees.push(densukeName + '_Child' + childNumber);
+                            childNumber++;
+                        }
+                        if (
+                            child4Index > -1 &&
+                            (userAttendance[child4Index] === 'TRUE' || userAttendance[child4Index] === true || userAttendance[child4Index] === 'true')
+                        ) {
+                            attendees.push(densukeName + '_Child' + childNumber);
+                            childNumber++;
+                        }
+                        if (
+                            child5Index > -1 &&
+                            (userAttendance[child5Index] === 'TRUE' || userAttendance[child5Index] === true || userAttendance[child5Index] === 'true')
+                        ) {
+                            attendees.push(densukeName + '_Child' + childNumber);
+                            childNumber++;
                         }
                     }
                 }

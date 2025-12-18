@@ -131,6 +131,7 @@ export class LiffApi {
             throw new Error('attendance sheet was not found.');
         }
         getEventHandler.result.attendance = attendance.getDataRange().getValues();
+        getEventHandler.result.jsonAttendance = this.convertSheetDataToJson(getEventHandler.result.attendance);
     }
 
     private getAttendees(getEventHandler: GetEventHandler): void {
