@@ -673,6 +673,43 @@ export class LiffApi {
         console.log(getEventHandler.result.jsonUsers);
     }
 
+    public getQuizData(getEventHandler: GetEventHandler): void {
+        const tabName: string = getEventHandler.e.parameter['tabName'];
+
+        if (!tabName) {
+            // tabNameが指定されていない場合は、getUsersと同じ動作をする
+            this.getUsers(getEventHandler);
+            getEventHandler.result.quizData = getEventHandler.result.users;
+            return;
+        }
+
+        // tabNameに基づいてシートからデータを取得
+        // tabNameをシート名として使用するか、または設定シートから取得
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        let quizSheet: GoogleAppsScript.Spreadsheet.Sheet | null = null;
+
+        // まず、tabNameをシート名として検索
+        quizSheet = setting.getSheetByName(tabName);
+
+        if (!quizSheet) {
+            // シートが見つからない場合は、mappingSheetを使用（デフォルト動作）
+            const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const resultValues: any[][] = mappingSheet.getDataRange().getValues();
+            getEventHandler.result.quizData = resultValues;
+            getEventHandler.result.jsonQuizData = this.convertSheetDataToJson(resultValues);
+            console.log('Quiz sheet not found, using mappingSheet. tabName:', tabName);
+            return;
+        }
+
+        // シートからデータを取得
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const resultValues: any[][] = quizSheet.getDataRange().getValues();
+        getEventHandler.result.quizData = resultValues;
+        getEventHandler.result.jsonQuizData = this.convertSheetDataToJson(resultValues);
+        console.log('Quiz data loaded from sheet:', tabName);
+    }
+
     private getYTComments(getEventHandler: GetEventHandler): void {
         const videoId: string = this.getYouTubeVideoId(getEventHandler.e.parameters['url'][0]);
 
