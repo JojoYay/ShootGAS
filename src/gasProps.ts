@@ -82,9 +82,7 @@ export class GasProps {
     public get usersSheet(): GoogleAppsScript.Spreadsheet.Sheet {
         const ss: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.usersSheet);
         const sheetName: string =
-            ScriptProps.instance.usersSheet === ScriptProps.instance.settingSheet
-                ? this.USERS_SHEET_NAME_LEGACY
-                : this.USERS_SHEET_NAME;
+            ScriptProps.instance.usersSheet === ScriptProps.instance.settingSheet ? this.USERS_SHEET_NAME_LEGACY : this.USERS_SHEET_NAME;
         const sheet: GoogleAppsScript.Spreadsheet.Sheet | null = ss.getSheetByName(sheetName);
         if (!sheet) {
             throw new Error(`usersSheet was not found. spreadsheet: usersSheet, sheet: ${sheetName}`);
