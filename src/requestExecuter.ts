@@ -16,7 +16,7 @@ export class RequestExecuter {
         const lineId: string = postEventHandler.parameter['LINE ID'];
 
         // マッピングシートのデータを取得
-        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.usersSheet;
         const dataRange = mappingSheet.getDataRange();
         const dataValues = dataRange.getValues();
 
@@ -282,7 +282,7 @@ export class RequestExecuter {
     }
 
     public registrationFromApp(postEventHander: PostEventHandler): void {
-        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.usersSheet;
         const userId: string = postEventHander.parameter['userId'];
         const nickname: string = postEventHander.parameter['nickname'];
         const lineName: string = postEventHander.parameter['line_name'];
@@ -583,7 +583,7 @@ export class RequestExecuter {
         const calendarSheet = su.calendarSheet;
         const calVals = calendarSheet.getDataRange().getValues();
 
-        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.usersSheet;
         const mappingValues = mappingSheet.getDataRange().getValues();
         const userIdToDensukeNameMap: { [key: string]: string } = {};
         // mappingSheetからuserIdと伝助上の名前のマッピングを作成
@@ -806,7 +806,7 @@ export class RequestExecuter {
 
         const attendanceSheet = su.attendanceSheet;
         const attendanceValues = attendanceSheet.getDataRange().getValues(); // 出席シートのデータを取得
-        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.usersSheet;
         const mappingValues = mappingSheet.getDataRange().getValues();
         const userIdToDensukeNameMap: { [key: string]: string } = {};
         // mappingSheetからuserIdと伝助上の名前のマッピングを作成
@@ -1658,7 +1658,7 @@ export class RequestExecuter {
     public uploadPaticipationPayNow(postEventHander: PostEventHandler): void {
         const decodedFile = Utilities.base64Decode(postEventHander.parameter.file);
         const userId: string = postEventHander.parameter.userId;
-        const mappingSheet = GasProps.instance.mappingSheet;
+        const mappingSheet = GasProps.instance.usersSheet;
         const mapVals = mappingSheet.getDataRange().getValues();
         const userVal = mapVals.filter(row => row[2] === userId)[0]; // 1列目が calendarId
 
@@ -1741,7 +1741,7 @@ export class RequestExecuter {
         const amount: string = postEventHander.parameter.amount;
         const remarks: string = postEventHander.parameter.remarks;
 
-        const mappingSheet = GasProps.instance.mappingSheet;
+        const mappingSheet = GasProps.instance.usersSheet;
         const mapVals = mappingSheet.getDataRange().getValues();
         const userVal = mapVals.filter(row => row[2] === userId)[0]; // 1列目が calendarId
 
@@ -2006,7 +2006,7 @@ export class RequestExecuter {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private writeRankingContents(aRankValues: any[][], jsonMessage: any, lang: string, ten: string, contentsIndex: number) {
-        // const densukeVals = GasProps.instance.mappingSheet.getDataRange().getValues();
+        // const densukeVals = GasProps.instance.usersSheet.getDataRange().getValues();
         for (const ranking of aRankValues) {
             if (ranking[0] !== '' && ranking[0] !== '伝助名称' && ranking[1] < 4 && ranking[3] > 0) {
                 // if (ranking[1] === '1') {

@@ -67,6 +67,18 @@ export class ScriptProps {
         return lineAccessTokenProp;
     }
 
+    /**
+     * Spreadsheet ID for user data (formerly Densuke mapping).
+     * If not set, falls back to settingSheet and sheet name "DensukeMapping" for backward compatibility.
+     */
+    public get usersSheet(): string {
+        const prop: string | null = PropertiesService.getScriptProperties().getProperty('usersSheet');
+        if (prop) {
+            return prop;
+        }
+        return this.settingSheet;
+    }
+
     public get folderId(): string {
         let folderProp: string | null = PropertiesService.getScriptProperties().getProperty('folderId');
         if (!folderProp) {

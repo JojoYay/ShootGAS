@@ -19,7 +19,7 @@ function calendarWork() {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function updateProfilePic() {
     const lineUtil: LineUtil = new LineUtil();
-    const densukeMappingVals = GasProps.instance.mappingSheet.getDataRange().getValues();
+    const densukeMappingVals = GasProps.instance.usersSheet.getDataRange().getValues();
     let index: number = 0;
     for (const userRow of densukeMappingVals) {
         if (userRow[0] !== 'ライン上の名前') {
@@ -29,9 +29,9 @@ function updateProfilePic() {
                 if (prof) {
                     console.log(userRow[0] + ': ' + prof.pictureUrl);
                     if (prof.pictureUrl) {
-                        GasProps.instance.mappingSheet.getRange(index + 1, 5).setValue(prof.pictureUrl);
+                        GasProps.instance.usersSheet.getRange(index + 1, 5).setValue(prof.pictureUrl);
                     } else if (prof.userName === 'yagisho') {
-                        GasProps.instance.mappingSheet
+                        GasProps.instance.usersSheet
                             .getRange(index + 1, 5)
                             .setValue('https://lh3.googleusercontent.com/d/1Qc2YASdbIoikuT5bNcdnObhznf-WD5rK');
                     }

@@ -89,7 +89,7 @@ export class LineUtil {
     }
 
     public getLineProileLite(userId: string) {
-        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.usersSheet;
         const values = mappingSheet.getDataRange().getValues();
         return values.find(row => row[2] === userId);
     }

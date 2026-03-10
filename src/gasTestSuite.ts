@@ -15,7 +15,7 @@ export class GasTestSuite {
         this.copySheetData(baseSetting, settingSheet);
 
         const baseMapping: GoogleAppsScript.Spreadsheet.Sheet | null = baseSS.getSheetByName('DensukeMapping');
-        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.usersSheet;
         this.copySheetData(baseMapping, mappingSheet);
 
         const baseCashBook: GoogleAppsScript.Spreadsheet.Sheet | null = baseSS.getSheetByName('CashBook');

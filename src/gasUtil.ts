@@ -10,7 +10,7 @@ export class GasUtil {
 
     private getKanjiIds(): string[] {
         const kanjiIds: string[] = [];
-        const mappingSheet = GasProps.instance.mappingSheet;
+        const mappingSheet = GasProps.instance.usersSheet;
         const values = mappingSheet.getDataRange().getValues();
         for (let i = values.length - 1; i >= 0; i--) {
             if (values[i][3] === '幹事') {
@@ -45,7 +45,7 @@ export class GasUtil {
     }
 
     public registerMapping(lineName: string, densukeName: string, userId: string): void {
-        const mappingSheet = GasProps.instance.mappingSheet;
+        const mappingSheet = GasProps.instance.usersSheet;
         const values = mappingSheet.getDataRange().getValues();
         for (let i = values.length - 1; i >= 0; i--) {
             if (values[i][0] === lineName) {
@@ -78,13 +78,13 @@ export class GasUtil {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public getLineUserIdRangeValue(): any[][] {
-        const mappingSheet = GasProps.instance.mappingSheet;
+        const mappingSheet = GasProps.instance.usersSheet;
         return mappingSheet.getDataRange().getValues();
     }
 
     public getLineUserId(densukeName: string): string {
         let userId = '';
-        const mappingSheet = GasProps.instance.mappingSheet;
+        const mappingSheet = GasProps.instance.usersSheet;
         const values = mappingSheet.getDataRange().getValues();
         for (let i = values.length - 1; i >= 0; i--) {
             if (values[i][1] === densukeName) {
@@ -97,7 +97,7 @@ export class GasUtil {
 
     public getLineName(densukeName: string) {
         let lineName = null;
-        const mappingSheet = GasProps.instance.mappingSheet;
+        const mappingSheet = GasProps.instance.usersSheet;
         const values = mappingSheet.getDataRange().getValues();
         for (let i = values.length - 1; i >= 0; i--) {
             if (values[i][1] === densukeName) {
@@ -114,7 +114,7 @@ export class GasUtil {
 
     public getNickname(userId: string): string {
         let nickName = null;
-        const mappingSheet = GasProps.instance.mappingSheet;
+        const mappingSheet = GasProps.instance.usersSheet;
         const values = mappingSheet.getDataRange().getValues();
         for (let i = values.length - 1; i >= 0; i--) {
             if (values[i][2] === userId) {
@@ -128,7 +128,7 @@ export class GasUtil {
     //depliciated
     public getDensukeName(lineName: string): string {
         let densukeName = null;
-        const mappingSheet = GasProps.instance.mappingSheet;
+        const mappingSheet = GasProps.instance.usersSheet;
         const values = mappingSheet.getDataRange().getValues();
         for (let i = values.length - 1; i >= 0; i--) {
             if (values[i][0] === lineName) {

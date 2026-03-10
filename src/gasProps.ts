@@ -12,7 +12,8 @@ export class GasProps {
     }
     private SETTING_SHEET_NAME: string = 'Settings';
     private CASH_BOOK_SHEET_NAME: string = 'CashBook';
-    private MAPPING_SHEET_NAME: string = 'DensukeMapping';
+    private USERS_SHEET_NAME: string = 'Users';
+    private USERS_SHEET_NAME_LEGACY: string = 'DensukeMapping';
     private EVENT_DATA_SHEET_NAME: string = 'EventData';
     private PERSONAL_TOTAL_SHEET_NAME: string = 'Total';
     private G_RANKING_SHEET_NAME: string = '得点王ランキング';
@@ -75,13 +76,20 @@ export class GasProps {
         return cashBook;
     }
 
-    public get mappingSheet(): GoogleAppsScript.Spreadsheet.Sheet {
-        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
-        const cashBook: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName(this.MAPPING_SHEET_NAME);
-        if (!cashBook) {
-            throw new Error('mappingSheet was not found.');
+    /**
+     * User data sheet. From usersSheet spreadsheet (sheet "Users"), or from settingSheet (sheet "DensukeMapping") when not set.
+     */
+    public get usersSheet(): GoogleAppsScript.Spreadsheet.Sheet {
+        const ss: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.usersSheet);
+        const sheetName: string =
+            ScriptProps.instance.usersSheet === ScriptProps.instance.settingSheet
+                ? this.USERS_SHEET_NAME_LEGACY
+                : this.USERS_SHEET_NAME;
+        const sheet: GoogleAppsScript.Spreadsheet.Sheet | null = ss.getSheetByName(sheetName);
+        if (!sheet) {
+            throw new Error(`usersSheet was not found. spreadsheet: usersSheet, sheet: ${sheetName}`);
         }
-        return cashBook;
+        return sheet;
     }
 
     public get eventResultSheet(): GoogleAppsScript.Spreadsheet.Sheet {

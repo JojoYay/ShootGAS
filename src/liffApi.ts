@@ -147,7 +147,7 @@ export class LiffApi {
         const attendeeUserIds = filteredAttendees.map(row => row[1]); // 2列目が user_id
 
         // mappingSheetからデータを取得
-        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.usersSheet;
         const mappingValues = mappingSheet.getDataRange().getValues();
 
         const matchedMappingData = [];
@@ -357,7 +357,7 @@ export class LiffApi {
     }
 
     private getRegisteredMembers(getEventHandler: GetEventHandler): void {
-        const members: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const members: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.usersSheet;
         getEventHandler.result.members = members.getDataRange().getValues();
     }
 
@@ -441,7 +441,7 @@ export class LiffApi {
 
         const parentFolder: GoogleAppsScript.Drive.Folder = GasProps.instance.payNowFolder; // 親フォルダを取得
         const folders = parentFolder.getFolders();
-        const mappingSheetVal = GasProps.instance.mappingSheet.getDataRange().getValues();
+        const mappingSheetVal = GasProps.instance.usersSheet.getDataRange().getValues();
         const su: SchedulerUtil = new SchedulerUtil();
         const calVal = su.calendarSheet.getDataRange().getValues();
 
@@ -532,7 +532,7 @@ export class LiffApi {
         // const lang: string = getEventHandler.e.parameter['lang'];
         this.getCalendar(getEventHandler);
         const calendarVals = getEventHandler.result.event;
-        const mappingSheet = GasProps.instance.mappingSheet;
+        const mappingSheet = GasProps.instance.usersSheet;
         const mapVals = mappingSheet.getDataRange().getValues();
         const userVal = mapVals.filter(row => row[2] === userId)[0];
         const densukeName: string = userVal[1].toString();
@@ -570,7 +570,7 @@ export class LiffApi {
         const lang: string = getEventHandler.e.parameter['lang'];
         this.getCalendar(getEventHandler);
         const calendarVals = getEventHandler.result.event;
-        const mappingSheet = GasProps.instance.mappingSheet;
+        const mappingSheet = GasProps.instance.usersSheet;
         const mapVals = mappingSheet.getDataRange().getValues();
         const userVal = mapVals.filter(row => row[2] === userId)[0];
         const densukeName: string = userVal[1].toString();
@@ -665,7 +665,7 @@ export class LiffApi {
     }
 
     public getUsers(getEventHandler: GetEventHandler): void {
-        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.usersSheet;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const resultValues: any[][] = mappingSheet.getDataRange().getValues();
         getEventHandler.result.users = resultValues;
@@ -693,7 +693,7 @@ export class LiffApi {
 
         if (!quizSheet) {
             // シートが見つからない場合は、mappingSheetを使用（デフォルト動作）
-            const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+            const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.usersSheet;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const resultValues: any[][] = mappingSheet.getDataRange().getValues();
             getEventHandler.result.quizData = resultValues;
@@ -847,7 +847,7 @@ export class LiffApi {
             sheet.appendRow(['参加者（伝助名称）', '参加者（Line名称）', '金額', '支払い状況']);
         }
         let index = 6;
-        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.usersSheet;
         const mapVal = mappingSheet.getDataRange().getValues();
 
         for (const user of users) {

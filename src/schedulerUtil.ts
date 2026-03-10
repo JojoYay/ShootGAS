@@ -36,7 +36,7 @@ export class SchedulerUtil {
         const cValues = calendarSheet.getDataRange().getValues();
 
         // mappingSheetを利用してuserIdと伝助上の名前のマッピングを作成
-        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.mappingSheet;
+        const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.usersSheet;
         const mappingValues = mappingSheet.getDataRange().getValues();
         const userIdToNameMap: { [key: string]: { densukeName: string; lineName: string } } = {};
         for (let i = 1; i < mappingValues.length; i++) {
@@ -323,7 +323,7 @@ export class SchedulerUtil {
             report.deleteRow(i);
         }
         // this.reCalcTotalVal(cashBook);
-        const mappingSheet = GasProps.instance.mappingSheet;
+        const mappingSheet = GasProps.instance.usersSheet;
         const mapValues = mappingSheet.getDataRange().getValues();
         const userIdToDensukeNameMap: { [key: string]: [string, string] } = {};
 

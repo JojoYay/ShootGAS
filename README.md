@@ -89,6 +89,11 @@ ShootGAS/
 | `channelUrl` | LINEチャンネルのURL |
 | `messageUsage` | メッセージ使用量の設定 |
 | `chat` | チャット関連の設定 |
+| `usersSheet` | ユーザー情報用スプレッドシートのID。未設定時は `settingSheet` の「DensukeMapping」シートを参照（後方互換） |
+
+### ユーザー情報（users）の取得元
+
+ユーザー一覧は従来は設定用スプレッドシートの「DensukeMapping」シートから取得していました。`usersSheet` を設定すると、そのスプレッドシートの「Users」シートから取得します（設定とユーザーを別ファイルに分離する場合）。フロントごとに接続先GASが分かれているため、GAS側でチャネルを意識する必要はありません。
 
 ## ライセンス
 
