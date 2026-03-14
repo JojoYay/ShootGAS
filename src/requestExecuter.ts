@@ -1720,7 +1720,7 @@ export class RequestExecuter {
         const picUrl: string = 'https://lh3.googleusercontent.com/d/' + file.getId();
         for (let index = 1; index <= sheetVal.length; index++) {
             const row = sheetVal[index - 1];
-            if (index > 5 && row[0] === userId) {
+            if (index > 5 && row[2] === userId) {
                 sheet.getRange(index, 5).setValue(picUrl);
                 break;
             }

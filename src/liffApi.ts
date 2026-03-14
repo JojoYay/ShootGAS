@@ -414,7 +414,7 @@ export class LiffApi {
 
             const sheet: GoogleAppsScript.Spreadsheet.Sheet = spreadSheet.getActiveSheet();
             const sheetVal = sheet.getDataRange().getValues();
-            const userRow = sheetVal.find((row, idx) => idx > 4 && row[0] === userId);
+            const userRow = sheetVal.find((row, idx) => idx > 4 && row[2] === userId);
             // const settingSheet = GasProps.instance.settingSheet;
             // const addy = settingSheet.getRange('B2').getValue();
             const addy = sheet.getRange('B4').getValue();
@@ -835,22 +835,35 @@ export class LiffApi {
         sheet.appendRow(['PayNow先', payNow]);
         let statusVal = null;
         if (receiveColumn === 'true') {
-            sheet.appendRow(['参加者（LINE ID）', '参加者（伝助名称）', '参加者（Line名称）', '金額', '支払い状況', '受け取り状況']);
+            sheet.appendRow(['参加者（伝助名称）', '参加者（Line名称）', 'LINE_ID', '金額', '支払い状況', '受け取り状況']);
             const status: string[] = ['受渡済', ''];
             statusVal = SpreadsheetApp.newDataValidation().requireValueInList(status).build();
         } else {
-            sheet.appendRow(['参加者（LINE ID）', '参加者（伝助名称）', '参加者（Line名称）', '金額', '支払い状況']);
+            sheet.appendRow(['参加者（伝助名称）', '参加者（Line名称）', 'LINE_ID', '金額', '支払い状況']);
         }
         let index = 6;
         const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.usersSheet;
         const mapVal = mappingSheet.getDataRange().getValues();
-        // users: LINE ID (column index 2 in mapping sheet). Match by ID only; do not use LINE name for lookup.
+        const mapHeaders = mapVal[0] as string[];
+        const userIdColIdx = (() => {
+            const i = mapHeaders.findIndex(h => String(h).trim() === 'LINE ID');
+            return i >= 0 ? i : 2; // fallback: legacy DensukeMapping uses index 2
+        })();
+        const nameColIdx = (() => {
+            const i = mapHeaders.findIndex(h => String(h).trim() === '伝助上の名前');
+            return i >= 0 ? i : 1; // fallback: index 1
+        })();
+        const lineNameColIdx = (() => {
+            const i = mapHeaders.findIndex(h => String(h).trim() === 'ライン上の名前');
+            return i >= 0 ? i : 0; // fallback: index 0
+        })();
+        const mapData = mapVal.slice(1);
         for (const userId of users) {
-            const mapRow = mapVal.find(item => item[2] === userId);
+            const mapRow = mapData.find(item => String(item[userIdColIdx]).trim() === String(userId).trim());
             if (!mapRow) continue;
-            sheet.getRange(index, 1).setValue(userId);
-            sheet.getRange(index, 2).setValue(mapRow[1]);
-            sheet.getRange(index, 3).setValue(mapRow[0]);
+            sheet.getRange(index, 1).setValue(mapRow[nameColIdx]);
+            sheet.getRange(index, 2).setValue(mapRow[lineNameColIdx]);
+            sheet.getRange(index, 3).setValue(userId);
             sheet.getRange(index, 4).setValue(price);
             const search = title + '_' + mapRow[1];
             const searchQuery = `title = '${search}' and '${expenseFolder.getId()}' in parents`;
