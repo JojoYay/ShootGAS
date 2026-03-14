@@ -1561,9 +1561,10 @@ export class RequestExecuter {
         while (titleFolderIt.hasNext()) {
             const expenseFolder: GoogleAppsScript.Drive.Folder = titleFolderIt.next();
             const title = expenseFolder.getName();
-            // const url = expenseFolder.getFilesByName(title).next().getUrl();
-            const url = expenseFolder.getUrl(); // フォルダのURLを取得
-            results.push({ title: title, url: url });
+            const folderUrl = expenseFolder.getUrl();
+            const fileIt = expenseFolder.getFilesByName(title);
+            const sheetUrl = fileIt.hasNext() ? fileIt.next().getUrl() : '';
+            results.push({ title: title, url: folderUrl, sheetUrl: sheetUrl });
         }
         postEventHander.reponseObj = { resultList: results };
     }
@@ -1689,12 +1690,11 @@ export class RequestExecuter {
     public upload(postEventHander: PostEventHandler): void {
         console.log('execute upload');
         const decodedFile = Utilities.base64Decode(postEventHander.parameter.file);
-        const lu: LineUtil = new LineUtil();
-        const lineName = lu.getLineDisplayName(postEventHander.parameter.userId);
-        const gu: GasUtil = new GasUtil();
-        const densukeName = gu.getDensukeName(lineName);
+        const userId: string = postEventHander.parameter.userId;
         const title: string = postEventHander.parameter.title;
-        const blob = Utilities.newBlob(decodedFile, 'application/octet-stream', title + '_' + lineName);
+        const gu: GasUtil = new GasUtil();
+        const densukeName: string = gu.getNickname(userId) || userId;
+        const blob = Utilities.newBlob(decodedFile, 'application/octet-stream', title + '_' + densukeName);
         const rootFolder = DriveApp.getFolderById(ScriptProps.instance.expenseFolder);
 
         const folderIt = rootFolder.getFoldersByName(title);
@@ -1702,32 +1702,28 @@ export class RequestExecuter {
             console.log('no expense folder found:' + title);
         }
         const expenseFolder = folderIt.next();
-        const oldFileIt = expenseFolder.getFilesByName(title + '_' + lineName);
+        const searchQuery = `title = '${title}_${densukeName}' and '${expenseFolder.getId()}' in parents`;
+        const oldFileIt = expenseFolder.searchFiles(searchQuery);
         while (oldFileIt.hasNext()) {
             oldFileIt.next().setTrashed(true);
         }
         const file = expenseFolder.createFile(blob);
         console.log('File uploaded to Google Drive with ID:', file.getId());
 
-        let spreadSheet: GoogleAppsScript.Spreadsheet.Spreadsheet | null = null;
-        const fileIt = expenseFolder.getFilesByName(title);
-        if (fileIt.hasNext()) {
-            const sheetFile = fileIt.next();
-            spreadSheet = SpreadsheetApp.openById(sheetFile.getId());
-        } else {
+        const sheetFileIt = expenseFolder.searchFiles(`title = '${title}' and '${expenseFolder.getId()}' in parents`);
+        if (!sheetFileIt.hasNext()) {
             throw new Error('SpreadSheet is not available:' + title);
         }
+        const spreadSheet = SpreadsheetApp.openById(sheetFileIt.next().getId());
         const sheet: GoogleAppsScript.Spreadsheet.Sheet = spreadSheet.getActiveSheet();
         const sheetVal = sheet.getDataRange().getValues();
-        let index = 1;
         const picUrl: string = 'https://lh3.googleusercontent.com/d/' + file.getId();
-        for (const row of sheetVal) {
-            if (index > 4) {
-                if (row[0] === densukeName) {
-                    sheet.getRange(index, 4).setValue(picUrl);
-                }
+        for (let index = 1; index <= sheetVal.length; index++) {
+            const row = sheetVal[index - 1];
+            if (index > 5 && row[0] === userId) {
+                sheet.getRange(index, 5).setValue(picUrl);
+                break;
             }
-            index++;
         }
         postEventHander.reponseObj = { picUrl: picUrl, sheetUrl: GasProps.instance.generateSheetUrl(spreadSheet.getId()) };
     }

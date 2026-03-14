@@ -388,14 +388,11 @@ export class LiffApi {
             console.log('no such expense folder found:' + title);
         }
         const expenseFolder = folderIt.next();
-        const lineUtil: LineUtil = new LineUtil();
-        // console.log('userId ' + userId);
-        const lineName: string = lineUtil.getLineDisplayName(userId);
-        // const fileIt = expenseFolder.getFilesByName(title + '_' + lineName);
-
-        const fileNameToSearch = title + '_' + lineName;
-        const searchQuery = `title = '${fileNameToSearch}' and '${expenseFolder.getId()}' in parents`; // より正確なファイル名検索クエリ
-        const fileIt = expenseFolder.searchFiles(searchQuery); // searchFiles を使用
+        const gasUtil: GasUtil = new GasUtil();
+        const densukeName: string = gasUtil.getNickname(userId) || userId;
+        const fileNameToSearch = title + '_' + densukeName;
+        const searchQuery = `title = '${fileNameToSearch}' and '${expenseFolder.getId()}' in parents`;
+        const fileIt = expenseFolder.searchFiles(searchQuery);
 
         if (fileIt.hasNext()) {
             const file = fileIt.next();
@@ -405,8 +402,8 @@ export class LiffApi {
         } else {
             let spreadSheet: GoogleAppsScript.Spreadsheet.Spreadsheet | null = null;
             // const fileIt2 = expenseFolder.getFilesByName(title);
-            const searchQuery = `title = '${title}' and '${expenseFolder.getId()}' in parents`; // より正確なファイル名検索クエリ
-            const fileIt2 = expenseFolder.searchFiles(searchQuery); // searchFiles を使用
+            const searchQuery2 = `title = '${title}' and '${expenseFolder.getId()}' in parents`;
+            const fileIt2 = expenseFolder.searchFiles(searchQuery2);
 
             if (fileIt2.hasNext()) {
                 const sheetFile = fileIt2.next();
@@ -417,16 +414,14 @@ export class LiffApi {
 
             const sheet: GoogleAppsScript.Spreadsheet.Sheet = spreadSheet.getActiveSheet();
             const sheetVal = sheet.getDataRange().getValues();
-            const gasUtil: GasUtil = new GasUtil();
-            // const densukeName = gasUtil.getDensukeName(lineName);
-            const densukeName = gasUtil.getNickname(userId);
-            const userRow = sheetVal.find(item => item[0] === densukeName);
+            const userRow = sheetVal.find((row, idx) => idx > 4 && row[0] === userId);
             // const settingSheet = GasProps.instance.settingSheet;
             // const addy = settingSheet.getRange('B2').getValue();
             const addy = sheet.getRange('B4').getValue();
             if (userRow) {
+                const amountColIndex = 3;
                 getEventHandler.result.statusMsg =
-                    '支払額：$' + userRow[2] + ' PayNow先:' + addy + '\n支払い済みのスクリーンショットをこちらにアップロードして下さい';
+                    '支払額：$' + userRow[amountColIndex] + ' PayNow先:' + addy + '\n支払い済みのスクリーンショットをこちらにアップロードして下さい';
                 getEventHandler.result.picUrl = '';
             } else {
                 getEventHandler.result.statusMsg = '支払い人として登録されていません。管理者にご確認下さい。';
@@ -840,35 +835,33 @@ export class LiffApi {
         sheet.appendRow(['PayNow先', payNow]);
         let statusVal = null;
         if (receiveColumn === 'true') {
-            sheet.appendRow(['参加者（伝助名称）', '参加者（Line名称）', '金額', '支払い状況', '受け取り状況']);
+            sheet.appendRow(['参加者（LINE ID）', '参加者（伝助名称）', '参加者（Line名称）', '金額', '支払い状況', '受け取り状況']);
             const status: string[] = ['受渡済', ''];
             statusVal = SpreadsheetApp.newDataValidation().requireValueInList(status).build();
         } else {
-            sheet.appendRow(['参加者（伝助名称）', '参加者（Line名称）', '金額', '支払い状況']);
+            sheet.appendRow(['参加者（LINE ID）', '参加者（伝助名称）', '参加者（Line名称）', '金額', '支払い状況']);
         }
         let index = 6;
         const mappingSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.usersSheet;
         const mapVal = mappingSheet.getDataRange().getValues();
-
-        for (const user of users) {
-            const mapRow = mapVal.find(item => item[1] === user);
-            console.log(user);
-            sheet.getRange(index, 1).setValue(user);
-            sheet.getRange(index, 2).setValue(mapRow?.[0]);
-            sheet.getRange(index, 3).setValue(price);
-            // console.log('user ' + user + ' maprow1 ' + mapRow?.[1]);
-            // const fileIt = expenseFolder.getFilesByName(title + '_' + mapRow?.[0]);
-            const search = title + '_' + mapRow?.[0];
-            const searchQuery = `title = '${search}' and '${expenseFolder.getId()}' in parents`; // より正確なファイル名検索クエリ
-            const fileIt = expenseFolder.searchFiles(searchQuery); // searchFiles を使用
+        // users: LINE ID (column index 2 in mapping sheet). Match by ID only; do not use LINE name for lookup.
+        for (const userId of users) {
+            const mapRow = mapVal.find(item => item[2] === userId);
+            if (!mapRow) continue;
+            sheet.getRange(index, 1).setValue(userId);
+            sheet.getRange(index, 2).setValue(mapRow[1]);
+            sheet.getRange(index, 3).setValue(mapRow[0]);
+            sheet.getRange(index, 4).setValue(price);
+            const search = title + '_' + mapRow[1];
+            const searchQuery = `title = '${search}' and '${expenseFolder.getId()}' in parents`;
+            const fileIt = expenseFolder.searchFiles(searchQuery);
             if (fileIt.hasNext()) {
                 const file = fileIt.next();
                 const picUrl: string = 'https://lh3.googleusercontent.com/d/' + file.getId();
-                sheet.getRange(index, 4).setValue(picUrl);
+                sheet.getRange(index, 5).setValue(picUrl);
             }
             if (statusVal) {
-                // sheet.getRange(index, 1).setValue(lu.getLineDisplayName());
-                sheet.getRange(index, 5).setDataValidation(statusVal);
+                sheet.getRange(index, 6).setDataValidation(statusVal);
             }
             index++;
         }
@@ -878,7 +871,7 @@ export class LiffApi {
         sheet.getRange(5, 1, lastRow - 4, lastCol).setBorder(true, true, true, true, true, true);
         sheet.getRange(5, 1, 1, lastCol).setBackground('#fff2cc');
 
-        const range = sheet.getRange(6, 3, lastRow - 5, 1);
+        const range = sheet.getRange(6, 4, lastRow, 4);
         const formula = `=SUM(${range.getA1Notation()})`;
         sheet.getRange(3, 2).setFormula(formula);
 
