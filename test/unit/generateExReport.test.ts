@@ -1,4 +1,19 @@
 /**
+ * Copyright 2024 JojoYay
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
  * Unit tests for LiffApi#generateExReport
  *
  * Verifies:
@@ -147,13 +162,7 @@ beforeEach(() => {
 
 // ─── Helper to call the private generateExReport method directly ─────────────
 
-function callGenerateExReport(params: {
-    users: string[];
-    price: string;
-    title: string;
-    payNow: string;
-    receiveColumn: string;
-}): GetEventHandler {
+function callGenerateExReport(params: { users: string[]; price: string; title: string; payNow: string; receiveColumn: string }): GetEventHandler {
     const e = {
         parameters: {
             func: ['generateExReport'],
@@ -168,7 +177,7 @@ function callGenerateExReport(params: {
     const handler = new GetEventHandler(e);
     const liffApi = new LiffApi();
     // generateExReport is private; call via bracket notation
-    (liffApi as unknown as Record<string, (h: GetEventHandler) => void>)['generateExReport'](handler);
+    (liffApi as unknown as Record<string, (_h: GetEventHandler) => void>)['generateExReport'](handler);
     return handler;
 }
 
@@ -179,7 +188,7 @@ describe('LiffApi#generateExReport', () => {
     const newUsersSheetData = [
         ['ライン上の名前', '伝助上の名前', 'LINE ID', '幹事フラグ', 'Picture'],
         ['LineAlice', 'Alice', 'U001', '', ''],
-        ['LineBob',   'Bob',   'U002', '', ''],
+        ['LineBob', 'Bob', 'U002', '', ''],
         ['LineCarol', 'Carol', 'U003', '', ''],
     ];
 
@@ -212,9 +221,7 @@ describe('LiffApi#generateExReport', () => {
                 receiveColumn: 'false',
             });
 
-            expect(mockAppendRow).toHaveBeenCalledWith(
-                ['参加者（伝助名称）', '参加者（Line名称）', 'LINE_ID', '金額', '支払い状況']
-            );
+            expect(mockAppendRow).toHaveBeenCalledWith(['参加者（伝助名称）', '参加者（Line名称）', 'LINE_ID', '金額', '支払い状況']);
         });
 
         it('9-3: receiveColumn=true のとき 6列のカラムヘッダーが書き込まれる', () => {
@@ -226,9 +233,7 @@ describe('LiffApi#generateExReport', () => {
                 receiveColumn: 'true',
             });
 
-            expect(mockAppendRow).toHaveBeenCalledWith(
-                ['参加者（伝助名称）', '参加者（Line名称）', 'LINE_ID', '金額', '支払い状況', '受け取り状況']
-            );
+            expect(mockAppendRow).toHaveBeenCalledWith(['参加者（伝助名称）', '参加者（Line名称）', 'LINE_ID', '金額', '支払い状況', '受け取り状況']);
         });
 
         it('9-4: 合計金額は users.length × price の積になる', () => {
@@ -265,10 +270,10 @@ describe('LiffApi#generateExReport', () => {
 
             // setValue の順番: col1=Bob, col2=LineBob, col3=U002, col4=price
             const setValueCalls = mockSetValue.mock.calls;
-            expect(setValueCalls[0][0]).toBe('Bob');      // col1: 伝助上の名前
-            expect(setValueCalls[1][0]).toBe('LineBob');  // col2: ライン上の名前
-            expect(setValueCalls[2][0]).toBe('U002');     // col3: LINE ID
-            expect(setValueCalls[3][0]).toBe('500');      // col4: price
+            expect(setValueCalls[0][0]).toBe('Bob'); // col1: 伝助上の名前
+            expect(setValueCalls[1][0]).toBe('LineBob'); // col2: ライン上の名前
+            expect(setValueCalls[2][0]).toBe('U002'); // col3: LINE ID
+            expect(setValueCalls[3][0]).toBe('500'); // col4: price
         });
 
         it('9-6: 複数ユーザーの場合、行インデックスが 6 から順に増加する', () => {
@@ -281,9 +286,7 @@ describe('LiffApi#generateExReport', () => {
             });
 
             // 1人目: row6, 2人目: row7
-            const getRangeCalls = mockGetRange.mock.calls.filter(
-                (c: unknown[]) => typeof c[0] === 'number' && typeof c[1] === 'number' && c[0] >= 6
-            );
+            const getRangeCalls = mockGetRange.mock.calls.filter((c: unknown[]) => typeof c[0] === 'number' && typeof c[1] === 'number' && c[0] >= 6);
             const rows = getRangeCalls.map((c: unknown[]) => c[0] as number);
             expect(rows).toContain(6);
             expect(rows).toContain(7);
@@ -299,9 +302,7 @@ describe('LiffApi#generateExReport', () => {
             });
 
             // U001→row6, U003→row7 (U_NOT_EXISTはskip)
-            const getRangeCalls = mockGetRange.mock.calls.filter(
-                (c: unknown[]) => typeof c[0] === 'number' && typeof c[1] === 'number' && c[0] >= 6
-            );
+            const getRangeCalls = mockGetRange.mock.calls.filter((c: unknown[]) => typeof c[0] === 'number' && typeof c[1] === 'number' && c[0] >= 6);
             const rows = [...new Set(getRangeCalls.map((c: unknown[]) => c[0] as number))];
             expect(rows).toContain(6);
             expect(rows).toContain(7);
@@ -326,7 +327,7 @@ describe('LiffApi#generateExReport', () => {
         it('9-9: LINE ID ヘッダーがない場合、index 2 がユーザーID列として使われる', () => {
             // Legacy format: no header names, LINE ID is at index 2
             mockUsersSheetValues = [
-                ['ライン名称', '伝助名称', 'U_LEGACY_ID'],  // no 'LINE ID' in header
+                ['ライン名称', '伝助名称', 'U_LEGACY_ID'], // no 'LINE ID' in header
                 ['LineX', 'DensukeX', 'ULEGACY001'],
             ];
 

@@ -11,6 +11,7 @@ export class GasProps {
         return this._instance;
     }
     private SETTING_SHEET_NAME: string = 'Settings';
+    private RICH_MENU_TEMPLATES_SHEET_NAME: string = 'RichMenuTemplates';
     private CASH_BOOK_SHEET_NAME: string = 'CashBook';
     private USERS_SHEET_NAME: string = 'Users';
     private USERS_SHEET_NAME_LEGACY: string = 'DensukeMapping';
@@ -141,6 +142,17 @@ export class GasProps {
             return 'https://docs.google.com/spreadsheets/d/' + prop + '?usp=sharing';
         }
         return 'https://docs.google.com/spreadsheets/d/' + prop + '/edit?usp=sharing&ccc=' + new Date().getTime();
+    }
+
+    public get richMenuTemplatesSheet(): GoogleAppsScript.Spreadsheet.Sheet {
+        const setting: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.settingSheet);
+        let sheet: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName(this.RICH_MENU_TEMPLATES_SHEET_NAME);
+        if (!sheet) {
+            sheet = setting.insertSheet(this.RICH_MENU_TEMPLATES_SHEET_NAME);
+            const headers = ['id', 'name', 'chatBarText', 'sizeWidth', 'sizeHeight', 'areasJson', 'createdAt', 'updatedAt'];
+            sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+        }
+        return sheet;
     }
 
     public get weightRecordSheet(): GoogleAppsScript.Spreadsheet.Sheet {

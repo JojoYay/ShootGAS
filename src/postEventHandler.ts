@@ -15,6 +15,18 @@ export const COMMAND_MAP: Command[] = [
         condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'updateUser',
     },
     {
+        func: 'saveRichMenuTemplate',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'saveRichMenuTemplate',
+    },
+    {
+        func: 'deleteRichMenuTemplate',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'deleteRichMenuTemplate',
+    },
+    {
         func: 'uploadInvoice',
         lineCmd: '',
         display: false,

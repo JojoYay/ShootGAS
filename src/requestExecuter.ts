@@ -43,6 +43,50 @@ export class RequestExecuter {
         }
     }
 
+    public saveRichMenuTemplate(postEventHandler: PostEventHandler): void {
+        const id: string = postEventHandler.parameter['id'];
+        const name: string = postEventHandler.parameter['name'];
+        const chatBarText: string = postEventHandler.parameter['chatBarText'];
+        const sizeWidth: string = postEventHandler.parameter['sizeWidth'];
+        const sizeHeight: string = postEventHandler.parameter['sizeHeight'];
+        const areasJson: string = postEventHandler.parameter['areasJson'];
+        const now: string = new Date().toISOString();
+
+        const sheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.richMenuTemplatesSheet;
+        const values = sheet.getDataRange().getValues();
+        const headers = values[0];
+        const idIndex = headers.indexOf('id');
+
+        for (let i = 1; i < values.length; i++) {
+            if (String(values[i][idIndex]) === id) {
+                sheet.getRange(i + 1, headers.indexOf('name') + 1).setValue(name);
+                sheet.getRange(i + 1, headers.indexOf('chatBarText') + 1).setValue(chatBarText);
+                sheet.getRange(i + 1, headers.indexOf('sizeWidth') + 1).setValue(Number(sizeWidth));
+                sheet.getRange(i + 1, headers.indexOf('sizeHeight') + 1).setValue(Number(sizeHeight));
+                sheet.getRange(i + 1, headers.indexOf('areasJson') + 1).setValue(areasJson);
+                sheet.getRange(i + 1, headers.indexOf('updatedAt') + 1).setValue(now);
+                return;
+            }
+        }
+        // 新規追加
+        sheet.appendRow([id, name, chatBarText, Number(sizeWidth), Number(sizeHeight), areasJson, now, now]);
+    }
+
+    public deleteRichMenuTemplate(postEventHandler: PostEventHandler): void {
+        const id: string = postEventHandler.parameter['id'];
+        const sheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.richMenuTemplatesSheet;
+        const values = sheet.getDataRange().getValues();
+        const idIndex = values[0].indexOf('id');
+
+        for (let i = 1; i < values.length; i++) {
+            if (String(values[i][idIndex]) === id) {
+                sheet.deleteRow(i + 1);
+                return;
+            }
+        }
+        throw new Error(`RichMenuTemplate not found: id=${id}`);
+    }
+
     public insertCashBook(postEventHandler: PostEventHandler): void {
         const memo: string = postEventHandler.parameter['memo'];
         const title: string = postEventHandler.parameter['title'];
@@ -986,7 +1030,9 @@ export class RequestExecuter {
                         console.log('3rd ', videoSheetVals[i][10]);
                         flg1 = true;
                         const looser = winner === team1Name ? team2Name : team1Name; // ３位決定戦は勝者じゃない方のチームをセット
-                        const lostMembers = winner === team1Name ? videoSheetVals[targetRow - 1][6] : videoSheetVals[targetRow - 1][5];
+                        // Bug1修正: videoSheetVals はシート更新前のキャッシュのため stale
+                        // team1mem / team2mem を直接使用して助っ人も含めたメンバーを正しく引き継ぐ
+                        const lostMembers = winner === team1Name ? team2mem : team1mem;
                         if (!videoSheetVals[i][3]) {
                             videoSheet.getRange(i + 1, 4).setValue(looser);
                             videoSheet.getRange(i + 1, 6).setValue(lostMembers);
@@ -997,7 +1043,7 @@ export class RequestExecuter {
                     } else if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '#4 決勝') {
                         console.log('1st ', videoSheetVals[i][10]);
                         flg2 = true;
-                        const winMembers = winner === team1Name ? videoSheetVals[targetRow - 1][5] : videoSheetVals[targetRow - 1][6];
+                        const winMembers = winner === team1Name ? team1mem : team2mem;
                         if (!videoSheetVals[i][3]) {
                             videoSheet.getRange(i + 1, 4).setValue(winner);
                             videoSheet.getRange(i + 1, 6).setValue(winMembers);
@@ -1009,7 +1055,7 @@ export class RequestExecuter {
                         console.log('3rd ', videoSheetVals[i][10]);
                         flg3 = true;
                         const looser = winner === team1Name ? team2Name : team1Name; // ３位決定戦は勝者じゃない方のチームをセット
-                        const lostMembers = winner === team1Name ? videoSheetVals[targetRow - 1][6] : videoSheetVals[targetRow - 1][5];
+                        const lostMembers = winner === team1Name ? team2mem : team1mem;
                         if (!videoSheetVals[i][3]) {
                             videoSheet.getRange(i + 1, 4).setValue(looser);
                             videoSheet.getRange(i + 1, 6).setValue(lostMembers);
@@ -1020,7 +1066,7 @@ export class RequestExecuter {
                     } else if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '#4 決勝 Drone') {
                         console.log('1st ', videoSheetVals[i][10]);
                         flg4 = true;
-                        const winMembers = winner === team1Name ? videoSheetVals[targetRow - 1][5] : videoSheetVals[targetRow - 1][6];
+                        const winMembers = winner === team1Name ? team1mem : team2mem;
                         if (!videoSheetVals[i][3]) {
                             videoSheet.getRange(i + 1, 4).setValue(winner);
                             videoSheet.getRange(i + 1, 6).setValue(winMembers);
@@ -1238,7 +1284,8 @@ export class RequestExecuter {
 
         shootLog.appendRow([no + 1, matchId, team, assister ? assister : '', scorer]);
 
-        postEventHander.reponseObj = { success: true };
+        // Bug3修正: クライアントが正確なscoreIdを使えるよう新しいIDを返す
+        postEventHander.reponseObj = { success: true, newScoreId: no + 1 };
     }
 
     public updateGoal(postEventHander: PostEventHandler): void {

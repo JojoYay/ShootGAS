@@ -39,6 +39,13 @@ export class LiffApi {
         this.deleteSheetData(getEventHandler);
     }
 
+    private getRichMenuTemplates(getEventHandler: GetEventHandler): void {
+        const sheet = GasProps.instance.richMenuTemplatesSheet;
+        const values = sheet.getDataRange().getValues();
+        getEventHandler.result.richMenuTemplates = values;
+        getEventHandler.result.jsonRichMenuTemplates = this.convertSheetDataToJson(values);
+    }
+
     private test(getEventHandler: GetEventHandler): void {
         const value: string = getEventHandler.e.parameters['param'][0];
         getEventHandler.result = { result: value };
