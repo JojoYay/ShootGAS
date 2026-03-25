@@ -149,7 +149,19 @@ export class GasProps {
         let sheet: GoogleAppsScript.Spreadsheet.Sheet | null = setting.getSheetByName(this.RICH_MENU_TEMPLATES_SHEET_NAME);
         if (!sheet) {
             sheet = setting.insertSheet(this.RICH_MENU_TEMPLATES_SHEET_NAME);
-            const headers = ['id', 'name', 'chatBarText', 'sizeWidth', 'sizeHeight', 'areasJson', 'createdAt', 'updatedAt'];
+            const headers = [
+                'id',
+                'name',
+                'chatBarText',
+                'sizeWidth',
+                'sizeHeight',
+                'areasJson',
+                'createdAt',
+                'updatedAt',
+                'bgImageUrl',
+                'lineRichMenuId',
+                'isDefault',
+            ];
             sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
         }
         return sheet;

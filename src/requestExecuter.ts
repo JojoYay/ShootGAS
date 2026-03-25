@@ -43,6 +43,22 @@ export class RequestExecuter {
         }
     }
 
+    public uploadRichMenuBgImage(postEventHandler: PostEventHandler): void {
+        const fileBase64: string = postEventHandler.parameter['file'];
+        const mimeType: string = postEventHandler.parameter['mimeType'] || 'image/jpeg';
+        const fileName: string = postEventHandler.parameter['fileName'] || 'richmenu_bg';
+
+        const decodedFile = Utilities.base64Decode(fileBase64);
+        const blob = Utilities.newBlob(decodedFile, mimeType, fileName);
+
+        const folder = GasProps.instance.payNowFolder;
+        const file = folder.createFile(blob);
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+        const bgImageUrl = 'https://lh3.googleusercontent.com/d/' + file.getId();
+        postEventHandler.reponseObj = { bgImageUrl };
+    }
+
     public saveRichMenuTemplate(postEventHandler: PostEventHandler): void {
         const id: string = postEventHandler.parameter['id'];
         const name: string = postEventHandler.parameter['name'];
@@ -50,13 +66,127 @@ export class RequestExecuter {
         const sizeWidth: string = postEventHandler.parameter['sizeWidth'];
         const sizeHeight: string = postEventHandler.parameter['sizeHeight'];
         const areasJson: string = postEventHandler.parameter['areasJson'];
+        const bgImageUrl: string = postEventHandler.parameter['bgImageUrl'] || '';
+        const isDefault: string = postEventHandler.parameter['isDefault'] || 'false';
         const now: string = new Date().toISOString();
 
         const sheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.richMenuTemplatesSheet;
         const values = sheet.getDataRange().getValues();
-        const headers = values[0];
+        const headers = values[0] as string[];
         const idIndex = headers.indexOf('id');
 
+        // 動的に列が足りない場合は追加
+        const ensureCol = (colName: string): number => {
+            let idx = headers.indexOf(colName) + 1;
+            if (idx === 0) {
+                idx = headers.length + 1;
+                sheet.getRange(1, idx).setValue(colName);
+                headers.push(colName);
+            }
+            return idx;
+        };
+        const bgImageUrlColIdx = ensureCol('bgImageUrl');
+        const lineRichMenuIdColIdx = ensureCol('lineRichMenuId');
+        const isDefaultColIdx = ensureCol('isDefault');
+
+        // ── LINE API: リッチメニュー作成 ────────────────────────────────────
+        let oldLineRichMenuId = '';
+        let newLineRichMenuId = '';
+        try {
+            // areasJson をパースして LINE API 用の JSON を生成
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let areas: any[] = [];
+            try {
+                areas = JSON.parse(areasJson);
+            } catch {
+                /* noop */
+            }
+            const richMenuJson = {
+                size: { width: Number(sizeWidth), height: Number(sizeHeight) },
+                selected: true,
+                name: name,
+                chatBarText: chatBarText,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                areas: areas.map((a: any) => {
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    const { label: _label, ...actionWithoutLabel } = a.action;
+                    return { bounds: a.bounds, action: actionWithoutLabel };
+                }),
+            };
+
+            // 既存の lineRichMenuId を取得（編集時）
+            for (let i = 1; i < values.length; i++) {
+                if (String(values[i][idIndex]) === id) {
+                    const oldIdx = headers.indexOf('lineRichMenuId');
+                    if (oldIdx >= 0) {
+                        oldLineRichMenuId = String(values[i][oldIdx] || '');
+                    }
+                    break;
+                }
+            }
+
+            // 旧リッチメニューを削除（編集時）
+            if (oldLineRichMenuId) {
+                try {
+                    lineUtil.deleteRichMenu(oldLineRichMenuId);
+                } catch (e) {
+                    console.log('旧メニュー削除スキップ: ' + e);
+                }
+            }
+
+            // 新規作成
+            newLineRichMenuId = lineUtil.createRichMenu(richMenuJson);
+
+            // 背景画像をアップロード
+            if (bgImageUrl) {
+                try {
+                    // Google Drive URL からファイルIDを抽出して画像を取得
+                    const driveFileIdMatch = bgImageUrl.match(/\/d\/([^/&?]+)/);
+                    if (driveFileIdMatch) {
+                        const driveFileId = driveFileIdMatch[1];
+                        const driveFile = DriveApp.getFileById(driveFileId);
+                        const imageBlob = driveFile.getBlob();
+                        lineUtil.uploadRichMenuImage(newLineRichMenuId, imageBlob);
+                    }
+                } catch (imgErr) {
+                    console.log('画像アップロードエラー（メニュー自体は作成済み）: ' + imgErr);
+                }
+            }
+
+            // 編集時: 割り当て済みユーザーを新しいメニューに再リンク
+            if (oldLineRichMenuId && newLineRichMenuId) {
+                const usersSheet = GasProps.instance.usersSheet;
+                const userValues = usersSheet.getDataRange().getValues();
+                const userHeaders = userValues[0] as string[];
+                const templateIdIdx = userHeaders.indexOf('RichMenuTemplateId');
+                const lineIdIdx = userHeaders.indexOf('LINE ID');
+                if (templateIdIdx >= 0 && lineIdIdx >= 0) {
+                    for (let i = 1; i < userValues.length; i++) {
+                        if (String(userValues[i][templateIdIdx]) === id && userValues[i][lineIdIdx]) {
+                            try {
+                                lineUtil.linkRichMenuToUser(String(userValues[i][lineIdIdx]), newLineRichMenuId);
+                            } catch (linkErr) {
+                                console.log('ユーザー再リンクエラー: ' + linkErr);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // デフォルトテンプレートが再作成された場合、LINE APIのデフォルトも更新
+            if (isDefault === 'true' && newLineRichMenuId) {
+                try {
+                    lineUtil.setDefaultRichMenu(newLineRichMenuId);
+                    console.log('デフォルトリッチメニューを再設定: ' + newLineRichMenuId);
+                } catch (defaultErr) {
+                    console.log('デフォルトリッチメニュー再設定エラー: ' + defaultErr);
+                }
+            }
+        } catch (lineErr) {
+            console.log('LINE API エラー（シートには保存します）: ' + lineErr);
+        }
+
+        // ── シートに保存 ────────────────────────────────────────────────────
         for (let i = 1; i < values.length; i++) {
             if (String(values[i][idIndex]) === id) {
                 sheet.getRange(i + 1, headers.indexOf('name') + 1).setValue(name);
@@ -65,26 +195,207 @@ export class RequestExecuter {
                 sheet.getRange(i + 1, headers.indexOf('sizeHeight') + 1).setValue(Number(sizeHeight));
                 sheet.getRange(i + 1, headers.indexOf('areasJson') + 1).setValue(areasJson);
                 sheet.getRange(i + 1, headers.indexOf('updatedAt') + 1).setValue(now);
+                sheet.getRange(i + 1, bgImageUrlColIdx).setValue(bgImageUrl);
+                sheet.getRange(i + 1, lineRichMenuIdColIdx).setValue(newLineRichMenuId);
+                sheet.getRange(i + 1, isDefaultColIdx).setValue(isDefault);
+                postEventHandler.reponseObj = { success: true, lineRichMenuId: newLineRichMenuId };
                 return;
             }
         }
         // 新規追加
-        sheet.appendRow([id, name, chatBarText, Number(sizeWidth), Number(sizeHeight), areasJson, now, now]);
+        sheet.appendRow([
+            id,
+            name,
+            chatBarText,
+            Number(sizeWidth),
+            Number(sizeHeight),
+            areasJson,
+            now,
+            now,
+            bgImageUrl,
+            newLineRichMenuId,
+            isDefault,
+        ]);
+        postEventHandler.reponseObj = { success: true, lineRichMenuId: newLineRichMenuId };
     }
 
     public deleteRichMenuTemplate(postEventHandler: PostEventHandler): void {
         const id: string = postEventHandler.parameter['id'];
         const sheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.richMenuTemplatesSheet;
         const values = sheet.getDataRange().getValues();
-        const idIndex = values[0].indexOf('id');
+        const headers = values[0] as string[];
+        const idIndex = headers.indexOf('id');
+        const lineRichMenuIdIdx = headers.indexOf('lineRichMenuId');
 
         for (let i = 1; i < values.length; i++) {
             if (String(values[i][idIndex]) === id) {
+                // LINE API: 割り当て済みユーザーのリンク解除 + リッチメニュー削除
+                const lineRichMenuId = lineRichMenuIdIdx >= 0 ? String(values[i][lineRichMenuIdIdx] || '') : '';
+                if (lineRichMenuId) {
+                    // 割り当て済みユーザーを全員解除
+                    try {
+                        const usersSheet = GasProps.instance.usersSheet;
+                        const userValues = usersSheet.getDataRange().getValues();
+                        const userHeaders = userValues[0] as string[];
+                        const templateIdIdx = userHeaders.indexOf('RichMenuTemplateId');
+                        const lineIdIdx = userHeaders.indexOf('LINE ID');
+                        if (templateIdIdx >= 0 && lineIdIdx >= 0) {
+                            for (let u = 1; u < userValues.length; u++) {
+                                if (String(userValues[u][templateIdIdx]) === id && userValues[u][lineIdIdx]) {
+                                    try {
+                                        lineUtil.unlinkRichMenuFromUser(String(userValues[u][lineIdIdx]));
+                                    } catch (e) {
+                                        console.log('unlink skip: ' + e);
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.log('ユーザー解除エラー: ' + e);
+                    }
+
+                    // LINE API からリッチメニュー削除
+                    try {
+                        lineUtil.deleteRichMenu(lineRichMenuId);
+                    } catch (e) {
+                        console.log('LINE deleteRichMenu skip: ' + e);
+                    }
+                }
+
                 sheet.deleteRow(i + 1);
                 return;
             }
         }
         throw new Error(`RichMenuTemplate not found: id=${id}`);
+    }
+
+    public assignRichMenuToUser(postEventHandler: PostEventHandler): void {
+        const userId: string = postEventHandler.parameter['LINE ID'];
+        const templateId: string = postEventHandler.parameter['RichMenuTemplateId'] || '';
+
+        // ── LINE API: リンク ─────────────────────────────────────────────────
+        if (templateId) {
+            // テンプレートの lineRichMenuId をシートから取得
+            const templateSheet = GasProps.instance.richMenuTemplatesSheet;
+            const templateValues = templateSheet.getDataRange().getValues();
+            const templateHeaders = templateValues[0] as string[];
+            const tIdIdx = templateHeaders.indexOf('id');
+            const lineMenuIdx = templateHeaders.indexOf('lineRichMenuId');
+
+            let lineRichMenuId = '';
+            if (tIdIdx >= 0 && lineMenuIdx >= 0) {
+                for (let i = 1; i < templateValues.length; i++) {
+                    if (String(templateValues[i][tIdIdx]) === templateId) {
+                        lineRichMenuId = String(templateValues[i][lineMenuIdx] || '');
+                        break;
+                    }
+                }
+            }
+
+            if (lineRichMenuId) {
+                // 既存メニューを解除してから新しいメニューをリンク
+                try {
+                    lineUtil.unlinkRichMenuFromUser(userId);
+                } catch (e) {
+                    console.log('unlink skip: ' + e);
+                }
+                lineUtil.linkRichMenuToUser(userId, lineRichMenuId);
+            }
+        } else {
+            // テンプレート未選択 = リンク解除
+            try {
+                lineUtil.unlinkRichMenuFromUser(userId);
+            } catch (e) {
+                console.log('unlink skip: ' + e);
+            }
+        }
+
+        // ── シートの RichMenuTemplateId を更新 ──────────────────────────────
+        const usersSheet = GasProps.instance.usersSheet;
+        const userValues = usersSheet.getDataRange().getValues();
+        const userHeaders = userValues[0] as string[];
+        const lineIdIdx = userHeaders.indexOf('LINE ID');
+        const templateIdColIdx = userHeaders.indexOf('RichMenuTemplateId') + 1;
+
+        if (lineIdIdx >= 0 && templateIdColIdx > 0) {
+            for (let i = 1; i < userValues.length; i++) {
+                if (String(userValues[i][lineIdIdx]) === userId) {
+                    usersSheet.getRange(i + 1, templateIdColIdx).setValue(templateId);
+                    break;
+                }
+            }
+        }
+
+        postEventHandler.reponseObj = { success: true };
+    }
+
+    /**
+     * デフォルトリッチメニューを設定/解除する。
+     * id が空の場合はデフォルト解除。
+     * 指定テンプレートの lineRichMenuId を使って LINE API のデフォルトリッチメニューを設定し、
+     * シートの isDefault フラグを更新する。
+     */
+    public setDefaultRichMenuTemplate(postEventHandler: PostEventHandler): void {
+        const templateId: string = postEventHandler.parameter['id'] || '';
+        const templateSheet = GasProps.instance.richMenuTemplatesSheet;
+        const values = templateSheet.getDataRange().getValues();
+        const headers = values[0] as string[];
+        const idIdx = headers.indexOf('id');
+        const lineMenuIdx = headers.indexOf('lineRichMenuId');
+        let isDefaultIdx = headers.indexOf('isDefault');
+
+        // isDefault 列がまだ存在しない場合は追加
+        if (isDefaultIdx < 0) {
+            const lastCol = headers.length + 1;
+            templateSheet.getRange(1, lastCol).setValue('isDefault');
+            isDefaultIdx = headers.length; // 0-based
+        }
+        const isDefaultCol = isDefaultIdx + 1; // 1-based for getRange
+
+        if (!templateId) {
+            // ── デフォルト解除 ──
+            // 全行の isDefault を false に
+            for (let i = 1; i < values.length; i++) {
+                templateSheet.getRange(i + 1, isDefaultCol).setValue('false');
+            }
+            // LINE API: デフォルトリッチメニュー解除
+            try {
+                lineUtil.cancelDefaultRichMenu();
+            } catch (e) {
+                console.log('cancelDefaultRichMenu skip: ' + e);
+            }
+            postEventHandler.reponseObj = { success: true };
+            return;
+        }
+
+        // ── 指定テンプレートをデフォルトに設定 ──
+        let lineRichMenuId = '';
+        for (let i = 1; i < values.length; i++) {
+            const rowId = String(values[i][idIdx]);
+            if (rowId === templateId) {
+                templateSheet.getRange(i + 1, isDefaultCol).setValue('true');
+                if (lineMenuIdx >= 0) {
+                    lineRichMenuId = String(values[i][lineMenuIdx] || '');
+                }
+            } else {
+                templateSheet.getRange(i + 1, isDefaultCol).setValue('false');
+            }
+        }
+
+        // LINE API: デフォルトリッチメニューを設定
+        if (lineRichMenuId) {
+            try {
+                lineUtil.setDefaultRichMenu(lineRichMenuId);
+            } catch (e) {
+                console.log('setDefaultRichMenu error: ' + e);
+                postEventHandler.reponseObj = { success: false, error: 'LINE API でのデフォルト設定に失敗しました: ' + e };
+                return;
+            }
+        } else {
+            console.log('setDefaultRichMenuTemplate: lineRichMenuId is empty, skipping LINE API call');
+        }
+
+        postEventHandler.reponseObj = { success: true };
     }
 
     public insertCashBook(postEventHandler: PostEventHandler): void {
@@ -181,6 +492,33 @@ export class RequestExecuter {
         const balanceFormula = `=IF(ROW()=2, INDEX(E:E, ROW()), INDEX(F:F, ROW()-1) + INDEX(E:E, ROW()))`;
         cashBook.getRange(lastRow, 6).setFormula(balanceFormula); // 6 is the index for the Balance column
         return cashBook;
+    }
+
+    public registerVideoUrl(postEventHander: PostEventHandler): void {
+        console.log('registerVideoUrl');
+        const actDate: string = postEventHander.parameter['actDate'];
+        const fileName: string = postEventHander.parameter['fileName'];
+        const videoUrl: string = postEventHander.parameter['videoUrl'];
+        if (!actDate || !fileName || !videoUrl) {
+            postEventHander.resultMessage = JSON.stringify({ err: 'actDate, fileName, videoUrl are required' });
+            return;
+        }
+        const videoSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
+        const videoSheetVals = videoSheet.getDataRange().getValues();
+        let matchedRowIndex = -1;
+        for (let i = 2; i < videoSheetVals.length; i++) {
+            const row = videoSheetVals[i];
+            if (row[0] === actDate && row[1] === fileName) {
+                matchedRowIndex = i;
+                break;
+            }
+        }
+        if (matchedRowIndex !== -1) {
+            videoSheet.getRange(matchedRowIndex + 1, 3).setValue(videoUrl);
+            postEventHander.resultMessage = JSON.stringify({ success: true });
+        } else {
+            postEventHander.resultMessage = JSON.stringify({ err: `No matching row found for actDate: ${actDate} and fileName: ${fileName}` });
+        }
     }
 
     public uploadToYoutube(postEventHander: PostEventHandler): void {

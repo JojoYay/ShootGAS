@@ -175,6 +175,159 @@ export class LineUtil {
         return folder;
     }
 
+    // ─── Rich Menu API ─────────────────────────────────────────────────────
+
+    /**
+     * LINE API にリッチメニューを作成し、richMenuId を返す。
+     */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    public createRichMenu(richMenuJson: any): string {
+        const url = 'https://api.line.me/v2/bot/richmenu';
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + ScriptProps.instance.lineAccessToken,
+        };
+        const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
+            method: 'post',
+            headers: headers,
+            payload: JSON.stringify(richMenuJson),
+            muteHttpExceptions: true,
+        };
+        const response = UrlFetchApp.fetch(url, options);
+        const result = JSON.parse(response.getContentText());
+        if (response.getResponseCode() !== 200) {
+            throw new Error(`createRichMenu failed: ${response.getContentText()}`);
+        }
+        console.log('createRichMenu: ' + result.richMenuId);
+        return result.richMenuId;
+    }
+
+    /**
+     * リッチメニューに背景画像をアップロードする。
+     * LINE の image upload エンドポイントは api-data.line.me を使う。
+     */
+    public uploadRichMenuImage(richMenuId: string, imageBlob: GoogleAppsScript.Base.Blob): void {
+        const url = `https://api-data.line.me/v2/bot/richmenu/${richMenuId}/content`;
+        const headers = {
+            'Content-Type': imageBlob.getContentType() || 'image/png',
+            'Authorization': 'Bearer ' + ScriptProps.instance.lineAccessToken,
+        };
+        const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
+            method: 'post',
+            headers: headers,
+            payload: imageBlob.getBytes(),
+            muteHttpExceptions: true,
+        };
+        const response = UrlFetchApp.fetch(url, options);
+        if (response.getResponseCode() !== 200) {
+            throw new Error(`uploadRichMenuImage failed: ${response.getContentText()}`);
+        }
+        console.log('uploadRichMenuImage success for: ' + richMenuId);
+    }
+
+    /**
+     * ユーザーにリッチメニューをリンクする。
+     */
+    public linkRichMenuToUser(userId: string, richMenuId: string): void {
+        const url = `https://api.line.me/v2/bot/user/${userId}/richmenu/${richMenuId}`;
+        const headers = {
+            Authorization: 'Bearer ' + ScriptProps.instance.lineAccessToken,
+        };
+        const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
+            method: 'post',
+            headers: headers,
+            muteHttpExceptions: true,
+        };
+        const response = UrlFetchApp.fetch(url, options);
+        if (response.getResponseCode() !== 200) {
+            throw new Error(`linkRichMenuToUser failed: ${response.getContentText()}`);
+        }
+        console.log(`linkRichMenuToUser: ${userId} → ${richMenuId}`);
+    }
+
+    /**
+     * ユーザーからリッチメニューのリンクを解除する。
+     */
+    public unlinkRichMenuFromUser(userId: string): void {
+        const url = `https://api.line.me/v2/bot/user/${userId}/richmenu`;
+        const headers = {
+            Authorization: 'Bearer ' + ScriptProps.instance.lineAccessToken,
+        };
+        const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
+            method: 'delete',
+            headers: headers,
+            muteHttpExceptions: true,
+        };
+        const response = UrlFetchApp.fetch(url, options);
+        // 404 = no rich menu linked (not an error)
+        if (response.getResponseCode() !== 200 && response.getResponseCode() !== 404) {
+            throw new Error(`unlinkRichMenuFromUser failed: ${response.getContentText()}`);
+        }
+        console.log('unlinkRichMenuFromUser: ' + userId);
+    }
+
+    /**
+     * リッチメニューをデフォルト（全ユーザー）に設定する。
+     * 個別にリンクされていないユーザー全員にこのメニューが表示される。
+     */
+    public setDefaultRichMenu(richMenuId: string): void {
+        const url = `https://api.line.me/v2/bot/user/all/richmenu/${richMenuId}`;
+        const headers = {
+            Authorization: 'Bearer ' + ScriptProps.instance.lineAccessToken,
+        };
+        const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
+            method: 'post',
+            headers: headers,
+            muteHttpExceptions: true,
+        };
+        const response = UrlFetchApp.fetch(url, options);
+        if (response.getResponseCode() !== 200) {
+            throw new Error(`setDefaultRichMenu failed: ${response.getContentText()}`);
+        }
+        console.log('setDefaultRichMenu: ' + richMenuId);
+    }
+
+    /**
+     * デフォルトリッチメニューの設定を解除する。
+     */
+    public cancelDefaultRichMenu(): void {
+        const url = 'https://api.line.me/v2/bot/user/all/richmenu';
+        const headers = {
+            Authorization: 'Bearer ' + ScriptProps.instance.lineAccessToken,
+        };
+        const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
+            method: 'delete',
+            headers: headers,
+            muteHttpExceptions: true,
+        };
+        const response = UrlFetchApp.fetch(url, options);
+        // 404 = no default rich menu set (not an error)
+        if (response.getResponseCode() !== 200 && response.getResponseCode() !== 404) {
+            throw new Error(`cancelDefaultRichMenu failed: ${response.getContentText()}`);
+        }
+        console.log('cancelDefaultRichMenu done');
+    }
+
+    /**
+     * LINE API からリッチメニューを削除する。
+     */
+    public deleteRichMenu(richMenuId: string): void {
+        const url = `https://api.line.me/v2/bot/richmenu/${richMenuId}`;
+        const headers = {
+            Authorization: 'Bearer ' + ScriptProps.instance.lineAccessToken,
+        };
+        const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
+            method: 'delete',
+            headers: headers,
+            muteHttpExceptions: true,
+        };
+        const response = UrlFetchApp.fetch(url, options);
+        if (response.getResponseCode() !== 200 && response.getResponseCode() !== 404) {
+            throw new Error(`deleteRichMenu failed: ${response.getContentText()}`);
+        }
+        console.log('deleteRichMenu: ' + richMenuId);
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public getCarouselBase(): any {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
