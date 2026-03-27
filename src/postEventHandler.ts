@@ -250,6 +250,15 @@ export const COMMAND_MAP: Command[] = [
             postEventHander.messageType === 'text' &&
             (postEventHander.messageText === '未払い' || postEventHander.messageText.toLowerCase() === 'unpaid'),
     },
+    {
+        func: 'seikyuu',
+        lineCmd: '請求, seikyuu',
+        display: true,
+        condition: (postEventHander: PostEventHandler) =>
+            postEventHander.type === 'message' &&
+            postEventHander.messageType === 'text' &&
+            (postEventHander.messageText === '請求' || postEventHander.messageText.toLowerCase() === 'seikyuu'),
+    },
     // {
     //     func: 'unRegister',
     //     lineCmd: '未登録参加者, unregister',

@@ -1088,4 +1088,106 @@ export class LiffApi {
                 throw Error('task typeが指定されていません');
         }
     }
+
+    // ── 集計完了チェック ────────────────────────────────────────────────────
+    /**
+     * 集計完了に必要な5条件を確認して結果を返す。
+     * calendarId から actDate を特定し、各データソースをチェックする。
+     */
+    private getAggregationStatus(getEventHandler: GetEventHandler): void {
+        const calendarId: string = getEventHandler.e.parameter['calendarId'];
+        if (!calendarId) {
+            getEventHandler.result.aggregationStatus = { error: 'calendarId is required' };
+            return;
+        }
+
+        // カレンダーシートから actDate を導出（extractDateFromRownum と同じフォーマット）
+        const su = new SchedulerUtil();
+        const cValues = su.calendarSheet.getDataRange().getValues();
+        let actDate = '';
+        for (let i = 1; i < cValues.length; i++) {
+            if (cValues[i][0].toString() === calendarId) {
+                const date = new Date(cValues[i][3]);
+                actDate = cValues[i][2] + '(' + Utilities.formatDate(date, Session.getScriptTimeZone(), 'dd MMM') + ')';
+                break;
+            }
+        }
+        if (!actDate) {
+            getEventHandler.result.aggregationStatus = { error: 'Event not found: ' + calendarId };
+            return;
+        }
+
+        const gasUtil = new GasUtil();
+
+        // 1. 支払い完了: レポートシートの全参加者(9行目以降)が支払い済みか
+        let payment = false;
+        try {
+            payment = gasUtil.getUnpaid(actDate).length === 0;
+        } catch (_e) {
+            payment = false; // reportSheet が未生成の場合
+        }
+
+        // 2. 点数登録: videoシートに actDate の行があり URL が設定されているか
+        let video = false;
+        try {
+            const videoVals = GasProps.instance.videoSheet.getDataRange().getValues();
+            video = videoVals.slice(1).some(row => row[0].toString() === actDate && !!row[2]);
+        } catch (_e) {
+            video = false;
+        }
+
+        // 3. 試合結果・MIP: EventData に actDate の行があり、チーム得点(col7-16)と MIP(col5,17-20)が入力済みか
+        let eventResult = false;
+        try {
+            const erVals = GasProps.instance.eventResultSheet.getDataRange().getValues();
+            for (let i = 1; i < erVals.length; i++) {
+                if (erVals[i][1].toString() === actDate) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const hasScore = erVals[i].slice(7, 17).some((v: any) => v !== '' && v !== null && v !== undefined && v !== 0);
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const hasMip = [5, 17, 18, 19, 20].some(idx => !!(erVals[i] as any[])[idx]);
+                    eventResult = hasScore && hasMip;
+                    break;
+                }
+            }
+        } catch (_e) {
+            eventResult = false;
+        }
+
+        // 4. ランキング集計: 3ランキングシートのrow2(ヘッダー行)に actDate が含まれるか
+        let ranking = false;
+        try {
+            const hasDateInRow2 = (sheet: GoogleAppsScript.Spreadsheet.Sheet): boolean => {
+                const lastCol = sheet.getLastColumn();
+                if (lastCol < 1) return false;
+                const row2 = sheet.getRange(2, 1, 1, lastCol).getValues()[0];
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                return row2.some((cell: any) => cell !== null && cell !== undefined && cell.toString() === actDate);
+            };
+            ranking =
+                hasDateInRow2(GasProps.instance.gRankingSheet) &&
+                hasDateInRow2(GasProps.instance.aRankingSheet) &&
+                hasDateInRow2(GasProps.instance.oRankingSheet);
+        } catch (_e) {
+            ranking = false;
+        }
+
+        // 5. CashBook更新: CashBookシートに actDate(col B = index 1)の行があるか
+        let cashBook = false;
+        try {
+            const cbVals = GasProps.instance.cashBookSheet.getDataRange().getValues();
+            cashBook = cbVals.slice(1).some(row => row[1].toString() === actDate);
+        } catch (_e) {
+            cashBook = false;
+        }
+
+        getEventHandler.result.aggregationStatus = {
+            actDate,
+            payment,
+            video,
+            eventResult,
+            ranking,
+            cashBook,
+        };
+    }
 }

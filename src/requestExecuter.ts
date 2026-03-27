@@ -686,8 +686,23 @@ export class RequestExecuter {
                 case 'Picture':
                     newRowData.push(picUrl);
                     break;
-                case '幹事フラグ': // 幹事フラグはパラメータにないため空文字
+                case '幹事フラグ':
                     newRowData.push('');
+                    break;
+                case 'child1':
+                    newRowData.push(postEventHander.parameter['child1'] || '');
+                    break;
+                case 'child2':
+                    newRowData.push(postEventHander.parameter['child2'] || '');
+                    break;
+                case 'child3':
+                    newRowData.push(postEventHander.parameter['child3'] || '');
+                    break;
+                case 'child4':
+                    newRowData.push(postEventHander.parameter['child4'] || '');
+                    break;
+                case 'child5':
+                    newRowData.push(postEventHander.parameter['child5'] || '');
                     break;
                 default:
                     newRowData.push(''); // その他のヘッダーの場合は空文字をセット
@@ -2453,6 +2468,55 @@ export class RequestExecuter {
         const actDate = su.extractDateFromRownum();
         const unpaid = gasUtil.getUnpaid(actDate);
         postEventHander.resultMessage = '未払いの人 (' + unpaid.length + '名): ' + unpaid.join(', ');
+    }
+
+    public seikyuu(postEventHander: PostEventHandler): void {
+        if (!gasUtil.isKanji(postEventHander.userId)) {
+            postEventHander.resultMessage = 'このコマンドは幹事のみ使用できます。';
+            return;
+        }
+
+        const su: SchedulerUtil = new SchedulerUtil();
+        const actDate = su.extractDateFromRownum();
+        const payNowAddy = su.getPayNowAddress();
+        const participationFee = su.getPaticipationFee();
+        const unpaidNames = gasUtil.getUnpaid(actDate);
+
+        if (unpaidNames.length === 0) {
+            postEventHander.resultMessage = '未払いの方はいません。全員支払い済みです！';
+            return;
+        }
+
+        const message =
+            `${actDate}のサッカーの支払いがまだです。\n` +
+            `PayNow先: ${payNowAddy}\n` +
+            `参加費: $${participationFee}\n` +
+            `PayNowのスクリーンショットをSundayShootチャンネルに送信してください！\n` +
+            `（このメッセージに返信しても読みません。）\n\n` +
+            `Payment for ${actDate} soccer is pending.\n` +
+            `PayNow: ${payNowAddy}\n` +
+            `Fee: $${participationFee}\n` +
+            `Please send your PayNow screenshot to the SundayShoot LINE channel!\n` +
+            `(Replies to this message are not monitored.)`;
+
+        const sentNames: string[] = [];
+        const skippedNames: string[] = [];
+
+        for (const densukeName of unpaidNames) {
+            const userId = gasUtil.getLineUserId(densukeName);
+            if (userId) {
+                lineUtil.sendLineMessage(userId, message);
+                sentNames.push(densukeName);
+            } else {
+                skippedNames.push(densukeName);
+            }
+        }
+
+        let result = `請求メッセージを${sentNames.length}名に送信しました: ${sentNames.join(', ')}`;
+        if (skippedNames.length > 0) {
+            result += `\n（LINE ID未登録のため未送信: ${skippedNames.join(', ')}）`;
+        }
+        postEventHander.resultMessage = result;
     }
 
     public remind(postEventHander: PostEventHandler): void {
