@@ -1068,20 +1068,69 @@ export class RequestExecuter {
                     }
                 });
             } else {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const newRowData: any[] = [];
-                // ヘッダー行に基づいて新しい行データを作成
-                headerRow.forEach(header => {
-                    if (header === 'attendance_id') {
-                        newRowData.push(Utilities.getUuid()); // attendance_id がない場合は新規にUUIDを生成
-                    } else if (updateData[header]) {
-                        newRowData.push(updateData[header]);
-                    } else {
-                        newRowData.push(''); // データがない場合は空文字
+                // attendance_id が未指定の場合でも、同一 user_id+calendar_id+year+month+date の
+                // レコードが既に存在しないか確認して重複作成を防ぐ（二重送信・競合対策）
+                const colUserId = headerRow.indexOf('user_id');
+                const colCalId = headerRow.indexOf('calendar_id');
+                const colYear = headerRow.indexOf('year');
+                const colMonth = headerRow.indexOf('month');
+                const colDateH = headerRow.indexOf('date');
+                let duplicateRowNum: number | null = null;
+                for (let i = 1; i < attendanceValues.length; i++) {
+                    const r = attendanceValues[i];
+                    if (
+                        String(r[colUserId]) === String(updateData['user_id']) &&
+                        String(r[colCalId]) === String(updateData['calendar_id']) &&
+                        String(r[colYear]) === String(updateData['year']) &&
+                        String(r[colMonth]) === String(updateData['month']) &&
+                        String(r[colDateH]) === String(updateData['date'])
+                    ) {
+                        duplicateRowNum = i + 1;
+                        break;
                     }
-                });
-                // console.log(newRowData);
-                attendanceSheet.appendRow(newRowData);
+                }
+
+                if (duplicateRowNum) {
+                    // 重複レコード検出 → appendRowではなく既存行を更新
+                    console.warn(`重複検出: user_id=${updateData['user_id']} calendar_id=${updateData['calendar_id']} → 行${duplicateRowNum}を更新`);
+                    const row = duplicateRowNum;
+                    [
+                        'user_id',
+                        'year',
+                        'month',
+                        'date',
+                        'status',
+                        'calendar_id',
+                        'adult_count',
+                        'child_count',
+                        'child1',
+                        'child2',
+                        'child3',
+                        'child4',
+                        'child5',
+                    ].forEach(paramName => {
+                        if (updateData[paramName] !== undefined) {
+                            const colIndex = headerRow.indexOf(paramName);
+                            if (colIndex > -1) {
+                                attendanceSheet.getRange(row, colIndex + 1).setValue(updateData[paramName]);
+                            }
+                        }
+                    });
+                } else {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const newRowData: any[] = [];
+                    // ヘッダー行に基づいて新しい行データを作成
+                    headerRow.forEach(header => {
+                        if (header === 'attendance_id') {
+                            newRowData.push(Utilities.getUuid()); // attendance_id がない場合は新規にUUIDを生成
+                        } else if (updateData[header]) {
+                            newRowData.push(updateData[header]);
+                        } else {
+                            newRowData.push(''); // データがない場合は空文字
+                        }
+                    });
+                    attendanceSheet.appendRow(newRowData);
+                }
             }
             //EventDetailsも無かったら作ってデータぶっこんでおく
             //これによりRankingBatchが基本要らなくなるはず
@@ -1256,187 +1305,249 @@ export class RequestExecuter {
     //毎回全部集計してアシストと得点を入れなおす
     public closeGame(postEventHander: PostEventHandler): void {
         console.log('closegame');
-        const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
-        const su: SchedulerUtil = new SchedulerUtil();
-        const actDate = su.extractDateFromRownum();
-        const shootLog: GoogleAppsScript.Spreadsheet.Sheet | null = eventSS.getSheetByName(this.getLogSheetName(actDate));
-        if (!shootLog) {
-            throw Error(this.getLogSheetName(actDate) + 'が存在しません！');
-        }
-        const shootLogVals = shootLog.getDataRange().getValues();
-        const matchId: string = postEventHander.parameter['matchId'];
-        const winner: string = postEventHander.parameter['winningTeam'];
-
-        const team1mem: string = postEventHander.parameter['team1Players'];
-        const team2mem: string = postEventHander.parameter['team2Players'];
-
-        const scoreBook: ScoreBook = new ScoreBook();
-        const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = scoreBook.getEventDetailSheet(eventSS, actDate);
-        const eventDetailVals = eventDetail.getDataRange().getValues();
-
-        // プレイヤーごとの得点とアシストを集計するオブジェクト
-        const playerStats: { [playerName: string]: { goals: number; assists: number } } = {};
-
-        // shootLogVals をループして得点とアシストを集計
-        for (let i = 1; i < shootLogVals.length; i++) {
-            const row = shootLogVals[i];
-            const scorer = row[4]; // ゴール (D列)
-            const assister = row[3]; // アシスト (E列)
-
-            // 得点者の集計
-            if (scorer) {
-                playerStats[scorer] = playerStats[scorer] || { goals: 0, assists: 0 };
-                playerStats[scorer].goals++;
+        // 2台同時登録によるレースコンディションを防ぐためスクリプトロックを取得
+        const lock = LockService.getScriptLock();
+        lock.waitLock(15000); // 最大15秒待機（先行処理が終わるまでブロック）
+        try {
+            const eventSS: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(ScriptProps.instance.eventResults);
+            const su: SchedulerUtil = new SchedulerUtil();
+            const actDate = su.extractDateFromRownum();
+            const shootLog: GoogleAppsScript.Spreadsheet.Sheet | null = eventSS.getSheetByName(this.getLogSheetName(actDate));
+            if (!shootLog) {
+                throw Error(this.getLogSheetName(actDate) + 'が存在しません！');
             }
-            // アシスト者の集計
-            if (assister) {
-                playerStats[assister] = playerStats[assister] || { goals: 0, assists: 0 };
-                playerStats[assister].assists++;
-            }
-        }
+            const shootLogVals = shootLog.getDataRange().getValues();
+            const matchId: string = postEventHander.parameter['matchId'];
+            const winner: string = postEventHander.parameter['winningTeam'];
 
-        const goalsUpdates = [];
-        const assistsUpdates = [];
+            const team1mem: string = postEventHander.parameter['team1Players'];
+            const team2mem: string = postEventHander.parameter['team2Players'];
 
-        for (let i = 1; i < eventDetailVals.length; i++) {
-            const row = eventDetailVals[i];
-            const playerName = row[0]; // 名前 (A列)
-            if (playerName in playerStats) {
-                const stats = playerStats[playerName];
-                goalsUpdates.push([stats.goals > 0 ? stats.goals : '']); // 3列目 (C列) : 得点
-                assistsUpdates.push([stats.assists > 0 ? stats.assists : '']); // 4列目 (D列) : アシスト
-            } else {
-                goalsUpdates.push(['']); // 0点の場合は空文字
-                assistsUpdates.push(['']); // 0アシストの場合は空文字
-            }
-        }
+            const scoreBook: ScoreBook = new ScoreBook();
+            const eventDetail: GoogleAppsScript.Spreadsheet.Sheet = scoreBook.getEventDetailSheet(eventSS, actDate);
+            const eventDetailVals = eventDetail.getDataRange().getValues();
 
-        // 一度に得点とアシストを設定
-        eventDetail.getRange(2, 3, goalsUpdates.length, 1).setValues(goalsUpdates);
-        eventDetail.getRange(2, 4, assistsUpdates.length, 1).setValues(assistsUpdates);
+            // プレイヤーごとの得点とアシストを集計するオブジェクト
+            const playerStats: { [playerName: string]: { goals: number; assists: number } } = {};
 
-        // videoSheet の更新処理
-        const videoSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
-        const videoSheetVals = videoSheet.getDataRange().getValues();
-        let targetRow: number | null = null;
-        let droneTargetRow: number | null = null;
-
-        // videoSheetVals をループして matchId が一致する行を探す (1行目はヘッダー行と仮定)
-        for (let i = videoSheetVals.length - 1; i >= 1; i--) {
-            if (videoSheetVals[i][10] === matchId) {
-                targetRow = i + 1; // スプレッドシートの行番号は1から始まるので +1
-                break; // matchId が見つかったのでループを抜ける
-            }
-        }
-
-        // videoSheetVals をループして matchId が一致する行を探す (1行目はヘッダー行と仮定)
-        for (let i = videoSheetVals.length - 1; i >= 1; i--) {
-            if (videoSheetVals[i][10] === matchId + 'd') {
-                droneTargetRow = i + 1; // スプレッドシートの行番号は1から始まるので +1
-                break; // matchId が見つかったのでループを抜ける
-            }
-        }
-
-        if (targetRow && droneTargetRow) {
-            // matchId に一致する行が見つかった場合、データを更新
-            const team1Name: string = videoSheetVals[targetRow - 1][3]; // 4列目 (D列) : チーム1名
-            const team2Name: string = videoSheetVals[targetRow - 1][4]; // 5列目 (E列) : チーム2名
-
-            let team1Score: number = 0;
-            let team2Score: number = 0;
-
-            // 該当の matchId に基づいて shootLogVals をループ処理
+            // shootLogVals をループして得点とアシストを集計
             for (let i = 1; i < shootLogVals.length; i++) {
-                const log = shootLogVals[i];
-                const logMatchId = log[1]; // 2列目の値を取得
+                const row = shootLogVals[i];
+                const scorer = row[4]; // ゴール (D列)
+                const assister = row[3]; // アシスト (E列)
 
-                if (logMatchId === matchId) {
-                    const logTeamName = log[2]; // ゴールを決めたプレイヤー名 (D列)
-                    if (team1Name === logTeamName) {
-                        team1Score++;
-                    } else if (team2Name === logTeamName) {
-                        team2Score++;
-                    }
+                // 得点者の集計
+                if (scorer) {
+                    playerStats[scorer] = playerStats[scorer] || { goals: 0, assists: 0 };
+                    playerStats[scorer].goals++;
+                }
+                // アシスト者の集計
+                if (assister) {
+                    playerStats[assister] = playerStats[assister] || { goals: 0, assists: 0 };
+                    playerStats[assister].assists++;
                 }
             }
 
-            // 一度に得点を設定
-            videoSheet.getRange(targetRow, 6, 1, 5).setValues([[team1mem, team2mem, team1Score, team2Score, winner]]);
-            videoSheet.getRange(droneTargetRow, 6, 1, 5).setValues([[team1mem, team2mem, team1Score, team2Score, winner]]);
+            const goalsUpdates = [];
+            const assistsUpdates = [];
 
-            const lastHyphenIndex = matchId.lastIndexOf('-');
-            let matchType = null;
-            if (lastHyphenIndex !== -1) {
-                matchType = matchId.substring(lastHyphenIndex + 1);
-            }
-
-            console.log('matchType', matchType);
-            if (matchType?.startsWith('4_1') || matchType?.startsWith('4_2')) {
-                console.log('enter');
-                //今のところ４人の場合のみトーナメント
-                let flg1 = false;
-                let flg2 = false;
-                let flg3 = false;
-                let flg4 = false;
-                for (let i = videoSheetVals.length - 1; i >= 1; i--) {
-                    if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '#3 ３位決定戦') {
-                        console.log('3rd ', videoSheetVals[i][10]);
-                        flg1 = true;
-                        const looser = winner === team1Name ? team2Name : team1Name; // ３位決定戦は勝者じゃない方のチームをセット
-                        // Bug1修正: videoSheetVals はシート更新前のキャッシュのため stale
-                        // team1mem / team2mem を直接使用して助っ人も含めたメンバーを正しく引き継ぐ
-                        const lostMembers = winner === team1Name ? team2mem : team1mem;
-                        if (!videoSheetVals[i][3]) {
-                            videoSheet.getRange(i + 1, 4).setValue(looser);
-                            videoSheet.getRange(i + 1, 6).setValue(lostMembers);
-                        } else if (!videoSheetVals[i][4]) {
-                            videoSheet.getRange(i + 1, 5).setValue(looser);
-                            videoSheet.getRange(i + 1, 7).setValue(lostMembers);
-                        }
-                    } else if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '#4 決勝') {
-                        console.log('1st ', videoSheetVals[i][10]);
-                        flg2 = true;
-                        const winMembers = winner === team1Name ? team1mem : team2mem;
-                        if (!videoSheetVals[i][3]) {
-                            videoSheet.getRange(i + 1, 4).setValue(winner);
-                            videoSheet.getRange(i + 1, 6).setValue(winMembers);
-                        } else if (!videoSheetVals[i][4]) {
-                            videoSheet.getRange(i + 1, 5).setValue(winner);
-                            videoSheet.getRange(i + 1, 7).setValue(winMembers);
-                        }
-                    } else if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '#3 ３位決定戦 Drone') {
-                        console.log('3rd ', videoSheetVals[i][10]);
-                        flg3 = true;
-                        const looser = winner === team1Name ? team2Name : team1Name; // ３位決定戦は勝者じゃない方のチームをセット
-                        const lostMembers = winner === team1Name ? team2mem : team1mem;
-                        if (!videoSheetVals[i][3]) {
-                            videoSheet.getRange(i + 1, 4).setValue(looser);
-                            videoSheet.getRange(i + 1, 6).setValue(lostMembers);
-                        } else if (!videoSheetVals[i][4]) {
-                            videoSheet.getRange(i + 1, 5).setValue(looser);
-                            videoSheet.getRange(i + 1, 7).setValue(lostMembers);
-                        }
-                    } else if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '#4 決勝 Drone') {
-                        console.log('1st ', videoSheetVals[i][10]);
-                        flg4 = true;
-                        const winMembers = winner === team1Name ? team1mem : team2mem;
-                        if (!videoSheetVals[i][3]) {
-                            videoSheet.getRange(i + 1, 4).setValue(winner);
-                            videoSheet.getRange(i + 1, 6).setValue(winMembers);
-                        } else if (!videoSheetVals[i][4]) {
-                            videoSheet.getRange(i + 1, 5).setValue(winner);
-                            videoSheet.getRange(i + 1, 7).setValue(winMembers);
-                        }
-                    }
-                    if (flg1 && flg2 && flg3 && flg4) {
-                        break;
-                    }
+            for (let i = 1; i < eventDetailVals.length; i++) {
+                const row = eventDetailVals[i];
+                const playerName = row[0]; // 名前 (A列)
+                if (playerName in playerStats) {
+                    const stats = playerStats[playerName];
+                    goalsUpdates.push([stats.goals > 0 ? stats.goals : '']); // 3列目 (C列) : 得点
+                    assistsUpdates.push([stats.assists > 0 ? stats.assists : '']); // 4列目 (D列) : アシスト
+                } else {
+                    goalsUpdates.push(['']); // 0点の場合は空文字
+                    assistsUpdates.push(['']); // 0アシストの場合は空文字
                 }
             }
-        } else {
-            console.warn(`No row found in videoSheet with matchId: ${matchId}.`);
+
+            // 一度に得点とアシストを設定
+            eventDetail.getRange(2, 3, goalsUpdates.length, 1).setValues(goalsUpdates);
+            eventDetail.getRange(2, 4, assistsUpdates.length, 1).setValues(assistsUpdates);
+
+            // videoSheet の更新処理
+            const videoSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
+            const videoSheetVals = videoSheet.getDataRange().getValues();
+            let targetRow: number | null = null;
+            let droneTargetRow: number | null = null;
+
+            // videoSheetVals をループして matchId が一致する行を探す (1行目はヘッダー行と仮定)
+            for (let i = videoSheetVals.length - 1; i >= 1; i--) {
+                if (videoSheetVals[i][10] === matchId) {
+                    targetRow = i + 1; // スプレッドシートの行番号は1から始まるので +1
+                    break; // matchId が見つかったのでループを抜ける
+                }
+            }
+
+            // videoSheetVals をループして matchId が一致する行を探す (1行目はヘッダー行と仮定)
+            for (let i = videoSheetVals.length - 1; i >= 1; i--) {
+                if (videoSheetVals[i][10] === matchId + 'd') {
+                    droneTargetRow = i + 1; // スプレッドシートの行番号は1から始まるので +1
+                    break; // matchId が見つかったのでループを抜ける
+                }
+            }
+
+            if (targetRow && droneTargetRow) {
+                // matchId に一致する行が見つかった場合、データを更新
+                const team1Name: string = videoSheetVals[targetRow - 1][3]; // 4列目 (D列) : チーム1名
+                const team2Name: string = videoSheetVals[targetRow - 1][4]; // 5列目 (E列) : チーム2名
+
+                let team1Score: number = 0;
+                let team2Score: number = 0;
+
+                // 該当の matchId に基づいて shootLogVals をループ処理
+                for (let i = 1; i < shootLogVals.length; i++) {
+                    const log = shootLogVals[i];
+                    const logMatchId = log[1]; // 2列目の値を取得
+
+                    if (logMatchId === matchId) {
+                        const logTeamName = log[2]; // ゴールを決めたプレイヤー名 (D列)
+                        if (team1Name === logTeamName) {
+                            team1Score++;
+                        } else if (team2Name === logTeamName) {
+                            team2Score++;
+                        }
+                    }
+                }
+
+                // 一度に得点を設定
+                videoSheet.getRange(targetRow, 6, 1, 5).setValues([[team1mem, team2mem, team1Score, team2Score, winner]]);
+                videoSheet.getRange(droneTargetRow, 6, 1, 5).setValues([[team1mem, team2mem, team1Score, team2Score, winner]]);
+
+                const lastHyphenIndex = matchId.lastIndexOf('-');
+                let matchType = null;
+                if (lastHyphenIndex !== -1) {
+                    matchType = matchId.substring(lastHyphenIndex + 1);
+                }
+
+                console.log('matchType', matchType);
+                if (matchType?.startsWith('4_1') || matchType?.startsWith('4_2')) {
+                    console.log('enter');
+                    //今のところ４人の場合のみトーナメント
+                    let flg1 = false;
+                    let flg2 = false;
+                    let flg3 = false;
+                    let flg4 = false;
+                    for (let i = videoSheetVals.length - 1; i >= 1; i--) {
+                        if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '#3 ３位決定戦') {
+                            console.log('3rd ', videoSheetVals[i][10]);
+                            flg1 = true;
+                            const looser = winner === team1Name ? team2Name : team1Name; // ３位決定戦は勝者じゃない方のチームをセット
+                            // Bug1修正: videoSheetVals はシート更新前のキャッシュのため stale
+                            // team1mem / team2mem を直接使用して助っ人も含めたメンバーを正しく引き継ぐ
+                            const lostMembers = winner === team1Name ? team2mem : team1mem;
+                            if (!videoSheetVals[i][3]) {
+                                videoSheet.getRange(i + 1, 4).setValue(looser);
+                                videoSheet.getRange(i + 1, 6).setValue(lostMembers);
+                            } else if (!videoSheetVals[i][4]) {
+                                videoSheet.getRange(i + 1, 5).setValue(looser);
+                                videoSheet.getRange(i + 1, 7).setValue(lostMembers);
+                            }
+                        } else if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '#4 決勝') {
+                            console.log('1st ', videoSheetVals[i][10]);
+                            flg2 = true;
+                            const winMembers = winner === team1Name ? team1mem : team2mem;
+                            if (!videoSheetVals[i][3]) {
+                                videoSheet.getRange(i + 1, 4).setValue(winner);
+                                videoSheet.getRange(i + 1, 6).setValue(winMembers);
+                            } else if (!videoSheetVals[i][4]) {
+                                videoSheet.getRange(i + 1, 5).setValue(winner);
+                                videoSheet.getRange(i + 1, 7).setValue(winMembers);
+                            }
+                        } else if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '#3 ３位決定戦 Drone') {
+                            console.log('3rd ', videoSheetVals[i][10]);
+                            flg3 = true;
+                            const looser = winner === team1Name ? team2Name : team1Name; // ３位決定戦は勝者じゃない方のチームをセット
+                            const lostMembers = winner === team1Name ? team2mem : team1mem;
+                            if (!videoSheetVals[i][3]) {
+                                videoSheet.getRange(i + 1, 4).setValue(looser);
+                                videoSheet.getRange(i + 1, 6).setValue(lostMembers);
+                            } else if (!videoSheetVals[i][4]) {
+                                videoSheet.getRange(i + 1, 5).setValue(looser);
+                                videoSheet.getRange(i + 1, 7).setValue(lostMembers);
+                            }
+                        } else if (videoSheetVals[i][0] === actDate && videoSheetVals[i][1] === '#4 決勝 Drone') {
+                            console.log('1st ', videoSheetVals[i][10]);
+                            flg4 = true;
+                            const winMembers = winner === team1Name ? team1mem : team2mem;
+                            if (!videoSheetVals[i][3]) {
+                                videoSheet.getRange(i + 1, 4).setValue(winner);
+                                videoSheet.getRange(i + 1, 6).setValue(winMembers);
+                            } else if (!videoSheetVals[i][4]) {
+                                videoSheet.getRange(i + 1, 5).setValue(winner);
+                                videoSheet.getRange(i + 1, 7).setValue(winMembers);
+                            }
+                        }
+                        if (flg1 && flg2 && flg3 && flg4) {
+                            break;
+                        }
+                    }
+                } else if (matchType && matchType.startsWith('6_')) {
+                    // 6チーム2面 負け残り方式 ブラケット自動埋め
+                    // ヘルパー: 最新のシート値を取得してターゲット行の空きスロットにチームを埋める
+                    const fillSlot6 = (suffix: string, teamName: string, teamMem: string): void => {
+                        const freshVals = videoSheet.getDataRange().getValues();
+                        const targetMatchId = actDate + suffix;
+                        const droneSuffix = suffix + 'd';
+                        const droneMatchId = actDate + droneSuffix;
+                        for (const ids of [
+                            [targetMatchId, false],
+                            [droneMatchId, true],
+                        ] as [string, boolean][]) {
+                            const [mid] = ids;
+                            for (let i = freshVals.length - 1; i >= 1; i--) {
+                                if (freshVals[i][10] === mid) {
+                                    if (!freshVals[i][3]) {
+                                        videoSheet.getRange(i + 1, 4).setValue(teamName);
+                                        videoSheet.getRange(i + 1, 6).setValue(teamMem);
+                                    } else if (!freshVals[i][4]) {
+                                        videoSheet.getRange(i + 1, 5).setValue(teamName);
+                                        videoSheet.getRange(i + 1, 7).setValue(teamMem);
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    };
+
+                    const winnerMem = winner === team1Name ? team1mem : team2mem;
+                    const loser = winner === team1Name ? team2Name : team1Name;
+                    const loserMem = winner === team1Name ? team2mem : team1mem;
+
+                    if (matchType === '6_d1_1' || matchType === '6_d1_2') {
+                        // 分けリーグ予選 Slot1 (T1vsT2 or T3vsT4) → 敗者はLL1へ、勝者はWL1へ
+                        fillSlot6('-6_ll1', loser, loserMem);
+                        fillSlot6('-6_wl1', winner, winnerMem);
+                    } else if (matchType === '6_d2_1') {
+                        // 分けリーグ予選 Slot2 (T5vsT6) → 勝者はWL2へ、敗者はLL2へ
+                        fillSlot6('-6_wl2', winner, winnerMem);
+                        fillSlot6('-6_ll2', loser, loserMem);
+                    } else if (matchType === '6_ll1') {
+                        // LoserLeague1完了 → 勝者はLL3へ（負け残りで復活）、敗者はLL2へ（負け残り）
+                        fillSlot6('-6_ll3', winner, winnerMem);
+                        fillSlot6('-6_ll2', loser, loserMem);
+                    } else if (matchType === '6_wl1') {
+                        // WinnerLeague1完了 → 勝者はWL3へ（負け残りで復活）、敗者はWL2へ（負け残り）
+                        fillSlot6('-6_wl3', winner, winnerMem);
+                        fillSlot6('-6_wl2', loser, loserMem);
+                    } else if (matchType === '6_ll2') {
+                        // LoserLeague2完了 → 敗者はLL3へ（負け残り）
+                        fillSlot6('-6_ll3', loser, loserMem);
+                    } else if (matchType === '6_wl2') {
+                        // WinnerLeague2完了 → 敗者はWL3へ（負け残り）
+                        fillSlot6('-6_wl3', loser, loserMem);
+                    }
+                }
+            } else {
+                console.warn(`No row found in videoSheet with matchId: ${matchId}.`);
+            }
+            postEventHander.reponseObj = { success: true };
+        } finally {
+            lock.releaseLock();
         }
-        postEventHander.reponseObj = { success: true };
     }
 
     // public closeGame(postEventHander: PostEventHandler): void {
@@ -1875,6 +1986,40 @@ export class RequestExecuter {
                 this.addRow(videoSheet, lastRow + 16, actDate, eventDetails, 'ゴール集 pitch1', '', '', '-5_1_g');
                 this.addRow(videoSheet, lastRow + 17, actDate, eventDetails, 'ゴール集 pitch2', '', '', '-5_2_g');
                 break;
+            case '6': // 6チームの場合(2ピッチ・負け残り方式)
+                // Slot1: 分けリーグ予選  T1vsT2 (Pitch1), T3vsT4 (Pitch2)
+                // Slot2: 分けリーグ予選  T5vsT6 (Pitch1), LoserLeague1 = L12 vs L34 (Pitch2)
+                // Slot3: WinnerLeague1 = W12 vs W34 (Pitch1), LoserLeague2 = L56 vs Winner(LL1) (Pitch2)
+                // Slot4: WinnerLeague2 = W56 vs Loser(WL1) (Pitch1), LoserLeague3 = Loser(LL2) vs Winner(LL1) (Pitch2) ※Winner(LL1) already in LL3 slot from LL1
+                // Slot5: WinnerLeague3 = Winner(WL2) vs Loser(WL1) (1面決勝)
+                videoSheet.insertRows(lastRow + 1, 20);
+                // Slot1
+                this.addRow(videoSheet, lastRow + 1, actDate, eventDetails, '#1 Pitch1 Team1 vs Team2', 'Team1', 'Team2', '-6_d1_1');
+                this.addRow(videoSheet, lastRow + 2, actDate, eventDetails, '#1 Pitch1 Team1 vs Team2 Drone', 'Team1', 'Team2', '-6_d1_1d');
+                this.addRow(videoSheet, lastRow + 3, actDate, eventDetails, '#1 Pitch2 Team3 vs Team4', 'Team3', 'Team4', '-6_d1_2');
+                this.addRow(videoSheet, lastRow + 4, actDate, eventDetails, '#1 Pitch2 Team3 vs Team4 Drone', 'Team3', 'Team4', '-6_d1_2d');
+                // Slot2
+                this.addRow(videoSheet, lastRow + 5, actDate, eventDetails, '#2 Pitch1 Team5 vs Team6', 'Team5', 'Team6', '-6_d2_1');
+                this.addRow(videoSheet, lastRow + 6, actDate, eventDetails, '#2 Pitch1 Team5 vs Team6 Drone', 'Team5', 'Team6', '-6_d2_1d');
+                this.addRow(videoSheet, lastRow + 7, actDate, eventDetails, '#2 Pitch2 LoserLeague1', '', '', '-6_ll1');
+                this.addRow(videoSheet, lastRow + 8, actDate, eventDetails, '#2 Pitch2 LoserLeague1 Drone', '', '', '-6_ll1d');
+                // Slot3
+                this.addRow(videoSheet, lastRow + 9, actDate, eventDetails, '#3 Pitch1 WinnerLeague1', '', '', '-6_wl1');
+                this.addRow(videoSheet, lastRow + 10, actDate, eventDetails, '#3 Pitch1 WinnerLeague1 Drone', '', '', '-6_wl1d');
+                this.addRow(videoSheet, lastRow + 11, actDate, eventDetails, '#3 Pitch2 LoserLeague2', '', '', '-6_ll2');
+                this.addRow(videoSheet, lastRow + 12, actDate, eventDetails, '#3 Pitch2 LoserLeague2 Drone', '', '', '-6_ll2d');
+                // Slot4
+                this.addRow(videoSheet, lastRow + 13, actDate, eventDetails, '#4 Pitch1 WinnerLeague2', '', '', '-6_wl2');
+                this.addRow(videoSheet, lastRow + 14, actDate, eventDetails, '#4 Pitch1 WinnerLeague2 Drone', '', '', '-6_wl2d');
+                this.addRow(videoSheet, lastRow + 15, actDate, eventDetails, '#4 Pitch2 LoserLeague3', '', '', '-6_ll3');
+                this.addRow(videoSheet, lastRow + 16, actDate, eventDetails, '#4 Pitch2 LoserLeague3 Drone', '', '', '-6_ll3d');
+                // Slot5
+                this.addRow(videoSheet, lastRow + 17, actDate, eventDetails, '#5 WinnerLeague3 (Final)', '', '', '-6_wl3');
+                this.addRow(videoSheet, lastRow + 18, actDate, eventDetails, '#5 WinnerLeague3 (Final) Drone', '', '', '-6_wl3d');
+                // Goal compilations
+                this.addRow(videoSheet, lastRow + 19, actDate, eventDetails, 'ゴール集 WinnerLeague', '', '', '-6_wg');
+                this.addRow(videoSheet, lastRow + 20, actDate, eventDetails, 'ゴール集 LoserLeague', '', '', '-6_lg');
+                break;
         }
     }
 
@@ -2050,6 +2195,28 @@ export class RequestExecuter {
                 rootFolder.createFolder(actDate + ' #5 Drone');
                 rootFolder.createFolder(actDate + ' #6 Goals pitch1');
                 rootFolder.createFolder(actDate + ' #7 Goals pitch2');
+                break;
+            case '6': // 6チームの場合(2ピッチ・負け残り方式)
+                rootFolder.createFolder(actDate + ' #1 Pitch1 Team1 vs Team2');
+                rootFolder.createFolder(actDate + ' #1 Pitch1 Team1 vs Team2 Drone');
+                rootFolder.createFolder(actDate + ' #1 Pitch2 Team3 vs Team4');
+                rootFolder.createFolder(actDate + ' #1 Pitch2 Team3 vs Team4 Drone');
+                rootFolder.createFolder(actDate + ' #2 Pitch1 Team5 vs Team6');
+                rootFolder.createFolder(actDate + ' #2 Pitch1 Team5 vs Team6 Drone');
+                rootFolder.createFolder(actDate + ' #2 Pitch2 LoserLeague1');
+                rootFolder.createFolder(actDate + ' #2 Pitch2 LoserLeague1 Drone');
+                rootFolder.createFolder(actDate + ' #3 Pitch1 WinnerLeague1');
+                rootFolder.createFolder(actDate + ' #3 Pitch1 WinnerLeague1 Drone');
+                rootFolder.createFolder(actDate + ' #3 Pitch2 LoserLeague2');
+                rootFolder.createFolder(actDate + ' #3 Pitch2 LoserLeague2 Drone');
+                rootFolder.createFolder(actDate + ' #4 Pitch1 WinnerLeague2');
+                rootFolder.createFolder(actDate + ' #4 Pitch1 WinnerLeague2 Drone');
+                rootFolder.createFolder(actDate + ' #4 Pitch2 LoserLeague3');
+                rootFolder.createFolder(actDate + ' #4 Pitch2 LoserLeague3 Drone');
+                rootFolder.createFolder(actDate + ' #5 WinnerLeague3 Final');
+                rootFolder.createFolder(actDate + ' #5 WinnerLeague3 Final Drone');
+                rootFolder.createFolder(actDate + ' #6 Goals WinnerLeague');
+                rootFolder.createFolder(actDate + ' #7 Goals LoserLeague');
                 break;
         }
 
