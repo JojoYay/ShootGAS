@@ -82,6 +82,12 @@ export const COMMAND_MAP: Command[] = [
         condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'registerVideoUrl',
     },
     {
+        func: 'updateVideoComment',
+        lineCmd: '',
+        display: false,
+        condition: (postEventHander: PostEventHandler) => postEventHander.parameter.func === 'updateVideoComment',
+    },
+    {
         func: 'uploadToYoutube',
         lineCmd: '',
         display: false,

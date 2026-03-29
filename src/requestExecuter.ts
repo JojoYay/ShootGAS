@@ -521,6 +521,32 @@ export class RequestExecuter {
         }
     }
 
+    public updateVideoComment(postEventHander: PostEventHandler): void {
+        const actDate: string = postEventHander.parameter['actDate'];
+        const fileName: string = postEventHander.parameter['fileName'];
+        const comment: string = postEventHander.parameter['comment'] ?? '';
+        if (!actDate || !fileName) {
+            postEventHander.resultMessage = JSON.stringify({ err: 'actDate, fileName are required' });
+            return;
+        }
+        const videoSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.videoSheet;
+        const videoSheetVals = videoSheet.getDataRange().getValues();
+        let matchedRowIndex = -1;
+        for (let i = 2; i < videoSheetVals.length; i++) {
+            const row = videoSheetVals[i];
+            if (row[0] === actDate && row[1] === fileName) {
+                matchedRowIndex = i;
+                break;
+            }
+        }
+        if (matchedRowIndex !== -1) {
+            videoSheet.getRange(matchedRowIndex + 1, 12).setValue(comment); // 12列目 (L列) にコメント
+            postEventHander.resultMessage = JSON.stringify({ success: true });
+        } else {
+            postEventHander.resultMessage = JSON.stringify({ err: `No matching row found` });
+        }
+    }
+
     public uploadToYoutube(postEventHander: PostEventHandler): void {
         console.log('uploadToYoutube');
         const fileName: string = postEventHander.parameter['fileName'];
