@@ -1,0 +1,88 @@
+name: Deploy to Google Apps Script
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy-dev:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup clasp credentials (Account A)
+        run: echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+
+      - name: Deploy
+        run: npm run deploy
+
+  deploy-prod:
+    name: Deploy to Prod (Shoot)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup clasp credentials (Account A)
+        run: echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+
+      - name: Deploy
+        run: npm run deploy:prod
+
+  deploy-bvs:
+    name: Deploy to BVS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup clasp credentials (Account B)
+        run: echo '${{ secrets.CLASPRC_BVS_JSON }}' > ~/.clasprc.json
+
+      - name: Deploy
+        run: npm run deploy:bvs
+
+  deploy-cs:
+    name: Deploy to CS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup clasp credentials
+        # CSがAccount Aと同じなら CLASPRC_JSON、別アカウントなら CLASPRC_CS_JSON を登録してください
+        run: echo '${{ secrets.CLASPRC_CS_JSON }}' > ~/.clasprc.json
+
+      - name: Deploy
+        run: npm run deploy:cs
