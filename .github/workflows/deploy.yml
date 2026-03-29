@@ -80,8 +80,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Setup clasp credentials (Account B)
-        run: echo '${{ secrets.CLASPRC_BVS_JSON }}' > ~/.clasprc.json
+      - name: Setup clasp credentials (Account C)
+        run: echo '${{ secrets.CLASPRC_CS_JSON }}' > ~/.clasprc.json
 
       - name: Deploy
         run: npm run deploy:cs
