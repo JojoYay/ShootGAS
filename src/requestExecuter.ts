@@ -613,6 +613,11 @@ export class RequestExecuter {
         const mip3: string = postEventHander.parameter['mip3'];
         const mip4: string = postEventHander.parameter['mip4'];
         const mip5: string = postEventHander.parameter['mip5'];
+        const mip1Comment: string = postEventHander.parameter['mip1Comment'];
+        const mip2Comment: string = postEventHander.parameter['mip2Comment'];
+        const mip3Comment: string = postEventHander.parameter['mip3Comment'];
+        const mip4Comment: string = postEventHander.parameter['mip4Comment'];
+        const mip5Comment: string = postEventHander.parameter['mip5Comment'];
 
         const eventDetailSheet: GoogleAppsScript.Spreadsheet.Sheet = GasProps.instance.eventResultSheet;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -640,7 +645,7 @@ export class RequestExecuter {
 
             updateValues[4] = weather !== undefined ? weather : updateValues[4]; // 天気 (5列目)
             updateValues[5] = mip1 !== undefined ? mip1 : updateValues[5]; // MIP1 (6列目)
-            updateValues[6] = reason !== undefined ? reason : updateValues[6]; // 選出理由 (7列目)
+            updateValues[6] = mip1Comment !== undefined ? mip1Comment : (reason !== undefined ? reason : updateValues[6]); // MIP1コメント (7列目)
             updateValues[7] = team1 !== undefined ? team1 : updateValues[7]; // team1 (8列目)
             updateValues[8] = team2 !== undefined ? team2 : updateValues[8]; // team2 (9列目)
             updateValues[9] = team3 !== undefined ? team3 : updateValues[9]; // team3 (10列目)
@@ -655,6 +660,13 @@ export class RequestExecuter {
             updateValues[18] = mip3 !== undefined ? mip3 : updateValues[18]; // MIP3 (19列目)
             updateValues[19] = mip4 !== undefined ? mip4 : updateValues[19]; // MIP4 (20列目)
             updateValues[20] = mip5 !== undefined ? mip5 : updateValues[20]; // MIP5 (21列目)
+
+            // MIPコメント列（シートに列がない場合は拡張）
+            while (updateValues.length < 25) updateValues.push('');
+            updateValues[21] = mip2Comment !== undefined ? mip2Comment : updateValues[21]; // MIP2コメント (22列目)
+            updateValues[22] = mip3Comment !== undefined ? mip3Comment : updateValues[22]; // MIP3コメント (23列目)
+            updateValues[23] = mip4Comment !== undefined ? mip4Comment : updateValues[23]; // MIP4コメント (24列目)
+            updateValues[24] = mip5Comment !== undefined ? mip5Comment : updateValues[24]; // MIP5コメント (25列目)
 
             // シートに書き戻し
             eventDetailSheet.getRange(targetRowIndex + 1, 1, 1, updateValues.length).setValues([updateValues]);
